@@ -55,11 +55,14 @@ function createUploads({ records, preferences, backend, network, contexts = requ
       if (target(record).original.saveState !== 'saved') throw { code: 'original-missing' };
       save(id, (draft) => { target(draft).uploadState = 'uploading'; delete target(draft).uploadError; });
       // Resolve uncertain acceptance before allocating the next version.
-      record = await publishContext(id);
-      if (!sameImages(record)) {
-        save(id, (draft) => { draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1); });
-        record = await publishContext(id);
-      }
+      record = await contexts.run(id, async () => {
+        let current = await publishContext(id);
+        if (!sameImages(current)) {
+          save(id, (draft) => { draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1); });
+          current = await publishContext(id);
+        }
+        return current;
+      });
       let image = target(read(id));
       if (!image.assetId) {
         let asset;
@@ -105,12 +108,16 @@ function createUploads({ records, preferences, backend, network, contexts = requ
         if (asset.contextId !== record.contextId || asset.imageId !== image.id || asset.uploadId !== image.uploadTicket.uploadId || !asset.assetId) throw { code: 'DEPENDENCY_MISSING' };
         save(id, (draft) => { target(draft).assetId = asset.assetId; target(draft).original.assetId = asset.assetId; });
       }
-      record = read(id);
-      if (!sameImages(record)) save(id, (draft) => {
-        draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1);
+      await contexts.run(id, async () => {
+        // Another image may have confirmed its asset while this one transferred.
+        // Replay any uncertain accepted body before constructing the next version.
+        record = await publishContext(id);
+        if (!sameImages(record)) save(id, (draft) => {
+          draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1);
+        });
+        if (read(id).pendingContextSnapshot) await publishContext(id);
+        save(id, (draft) => { target(draft).uploadState = 'uploaded'; delete target(draft).uploadError; });
       });
-      if (read(id).pendingContextSnapshot) await publishContext(id);
-      save(id, (draft) => { target(draft).uploadState = 'uploaded'; delete target(draft).uploadError; });
       return { ok: true, recordId: id };
     } catch (error) {
       const code = error.code || error.message || 'TEMPORARY_FAILURE';
@@ -125,27 +132,30 @@ function createUploads({ records, preferences, backend, network, contexts = requ
   return {
     enabled: backend.enabled,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    getState(id) {
+    getState(id, imageId) {
       const result = records.getRecord(id);
-      const images = result.ok ? result.record.images : [];
+      const images = result.ok ? result.record.images.filter((image) => !imageId || image.id === imageId) : [];
       const unfinished = images.filter((image) => image.uploadState !== 'uploaded');
-      const running = [...active.keys()].some((key) => key.startsWith(id + ':'));
-      const isResuming = [...resuming].some((key) => key.startsWith(id + ':'));
+      const matches = (key) => imageId ? key === `${id}:${imageId}` : key.startsWith(id + ':');
+      const running = [...active.keys()].some(matches);
+      const isResuming = [...resuming].some(matches);
       const originalMissing = unfinished.some((image) => image.original.saveState !== 'saved' || image.uploadError === 'original-missing');
       return { running, resuming: running && isResuming,
-        error: errors.get(id) || (images.find((image) => image.uploadError) || {}).uploadError || null,
+        error: ([...errors.entries()].find(([key]) => matches(key)) || [])[1] || (images.find((image) => image.uploadError) || {}).uploadError || null,
         interrupted: !running && unfinished.some((image) => image.uploadState === 'uploading'),
-        canRetry: backend.enabled && !running && unfinished.length > 0 && !originalMissing,
+        canRetry: backend.enabled && !running && unfinished.some((image) => image.original.saveState === 'saved' && image.uploadError !== 'original-missing'),
         originalMissing };
     },
     uploadRecord(id, imageId) {
-      const key = `${id}:${imageId || 'single'}`;
+      const previous = records.getRecord(id);
+      const unfinished = previous.ok ? previous.record.images.filter((image) => image.uploadState !== 'uploaded') : [];
+      const selectedId = imageId || (unfinished.length === 1 ? unfinished[0].id : undefined);
+      const key = `${id}:${selectedId || 'single'}`;
       if (!active.has(key)) {
-        const previous = records.getRecord(id);
-        if (previous.ok && previous.record.images.some((image) => (!imageId || image.id === imageId) && !['pending', 'uploaded'].includes(image.uploadState))) resuming.add(key);
-        errors.delete(id);
-        active.set(key, contexts.run(id, () => upload(id, imageId, key)).then((result) => {
-          if (!result.ok) errors.set(id, result.error);
+        if (previous.ok && previous.record.images.some((image) => (!selectedId || image.id === selectedId) && !['pending', 'uploaded'].includes(image.uploadState))) resuming.add(key);
+        errors.delete(key);
+        active.set(key, Promise.resolve().then(() => upload(id, selectedId, key)).then((result) => {
+          if (!result.ok) errors.set(key, result.error);
           return result;
         }).finally(() => { active.delete(key); resuming.delete(key); notify(id); }));
       }

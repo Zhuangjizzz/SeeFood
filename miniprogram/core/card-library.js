@@ -9,6 +9,7 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
   let error = null;
   let readable = false;
   let displayId = null;
+  let pendingRevealId = null;
   let menuId = null;
   let pendingDeletionId = null;
   let deleteError = null;
@@ -48,6 +49,7 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
     view.expanded = view.expanded === true;
     readable = true;
     error = null;
+    if (pendingRevealId) revealCard(pendingRevealId);
     return { ok: true };
   }
   load();
@@ -74,6 +76,15 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
     view = next;
     error = null;
     return { ok: true };
+  }
+
+  function revealCard(id) {
+    const card = cards.find((item) => item.id === id);
+    if (!card) { pendingRevealId = null; return { ok: false, error: 'card-not-found' }; }
+    // Returning from a successful save must show that card even if persisting
+    // the optional browsing position fails. A later reload retries this view.
+    view = Object.assign({}, view, { category: card.category, position: { cardId: id, offset: 0 } });
+    const result = saveView({}); pendingRevealId = result.ok ? null : id; return result;
   }
 
   function previewCards(visible) {
@@ -150,10 +161,12 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
     selectCategory(category) {
       if (!CATEGORIES.includes(category)) return { ok: false, error: 'invalid-category' };
       cancelGesture();
+      pendingRevealId = null;
       if (category === view.category) return { ok: true };
       library.closeMenu();
       return saveView({ category, position: null });
     },
+    revealCard,
     expand() { return saveView({ expanded: true, expandLearned: true }); },
     collapse() {
       library.closeMenu();

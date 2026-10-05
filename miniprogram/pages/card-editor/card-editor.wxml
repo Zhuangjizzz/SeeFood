@@ -1,0 +1,36 @@
+<view class="card-editor-page">
+  <button class="editor-back" bindtap="returnCards">‹ {{editorCopy.back}}</button>
+  <view class="editor-heading">{{editorCopy.title}}</view>
+  <view wx:if="{{saveMessage}}" class="draft-status {{saveError ? 'save-error' : ''}}" role="{{saveError ? 'alert' : 'status'}}"><text>{{saveMessage}}</text><button wx:if="{{saveError}}" bindtap="retrySave">{{saveError === 'storage-read' ? editorCopy.retryRead : editorCopy.retrySave}}</button></view>
+  <view wx:if="{{needsResume && draft}}" class="draft-recovery paper">
+    <view class="recovery-heading">{{editorCopy.draftFound}}</view>
+    <view class="input-language">{{sourceLanguageName}}</view>
+    <view class="recovery-preview">{{draft.text}}</view>
+    <button class="primary-button continue-draft" bindtap="continueDraft">{{editorCopy.continueDraft}}</button>
+    <button class="discard-draft" bindtap="discardDraft">{{editorCopy.discard}}</button>
+  </view>
+  <block wx:elif="{{draft && saveError !== 'storage-read'}}">
+    <view class="editor-field paper">
+      <label class="field-title" for="card-source">{{editorCopy.source}}</label><view class="input-language">{{sourceLanguageName}}</view>
+      <textarea id="card-source" class="source-input" value="{{draft.text}}" placeholder="{{editorCopy.sourcePlaceholder}}" bindinput="onSourceInput" maxlength="-1" auto-height cursor-spacing="100" adjust-position="{{true}}" />
+    </view>
+    <view wx:if="{{!isChinese}}" class="editor-field paper chinese-field">
+      <button class="generate-chinese" disabled="{{!canTranslate}}" bindtap="translate">{{editorCopy.generate}}</button>
+      <view wx:if="{{translationMessage}}" class="translation-status" role="status">{{translationMessage}}</view>
+      <button wx:if="{{canContinueTranslation}}" class="continue-translation" bindtap="continueTranslation">{{editorCopy.continueTranslation}}</button>
+      <label class="field-title" for="card-chinese">{{editorCopy.chinese}}</label><view class="field-help">{{editorCopy.chineseHelp}}</view>
+      <textarea id="card-chinese" class="chinese-input" value="{{draft.textZh}}" placeholder="{{editorCopy.chinesePlaceholder}}" bindinput="onChineseInput" maxlength="-1" auto-height cursor-spacing="100" adjust-position="{{true}}" />
+      <view wx:if="{{draft.job}}" class="mock-note">{{editorCopy.mock}}</view>
+    </view>
+    <view class="editor-field paper auxiliary-fields">
+      <label class="field-title" for="card-title">{{editorCopy.titleLabel}}</label>
+      <input id="card-title" class="title-input" value="{{draft.title}}" bindinput="onTitleInput" maxlength="-1" />
+      <view class="field-title">{{editorCopy.category}}</view>
+      <view class="category-options"><button wx:for="{{categories}}" wx:key="value" class="option {{draft.category === item.value ? 'selected' : ''}}" data-value="{{item.value}}" bindtap="selectCategory">{{item.label}}</button></view>
+      <view class="field-title">{{editorCopy.color}}</view>
+      <view class="color-options"><button wx:for="{{colors}}" wx:key="value" class="option color-option {{draft.color === item.value ? 'selected' : ''}}" data-value="{{item.value}}" bindtap="selectColor"><view class="color-dot tone-{{item.value}}"></view><text>{{item.label}}</text></button></view>
+    </view>
+    <button class="discard-draft" bindtap="discardDraft">{{editorCopy.discard}}</button>
+    <view class="editor-save-bar"><button class="primary-button save-card" disabled="{{!canSave}}" bindtap="saveCard">{{editorCopy.save}}</button></view>
+  </block>
+</view>

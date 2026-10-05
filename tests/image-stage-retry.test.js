@@ -36,6 +36,8 @@ test('retrying only the failed translation keeps successful cards and original a
   assert.deepEqual(image.original, before.images[0].original); assert.equal(image.translation.contentLanguage, 'ja');
   assert.equal(services.jobs.applyJob(id, { ...failed, revision: 1000 }).error, 'stale-job');
   assert.equal(services.jobs.applyJob(id, { ...image.stageJobs.image_translation, jobId: 'old-job', revision: 1001 }).error, 'stale-job');
+  assert.equal(services.jobs.applyJob(id, { ...image.stageJobs.image_translation, attempt: 3, revision: 1002 }).error, 'stale-job');
+  assert.equal(services.jobs.applyJob(id, { ...image.stageJobs.image_translation, revision: image.stageJobs.image_translation.revision - 1 }).error, 'stale-job');
   assert.equal((await services.jobs.retryStage(id, imageId, 'image_cards')).error, 'JOB_STATE_CONFLICT');
   assert.equal(traffic.filter((x) => x.method === 'POST' && x.url.endsWith('/retry')).length, 1);
   assert.equal(traffic.filter((x) => x.method === 'POST' && x.url.endsWith('/v1/jobs')).length, 2);
@@ -79,8 +81,15 @@ test('a never-delivered first stage request stays pending on reopen; explicit co
   assert.equal((await reopened.jobs.refreshRecord(id)).ok, true);
   assert.equal(reopened.records.getRecord(id).record.images[0].stageJobs.image_translation, null);
   assert.equal(traffic.slice(mark).filter((x) => x.method === 'POST').length, 0);
+  const page = resultPage(t, reopened); page.onLoad({ recordId: id }); page.onShow();
+  for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN']) {
+    reopened.application.chooseLanguage(language); page.retryRead();
+    assert.equal(page.data.translationRetry.canContinue, true); assert.equal(page.data.cardsRetry.canContinue, false);
+    assert.ok(page.data.stageCopy.continueTranslation);
+  }
   mark = traffic.length;
-  assert.equal((await reopened.jobs.continueSubmission(id, imageId, 'image_translation')).ok, true);
+  assert.equal((await page.continueImageStage({ currentTarget: { dataset: { id: imageId, kind: 'image_translation' } } })).ok, true);
+  page.onUnload();
   const posted = traffic.slice(mark).filter((x) => x.method === 'POST'); assert.equal(posted.length, 1);
   assert.deepEqual(posted[0].body, dropped.body); assert.equal(posted[0].key, dropped.key);
   assert.ok(traffic.slice(mark).findIndex((x) => x.method === 'GET' && x.url.includes('/contexts/')) < traffic.slice(mark).indexOf(posted[0]));

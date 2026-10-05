@@ -19,6 +19,13 @@
 .original-label { color: #6b7d62; font-size: 24rpx; margin: 8rpx 0 12rpx; }
 .original-button { width: 100%; height: 350rpx; padding: 12rpx; border-radius: 18rpx; }
 .result-original { width: 100%; height: 326rpx; }
+.add-photos { margin: 18rpx 0; width: 100%; min-height: 88rpx; border: 1rpx solid #819477; border-radius: 16rpx; color: #315d43; white-space: normal; }
+.append-input { padding: 24rpx; margin: 18rpx 0; }
+.append-target { font-size: 25rpx; overflow-wrap: anywhere; }
+.append-mode, .append-sources { display: flex; gap: 16rpx; margin-top: 20rpx; }
+.append-mode button, .append-sources button { flex: 1; min-width: 0; min-height: 88rpx; padding: 16rpx; font-size: 27rpx; white-space: normal; overflow-wrap: anywhere; border-radius: 14rpx; background: #e4e8dd; }
+.append-mode .active { background: #315d43; color: #fffefa; }
+.append-hint { font-size: 24rpx; line-height: 1.5; color: #6b7d62; margin-top: 16rpx; }
 .image-progress-list { margin-top: 22rpx; padding: 4rpx 24rpx; }
 .image-progress { padding: 18rpx 0; border-bottom: 1rpx solid #e2e5db; }
 .image-progress:last-child { border-bottom: 0; }

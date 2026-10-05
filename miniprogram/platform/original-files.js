@@ -14,9 +14,20 @@ function createWechatOriginalFiles(platform) {
       if (stat.size !== image.sizeBytes || stat.size <= 0) throw new Error('Original copy is incomplete');
       return destination;
     },
-    removeUncommittedOriginals(recordId) {
+    removeUncommittedOriginals(recordId, images) {
       const files = platform.getFileSystemManager();
       const directory = `${platform.env.USER_DATA_PATH}/seefood-originals/${encodeURIComponent(recordId)}`;
+      if (images) {
+        for (const image of images) {
+          const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[image.mimeType];
+          try { files.unlinkSync(`${directory}/${encodeURIComponent(image.id)}.${extension}`); }
+          catch (error) {
+            const message = error.errMsg || error.message || '';
+            if (error.code !== 'ENOENT' && !/no such file|file not exist/i.test(message)) throw error;
+          }
+        }
+        return;
+      }
       try { files.rmdirSync(directory, true); }
       catch (error) {
         const message = error.errMsg || error.message || '';

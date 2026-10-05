@@ -1,5 +1,6 @@
 const COPY = {
   en: {
+    appendTargetUnavailable: 'This record is no longer available for adding photos. Your selected photos have not been submitted.',
     result: 'Record', photo: 'Photo', photos: 'photos', original: 'Original',
     uploadLabel: 'Upload', saveLabel: 'On this device', pendingUpload: 'Waiting to upload', uploading: 'Uploading', uploaded: 'Uploaded', uploadFailed: 'Upload failed',
     saving: 'Saving on this device…', saved: 'Saved on this device', saveFailed: 'Not saved', partialSave: 'Some images are unavailable',
@@ -13,6 +14,7 @@ const COPY = {
     retrySave: 'Retry saving', retryRead: 'Try reading again', openRecord: 'Open record', back: 'Back'
   },
   ja: {
+    appendTargetUnavailable: 'この記録には写真を追加できません。選択した写真は送信されていません。',
     result: '記録', photo: '写真', photos: '枚', original: '元画像',
     uploadLabel: 'アップロード', saveLabel: '端末への保存', pendingUpload: 'アップロード待ち', uploading: 'アップロード中', uploaded: 'アップロード済み', uploadFailed: 'アップロード失敗',
     saving: '端末に保存中…', saved: '端末に保存済み', saveFailed: '未保存', partialSave: '一部の画像を利用できません',
@@ -26,6 +28,7 @@ const COPY = {
     retrySave: '保存を再試行', retryRead: '読み込みを再試行', openRecord: '記録を開く', back: '戻る'
   },
   ko: {
+    appendTargetUnavailable: '이 기록에 더 이상 사진을 추가할 수 없어요. 선택한 사진은 제출되지 않았어요.',
     result: '기록', photo: '사진', photos: '장', original: '원본',
     uploadLabel: '업로드', saveLabel: '기기 저장', pendingUpload: '업로드 대기 중', uploading: '업로드 중', uploaded: '업로드됨', uploadFailed: '업로드 실패',
     saving: '기기에 저장 중…', saved: '기기에 저장됨', saveFailed: '저장되지 않음', partialSave: '일부 이미지를 사용할 수 없어요',
@@ -39,6 +42,7 @@ const COPY = {
     retrySave: '저장 다시 시도', retryRead: '다시 읽기', openRecord: '기록 열기', back: '뒤로'
   },
   es: {
+    appendTargetUnavailable: 'Este registro ya no permite añadir fotos. Las fotos seleccionadas no se han enviado.',
     result: 'Registro', photo: 'Foto', photos: 'fotos', original: 'Original',
     uploadLabel: 'Subida', saveLabel: 'En este dispositivo', pendingUpload: 'Pendiente de subir', uploading: 'Subiendo', uploaded: 'Subida completada', uploadFailed: 'Error al subir',
     saving: 'Guardando en este dispositivo…', saved: 'Guardado en este dispositivo', saveFailed: 'Sin guardar', partialSave: 'Algunas imágenes no están disponibles',
@@ -52,6 +56,7 @@ const COPY = {
     retrySave: 'Reintentar guardado', retryRead: 'Volver a leer', openRecord: 'Abrir registro', back: 'Volver'
   },
   'zh-CN': {
+    appendTargetUnavailable: '这条记录已无法追加照片，所选图片尚未提交。',
     result: '当前记录', photo: '图片', photos: '张', original: '原图',
     uploadLabel: '上传', saveLabel: '本机保存', pendingUpload: '待上传', uploading: '上传中', uploaded: '已上传', uploadFailed: '上传失败',
     saving: '正在保存到本机…', saved: '已保存到本机', saveFailed: '未保存', partialSave: '部分图片无法读取',
@@ -70,7 +75,7 @@ function getRecordsCopy(language) { return Object.assign({}, COPY[language] || C
 function recordError(copy, error) {
   return ({ 'storage-read': copy.recordReadFailed, 'storage-write': copy.recordWriteFailed,
     'original-write': copy.originalWriteFailed, 'record-missing': copy.missingRecord,
-    'capture-invalid': copy.invalidCapture, 'capture-conflict': copy.captureConflict,
+    'capture-invalid': copy.invalidCapture, 'capture-conflict': copy.captureConflict, 'append-target-unavailable': copy.appendTargetUnavailable,
     'submission-missing': copy.invalidCapture, 'save-unavailable': copy.recordWriteFailed })[error] || '';
 }
 

@@ -1,4 +1,4 @@
-<view class="page capture-page" wx:if="!needsLanguage">
+<view class="page capture-page" wx:if="{{!needsLanguage}}">
   <view class="brand-row">
     <view class="brand"><text class="brand-seal">sf</text><text>SeeFood</text></view>
     <button class="language-link" bindtap="openLanguage" aria-label="{{copy.language}}" hover-class="press">
@@ -6,7 +6,7 @@
       <text>{{languageName}}</text>
     </button>
   </view>
-  <view class="notice" wx:if="errorMessage" role="alert">{{errorMessage}}</view>
+  <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
   <view class="welcome-panel">
     <view class="welcome-copy">
       <text class="welcome-title">{{copy.welcome}}</text>
@@ -14,7 +14,7 @@
     </view>
     <image class="welcome-art" src="/assets/table-scene.png" mode="aspectFit" aria-hidden="true" />
   </view>
-  <view class="welcome-note" wx:if="showPreferenceInvite">
+  <view class="welcome-note" wx:if="{{showPreferenceInvite}}">
     <text class="invite-copy">{{copy.preferenceBody}}</text>
     <view class="invite-actions">
       <button class="text-button invite-link" bindtap="openPreferences" hover-class="press">{{copy.setPreferences}}</button>

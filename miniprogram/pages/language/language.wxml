@@ -1,13 +1,13 @@
 <view class="page language-page">
   <view class="language-symbol" aria-hidden="true">文<text>A</text></view>
-  <view class="eyebrow" wx:if="needsLanguage">{{copy.languageWelcome}}</view>
+  <view class="eyebrow" wx:if="{{needsLanguage}}">{{copy.languageWelcome}}</view>
   <view class="page-heading">{{copy.chooseLanguage}}</view>
   <view class="body-copy">{{copy.languageBody}}</view>
-  <view class="notice" wx:if="errorMessage" role="alert">{{errorMessage}}</view>
+  <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
   <view class="language-list paper">
     <button wx:for="{{languages}}" wx:key="code" class="language-option {{!needsLanguage && item.code === language ? 'active' : ''}}" data-code="{{item.code}}" bindtap="selectLanguage" hover-class="press" aria-label="{{item.name}}" aria-pressed="{{!needsLanguage && item.code === language}}">
       <text>{{item.name}}</text>
-      <text class="selected-mark" wx:if="!needsLanguage && item.code === language" aria-label="{{copy.currentLanguage}}">✓</text>
+      <text class="selected-mark" wx:if="{{!needsLanguage && item.code === language}}" aria-label="{{copy.currentLanguage}}">✓</text>
       <text class="unselected-mark" wx:else></text>
     </button>
   </view>

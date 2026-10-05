@@ -1,6 +1,6 @@
-<view class="page" wx:if="!needsLanguage">
+<view class="page" wx:if="{{!needsLanguage}}">
   <view class="brand-row"><text class="section-title">{{copy.cards}}</text><button class="language-link" bindtap="openLanguage" aria-label="{{copy.language}}" hover-class="press"><image class="small-icon" src="/assets/globe.png" aria-hidden="true" /><text>{{languageName}}</text></button></view>
-  <view class="notice" wx:if="errorMessage" role="alert">{{errorMessage}}</view>
+  <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
   <view class="page-heading">{{copy.cardsTitle}}</view>
   <view class="body-copy">{{copy.cardsBody}}</view>
   <view class="card-preview" aria-hidden="true"><view class="sheet sheet-back"></view><view class="sheet sheet-middle"></view><view class="sheet sheet-front"><image src="/assets/cards-active.png" /><text>SeeFood</text></view></view>

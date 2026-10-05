@@ -1,6 +1,6 @@
-<view class="page" wx:if="!needsLanguage">
+<view class="page" wx:if="{{!needsLanguage}}">
   <view class="brand-row"><text class="section-title">{{copy.mine}}</text><text class="brand-seal">sf</text></view>
-  <view class="notice" wx:if="errorMessage" role="alert">{{errorMessage}}</view>
+  <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
   <button class="preference-panel" bindtap="openPreferences" hover-class="press">
     <view class="preference-title">{{copy.preferences}}</view>
     <view class="preference-summary">{{copy.noPreferences}}</view>

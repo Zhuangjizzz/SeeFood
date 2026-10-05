@@ -15,6 +15,16 @@ Page({
   onHide() { if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   retryRead() { recordsPage.showResult(this, this.recordId); },
+  retryUpload() {
+    if (this.retryingUpload) return this.retryingUpload;
+    const services = page.services();
+    if (!services.uploads.getState(this.recordId).canRetry) return Promise.resolve({ ok: false, error: 'upload-unavailable' });
+    this.retryingUpload = services.uploads.uploadRecord(this.recordId).then((result) => {
+      if (result.ok && services.jobs) return services.jobs.startImageProcessing(this.recordId);
+      return result;
+    }).finally(() => { this.retryingUpload = null; recordsPage.showResult(this, this.recordId); });
+    return this.retryingUpload;
+  },
   selectImage(event) {
     this.setData({ currentImageId: event.currentTarget.dataset.id });
     recordsPage.showResult(this, this.recordId);

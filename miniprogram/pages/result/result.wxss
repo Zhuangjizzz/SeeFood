@@ -25,6 +25,7 @@
 .image-local-state { color: #6b7d62; }
 .pending-explanation { font-size: 24rpx; color: #6b7d62; line-height: 1.5; margin: 20rpx 6rpx; }
 .result-empty { margin: 24rpx 0 0; padding: 28rpx 22rpx; }
+.retry-upload { width: 100%; min-height: 88rpx; margin: 20rpx 0; white-space: normal; overflow-wrap: anywhere; }
 .cards-progress { color: #315d43; margin: 24rpx 6rpx 12rpx; font-size: 26rpx; }
 .dish-section-title { font-size: 30rpx; font-weight: 600; margin-top: 28rpx; }
 .mock-notice { color: #7c705b; font-size: 22rpx; line-height: 1.5; margin: 12rpx 0 20rpx; }

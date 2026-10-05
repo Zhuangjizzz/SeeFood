@@ -1,0 +1,27 @@
+.result-page { padding-bottom: calc(48rpx + env(safe-area-inset-bottom)); }
+.record-heading { font-size: 36rpx; font-weight: 600; margin-top: 16rpx; overflow-wrap: anywhere; }
+.record-meta { font-size: 23rpx; color: #7b8772; margin: 8rpx 0 22rpx; }
+.record-status { padding: 18rpx 24rpx; }
+.status-row { display: flex; justify-content: space-between; gap: 22rpx; align-items: baseline; margin: 6rpx 0; font-size: 25rpx; }
+.status-label { color: #71816c; flex-shrink: 0; max-width: 42%; }
+.processing-state, .local-save-state { text-align: right; overflow-wrap: anywhere; }
+.processing-state { color: #755c37; }
+.local-save-state { color: #45694d; }
+.image-selector { margin: 24rpx 0 10rpx; width: 100%; white-space: nowrap; }
+.thumbnail-strip { display: inline-flex; gap: 14rpx; padding: 4rpx 6rpx 12rpx; }
+.image-selector-button { width: 106rpx; height: 110rpx; flex-shrink: 0; position: relative; border-radius: 14rpx; border: 3rpx solid transparent; padding: 4rpx; }
+.image-selector-button.selected-image { border-color: #315d43; background: #e4e8dd; }
+.selector-thumbnail { width: 92rpx; height: 96rpx; border-radius: 9rpx; background: #e4e8dd; }
+.missing-thumbnail { display: flex; align-items: center; justify-content: center; color: #829277; }
+.selector-number { position: absolute; left: 4rpx; bottom: 4rpx; padding: 0 10rpx; border-radius: 0 8rpx 0 8rpx; background: #315d43; color: #fffefa; font-size: 22rpx; }
+.original-label { color: #6b7d62; font-size: 24rpx; margin: 8rpx 0 12rpx; }
+.original-button { width: 100%; height: 350rpx; padding: 12rpx; border-radius: 18rpx; }
+.result-original { width: 100%; height: 326rpx; }
+.image-progress-list { margin-top: 22rpx; padding: 4rpx 24rpx; }
+.image-progress { padding: 18rpx 0; border-bottom: 1rpx solid #e2e5db; }
+.image-progress:last-child { border-bottom: 0; }
+.image-progress-name { font-size: 25rpx; font-weight: 600; }
+.image-progress-states { display: flex; flex-wrap: wrap; gap: 6rpx 22rpx; font-size: 23rpx; color: #755c37; margin-top: 6rpx; }
+.image-local-state { color: #6b7d62; }
+.pending-explanation { font-size: 24rpx; color: #6b7d62; line-height: 1.5; margin: 20rpx 6rpx; }
+.result-empty { margin: 24rpx 0 0; padding: 28rpx 22rpx; }

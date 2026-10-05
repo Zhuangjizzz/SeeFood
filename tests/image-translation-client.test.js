@@ -8,15 +8,15 @@ const { createCapture } = require('../miniprogram/core/capture');
 const { recordPlatform } = require('./support/record-platform');
 const { temporary, start } = require('./support/http-service');
 async function setup(t, env = {}, language = 'ja', kind = 'menu') {
-  const disk = recordPlatform(t); const server = await start(t, temporary(t), env); const traffic = [];
+  const disk = recordPlatform(t); const directory = temporary(t); const server = await start(t, directory, env); const traffic = [];
   const backend = { enabled: true, baseUrl: server.url, identity: 'demo-owner-a' };
   disk.platform.request = (options) => { traffic.push({ method: options.method, url: options.url });
     fetch(options.url, { method: options.method, headers: options.header, body: options.method === 'GET' ? undefined : options.data instanceof ArrayBuffer ? options.data : JSON.stringify(options.data) })
       .then(async (response) => { const data = await response.text(); options.success({ statusCode: response.status, data: data ? JSON.parse(data) : null }); }).catch(options.fail);
   };
-  disk.platform.downloadFile = (options) => { traffic.push({ method: 'DOWNLOAD', url: options.url });
+  disk.platform.downloadFile = (options) => { traffic.push({ method: 'DOWNLOAD', url: options.url }); const downloadIndex = traffic.length;
     fetch(options.url, { headers: options.header }).then(async (response) => {
-      const tempFilePath = path.join(disk.root, `download-${traffic.length}.png`);
+      const tempFilePath = path.join(disk.root, `download-${downloadIndex}.png`);
       fs.writeFileSync(tempFilePath, Buffer.from(await response.arrayBuffer()));
       options.success({ statusCode: response.status, tempFilePath });
     }).catch(options.fail);
@@ -28,7 +28,7 @@ async function setup(t, env = {}, language = 'ja', kind = 'menu') {
   capture.chooseMode(kind); await capture.chooseImages({ source: 'album' });
   const saved = await services.records.confirmCapture(capture.confirm().batch); assert.equal(saved.ok, true);
   assert.equal((await services.uploads.uploadRecord(saved.recordId)).ok, true);
-  return { disk, services, id: saved.recordId, traffic, backend, server };
+  return { disk, services, id: saved.recordId, traffic, backend, server, directory };
 }
 
 test('translation has independent real download and durable file state while cards and originals remain intact offline', async (t) => {
@@ -195,7 +195,7 @@ test('unsaved translated metadata stays distinct from successful cards and saves
   assert.equal(page.data.saveLabel, page.data.recordCopy.saveFailed); assert.equal(page.data.originalSaveLabel, page.data.imageCopy.saved);
   const ready = services.jobs.getState(id).unsavedJobs.find((job) => job.kind === 'image_translation');
   assert.equal(services.jobs.applyJob(id, { ...ready, state: 'running', output: null, revision: ready.revision - 1 }).error, 'stale-job');
-  disk.storage.set = write; await page.retryTranslationSave();
+  disk.storage.set = write; disk.platform.request = send; await page.retryTranslationSave();
   assert.equal(page.data.imageView.variant, 'original'); assert.equal(page.data.translationSaveLabel, page.data.imageCopy.saved); page.onUnload();
 });
 
@@ -233,4 +233,39 @@ test('two real saved images keep separate original or translated choices when sw
   const images = reopened.records.getRecord(id).record.images;
   assert.notEqual(images[0].translation.localPath, images[1].translation.localPath);
   assert.equal(images[0].translation.imageId, first); assert.equal(images[1].translation.imageId, second);
+});
+
+test('translation reentry drains job recovery pages after process restart and saves the original accepted resource', async (t) => {
+  const { services, disk, id, backend, traffic, server, directory } = await setup(t, { SEEFOOD_WORKER_DELAY_MS: '10000', SEEFOOD_JOB_PAGE_SIZE: '1' });
+  services.imageView.open(id);
+  const send = disk.platform.request; let accepted;
+  disk.platform.request = (options) => {
+    if (options.method === 'POST' && options.url.endsWith('/v1/jobs')) options.success = (result) => { accepted = result.data; options.fail(new Error('lost response')); };
+    send(options);
+  };
+  assert.equal((await services.jobs.startImageTranslation(id)).ok, false);
+  await server.stop('SIGKILL'); const restarted = await start(t, directory, { SEEFOOD_JOB_PAGE_SIZE: '1' });
+  backend.baseUrl = restarted.url; disk.platform.request = send;
+  const fresh = createWechatServices(disk.platform, { backend });
+  const before = traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length;
+  assert.equal((await fresh.jobs.refreshRecord(id)).ok, true);
+  const image = fresh.records.getRecord(id).record.images[0];
+  assert.equal(image.stageJobs.image_translation.jobId, accepted.jobId); assert.equal(image.translation.saveState, 'saved');
+  assert.equal(image.translation.remoteUrl.startsWith(restarted.url + '/'), true); assert.ok(fs.statSync(image.translation.localPath).size);
+  assert.equal(fresh.imageView.open(id).variant, 'original');
+  assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length, before);
+});
+
+test('manual saving refreshes an expired service address without creating another translation', async (t) => {
+  const { services, disk, id, backend, server, directory, traffic } = await setup(t);
+  await services.jobs.startImageTranslation(id); const image = services.records.getRecord(id).record.images[0];
+  fs.unlinkSync(image.translation.localPath);
+  await server.stop(); const restarted = await start(t, directory); backend.baseUrl = restarted.url;
+  const reopened = createWechatServices(disk.platform, { backend });
+  const before = traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length;
+  assert.equal((await reopened.jobs.saveTranslation(id, image.id)).ok, true);
+  const restored = reopened.records.getRecord(id).record.images[0];
+  assert.equal(restored.translation.saveState, 'saved'); assert.equal(restored.translation.id, image.translation.id);
+  assert.equal(restored.stageJobs.image_translation.revision, image.stageJobs.image_translation.revision);
+  assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length, before);
 });

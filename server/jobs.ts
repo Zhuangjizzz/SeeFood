@@ -17,7 +17,7 @@ interface JobServiceOptions {
   getContext: (id: string, owner: string) => any;
   getSnapshot: (id: string, owner: string, version?: number) => Json;
   idempotent: (owner: string, method: string, path: string, key: unknown, body: Json, operation: () => Json) => Json;
-  handlers: Record<string, JobHandler>; workerDelayMs?: number;
+  handlers: Record<string, JobHandler>; workerDelayMs?: number; pageSize?: number;
 }
 /** Durable acceptance, identity and execution are shared by all job kinds. */
 export function createJobService(options: JobServiceOptions) {
@@ -36,6 +36,23 @@ export function createJobService(options: JobServiceOptions) {
     return value;
   }
   function get(id: string, owner: string) { return JSON.parse(String(row(id, owner).response)); }
+  function list(contextId: string, owner: string, cursor?: string) {
+    getContext(contextId, owner);
+    let after = '';
+    if (cursor !== undefined) {
+      try {
+        const value = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+        if (!cursor || value.contextId !== contextId || typeof value.after !== 'string' || !value.after ||
+            Buffer.from(JSON.stringify(value)).toString('base64url') !== cursor) return reject(400, 'INPUT_UNSUPPORTED');
+        after = value.after;
+      } catch { return reject(400, 'INPUT_UNSUPPORTED'); }
+    }
+    const size = Number.isInteger(options.pageSize) && options.pageSize! > 0 ? Math.min(options.pageSize!, 100) : 50;
+    const rows = database.prepare('SELECT id FROM jobs WHERE context_id=? AND owner=? AND id>? ORDER BY id LIMIT ?').all(contextId, owner, after, size + 1);
+    const items = rows.slice(0, size).map((value) => get(String(value.id), owner));
+    const nextCursor = rows.length > size ? Buffer.from(JSON.stringify({ contextId, after: items[items.length - 1].jobId })).toString('base64url') : null;
+    return { items, nextCursor };
+  }
   function accept(owner: string, key: unknown, request: Json) {
     validate('CreateJobRequest', request);
     const context = getContext(request.contextId, owner);
@@ -113,5 +130,6 @@ export function createJobService(options: JobServiceOptions) {
     if (!stopped) work();
   }, interval);
   timer.unref();
-  return { accept, get, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
+  return { accept, get, list, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
+
 }

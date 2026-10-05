@@ -3,6 +3,7 @@ const { getRecordsCopy, recordError } = require('../core/records-copy');
 const { getUploadCopy } = require('../core/upload-copy');
 const { getDishesCopy, presentDish } = require('../core/dishes-copy');
 const { getImagesCopy } = require('../core/images-copy');
+const { getRecoveryCopy } = require('../core/recovery-copy');
 
 function dateTime(value) {
   const date = new Date(value);
@@ -58,27 +59,30 @@ function showResult(target, recordId) {
   const uploadStatus = page.services().uploads.getState(recordId);
   const dishCopy = getDishesCopy(application.language);
   const jobState = page.services().jobs.getState(recordId);
+  const recoveryCopy = getRecoveryCopy(application.language);
   const imageCopy = getImagesCopy(application.language);
   const imageView = page.services().imageView.open(recordId, target.data.currentImageId);
   const currentImage = record.images.find((image) => image.id === imageView.imageId) || record.images[0];
   const translationJob = imageView.translationJob;
   const output = translationJob && translationJob.output;
-  const translationStateLabel = !translationJob ? imageCopy.unstarted : translationJob.state !== 'succeeded' ? imageCopy[translationJob.state] :
+  const translationAcceptancePending = !translationJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_translation);
+  const translationStateLabel = !translationJob ? (translationAcceptancePending ? recoveryCopy.checking : imageCopy.unstarted) : translationJob.state !== 'succeeded' ? imageCopy[translationJob.state] :
     output.state === 'ready' ? imageCopy.ready : output.reasonKey === 'images.already_chinese' ? imageCopy.alreadyChinese :
     output.reasonKey === 'images.no_translatable_text' ? imageCopy.noText : imageCopy.notRequired;
   const cardsJob = jobState.unsavedJob && jobState.unsavedJob.target.imageId === currentImage.id ? jobState.unsavedJob : currentImage.stageJobs.image_cards;
+  const cardsAcceptancePending = !cardsJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_cards);
   const cards = jobState.unsavedJob && cardsJob === jobState.unsavedJob && cardsJob.state === 'succeeded' ?
     (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { record, copy: application.copy, recordCopy,
-    uploadCopy: getUploadCopy(application.language), dishCopy, cardsJob, imageCopy, imageView, translationJob, translationStateLabel,
+    uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: uploadStatus.originalMissing,
     originalSaveLabel: currentImage.original.saveState === 'saved' ? imageCopy.saved : imageCopy.saveFailed,
     translationSaveLabel: imageView.translationSaveState === 'failed' || imageView.translationUnsaved ? imageCopy.saveFailed : imageCopy[imageView.translationSaveState] || imageCopy.pending,
     dishCards: cards.filter((card) => card.sourceImageIds.includes(currentImage.id)).map((card) => presentDish(card, dishCopy)),
-    cardsStateLabel: cardsJob ? dishCopy[cardsJob.state] : dishCopy.unstarted,
+    cardsStateLabel: cardsJob ? dishCopy[cardsJob.state] : cardsAcceptancePending ? recoveryCopy.checking : dishCopy.unstarted,
     saveLabel: (jobState.unsavedJobs || []).length ? recordCopy.saveFailed : describe(record, application, uploadStatus).saveLabel,
-    cardsSaveFailed: !!jobState.unsavedJob, cardsReadFailed: !!jobState.error && !jobState.unsavedJob && (!cardsJob || ['queued', 'running'].includes(cardsJob.state)),
+    cardsSaveFailed: !!jobState.unsavedJob, cardsReadFailed: !!jobState.error && !(jobState.unsavedJobs || []).length && (!cardsJob || !translationJob || ['queued', 'running'].includes(cardsJob.state) || ['queued', 'running'].includes(translationJob.state)),
     canLeave: record.images.every((image) => image.uploadState === 'uploaded' && image.stageJobs.image_cards && image.stageJobs.image_translation),
 
     uploadLocalFailure: uploadStatus.error === 'storage-write' || uploadStatus.error === 'storage-read',

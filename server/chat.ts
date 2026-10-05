@@ -1,14 +1,14 @@
-import { reject, validate } from './contract.ts';
+import { ApiError, reject, validate } from './contract.ts';
 import type { JobHandler } from './jobs.ts';
 import { createRequire } from 'node:module';
 import { chatContent, twoPortions } from './chat-content.ts';
 const { getChatCopy } = createRequire(import.meta.url)('../miniprogram/core/chat-copy.js');
 
 /** The generated prose is fixed for local integration; record identities remain real. */
-export function chatHandler(): JobHandler {
+export function chatHandler(scenario = 'complete'): JobHandler {
   return {
     purpose: 'record',
-    prepare(request, snapshot) {
+    prepare(request, snapshot, asset) {
       const { userMessageId, assistantMessageId } = request.target;
       const { cards, images, messages } = snapshot.snapshot;
       const imageIds = new Set(images.map((image: any) => image.imageId));
@@ -18,9 +18,10 @@ export function chatHandler(): JobHandler {
           new Set(messages.map((message: any) => message.id)).size !== messages.length || messages.some((message: any, index: number) =>
             (message.role === 'user' && message.inReplyTo !== null) || (message.role === 'assistant' && !messages.slice(0, index).some((prior: any) => prior.id === message.inReplyTo && prior.role === 'user')) ||
             message.attachments.some((attachment: any) => attachment.type === 'dish_reference' && !cardIds.has(attachment.cardId)))) reject(409, 'DEPENDENCY_MISSING');
-      return [];
+      return images.filter((image: any) => image.assetId !== null).map((image: any) => asset(image.assetId, image.imageId, image.kind));
     },
     async generate({ request, snapshot }) {
+      if (scenario === 'chat-failure') throw new ApiError(503, 'TEMPORARY_FAILURE', true);
       const card = snapshot.snapshot.cards[0];
       const language = request.input.targetLanguage; const text = chatContent[language];
       const kind = getChatCopy(language).questions.find((question: any) => question.text === request.input.text)?.id || 'explain';

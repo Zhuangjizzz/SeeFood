@@ -23,6 +23,29 @@ async function setup(t, env) {
   return { disk, services, backend, id: saved.recordId, traffic, server };
 }
 
+async function addSecondMaterial(services, disk, id) {
+  // Exercise the public snapshot/upload/job APIs until T15 owns batch orchestration.
+  const capture = createCapture({ media: { chooseImages: async () => [disk.material('menu-screenshot.png')] }, getLanguage: () => 'en' });
+  await capture.chooseImages({ source: 'album' }); const batch = capture.confirm().batch;
+  const separate = await services.records.confirmCapture(batch);
+  const extra = services.records.getRecord(separate.recordId).record.images[0];
+  const record = services.records.getRecord(id).record;
+  // Public local storage operation performs the association; actual bytes and generation remain real.
+  services.records.updateRecord(id, (draft) => { extra.recordId = id; extra.order = 1; draft.images.push(extra); draft.imageIds.push(extra.id); });
+  const snapshot = structuredClone(record.contextSnapshot); snapshot.snapshotVersion += 1;
+  snapshot.snapshot.images.push({ imageId: extra.id, kind: extra.kind, order: extra.order, assetId: null });
+  services.records.updateRecord(id, (draft) => { draft.pendingContextSnapshot = snapshot; }); await services.contexts.publishPending(id);
+  const ticket = await services.backend.createUpload({ contextId: record.contextId, imageId: extra.id, kind: extra.kind, mimeType: extra.mimeType, sizeBytes: extra.sizeBytes }, extra.requests.upload);
+  await services.backend.sendUpload(ticket, extra.localOriginalPath);
+  const asset = await services.backend.completeUpload(ticket.uploadId, { contextId: record.contextId, imageId: extra.id }, extra.requests.complete);
+  snapshot.snapshotVersion += 1; snapshot.snapshot.images[1].assetId = asset.assetId;
+  services.records.updateRecord(id, (draft) => {
+    Object.assign(draft.images[1], { assetId: asset.assetId, uploadState: 'uploaded' }); draft.images[1].original.assetId = asset.assetId; draft.pendingContextSnapshot = snapshot;
+  });
+  await services.contexts.publishPending(id); assert.equal((await services.jobs.startImageCards(id, extra.id)).ok, true);
+  return extra.id;
+}
+
 test('public chat sends localized questions with a frozen whole-record snapshot and saved preferences/history, then reopens offline', async (t) => {
   const { disk, services, backend, id, traffic, server } = await setup(t);
   services.application.chooseLanguage('ja');
@@ -152,4 +175,40 @@ test('a lost chat acceptance is found read-only after client/server restart with
   assert.deepEqual(result.messageIds, saved.messageIds); assert.equal(result.messages[1].state, 'complete');
   assert.equal(result.chatJobs[saved.messages[1].id].jobId, accepted.jobId);
   assert.equal(traffic.slice(before).some((item) => item.method === 'POST' && item.url.endsWith('/v1/jobs')), false);
+});
+
+test('filtering to one photo does not narrow the complete menu frozen for record chat', async (t) => {
+  const { disk, services, id } = await setup(t); const secondImageId = await addSecondMaterial(services, disk, id);
+  const old = { Page: global.Page, wx: global.wx, getApp: global.getApp }; t.after(() => Object.assign(global, old));
+  global.getApp = () => ({ services }); global.wx = { setNavigationBarTitle() {} };
+  let definition; global.Page = (value) => { definition = value; }; const file = require.resolve('../miniprogram/pages/result/result'); delete require.cache[file]; require(file);
+  const result = { ...definition, data: { ...definition.data }, setData(value) { Object.assign(this.data, value); } };
+  result.onLoad({ recordId: id }); result.onShow(); result.selectImage({ currentTarget: { dataset: { id: secondImageId } } });
+  assert.equal(result.data.dishCards.length, 1); assert.equal(result.data.record.cards.length, 2);
+  assert.equal((await services.chat.sendQuickQuestion(id, 'explain')).ok, true);
+  const record = services.records.getRecord(id).record;
+  const snapshot = record.chatRequests[record.messages[1].id].snapshot;
+  assert.deepEqual(snapshot.snapshot.images.map((image) => image.imageId), record.imageIds);
+  assert.deepEqual(snapshot.snapshot.cards.map((card) => card.id), record.cardIds);
+  assert.equal(snapshot.snapshot.cards.length, 2); assert.equal(result.data.currentImageId, secondImageId); result.onUnload();
+});
+
+test('a delayed initial acceptance cannot replace a newer reply recovered through the same public operation', async (t) => {
+  const { disk, services, id, backend } = await setup(t); const send = disk.platform.request;
+  let release; let signal; const held = new Promise((resolve) => { signal = resolve; });
+  disk.platform.request = (options) => {
+    if (options.method === 'POST' && options.data.kind === 'chat') {
+      const success = options.success;
+      options.success = (response) => { release = () => success(response); signal(); };
+    }
+    send(options);
+  };
+  const original = services.chat.send(id, 'Please explain.'); await held;
+  disk.platform.request = send;
+  const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal((await reopened.chat.refreshRecord(id)).ok, true);
+  const saved = reopened.records.getRecord(id).record; assert.equal(saved.messages[1].state, 'complete');
+  release(); assert.equal((await original).ok, true);
+  assert.deepEqual(services.records.getRecord(id).record.messages, saved.messages);
+  assert.deepEqual(services.records.getRecord(id).record.chatJobs, saved.chatJobs);
 });

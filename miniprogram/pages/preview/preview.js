@@ -49,13 +49,20 @@ Page({
   startDrag(event) {
     if (this.data.confirmed || !event.touches[0] || !this.rowBounds || !this.rowBounds.length) return;
     const id = event.currentTarget.dataset.id;
-    this.dragY = event.touches[0].clientY;
-    this.setData({ draggingId: id, dropIndex: this.data.images.findIndex((image) => image.id === id) });
-    this.dragTimer = setInterval(() => this.updateDrop(true), 60);
+    const index = this.data.images.findIndex((image) => image.id === id);
+    const bounds = this.rowBounds[index];
+    if (!bounds) return;
+    this.pendingDrag = { id, startY: event.touches[0].clientY,
+      index, center: bounds.top + bounds.height / 2, scrollTop: this.actualScrollTop || 0 };
   },
   moveDrag(event) {
-    if (!this.data.draggingId || !event.touches[0]) return;
+    if (!this.pendingDrag || !event.touches[0]) return;
     this.dragY = event.touches[0].clientY;
+    if (!this.data.draggingId) {
+      if (Math.abs(this.dragY - this.pendingDrag.startY) <= 8) return;
+      this.setData({ draggingId: this.pendingDrag.id, dropIndex: this.pendingDrag.index });
+      this.dragTimer = setInterval(() => this.updateDrop(true), 60);
+    }
     this.updateDrop(false);
   },
   updateDrop(autoScroll) {
@@ -66,19 +73,25 @@ Page({
       else if (this.dragY > this.listBounds.bottom - 45) offset = 22;
       if (offset) this.setData({ scrollTop: Math.max(0, (this.actualScrollTop || 0) + offset) });
     }
-    const y = this.dragY + (this.actualScrollTop || 0);
-    let index = this.rowBounds.findIndex((bounds) => y < bounds.top + bounds.height / 2);
-    if (index < 0) index = this.rowBounds.length - 1;
+    const y = this.pendingDrag.center + this.dragY - this.pendingDrag.startY +
+      (this.actualScrollTop || 0) - this.pendingDrag.scrollTop;
+    let index = this.pendingDrag.index;
+    let distance = Infinity;
+    this.rowBounds.forEach((bounds, rowIndex) => {
+      const nextDistance = Math.abs(y - bounds.top - bounds.height / 2);
+      if (nextDistance < distance) { distance = nextDistance; index = rowIndex; }
+    });
     this.setData({ dropIndex: index });
   },
   finishDrag() {
-    if (!this.data.draggingId) return;
+    if (!this.data.draggingId) { this.clearDrag(); return; }
     page.services().capture.moveImage(this.data.draggingId, this.data.dropIndex);
     this.clearDrag();
     this.refresh();
   },
   clearDrag() {
     clearInterval(this.dragTimer);
+    this.pendingDrag = null;
     this.setData({ draggingId: null, dropIndex: -1 });
   },
   confirm() {

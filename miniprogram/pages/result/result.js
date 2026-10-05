@@ -61,6 +61,14 @@ Page({
   },
   retryRead() { recordsPage.showResult(this, this.recordId); },
   retryProgress() { return page.services().jobs.refreshRecord(this.recordId); },
+  retryImageStage(event) {
+    const { id, kind } = event.currentTarget.dataset;
+    return page.services().jobs.retryStage(this.recordId, id, kind).finally(() => recordsPage.showResult(this, this.recordId));
+  },
+  continueImageStage(event) {
+    const { id, kind } = event.currentTarget.dataset;
+    return page.services().jobs.continueSubmission(this.recordId, id, kind).finally(() => recordsPage.showResult(this, this.recordId));
+  },
   retryUpload(event) {
     const services = page.services();
     const imageId = event && event.currentTarget.dataset.id;

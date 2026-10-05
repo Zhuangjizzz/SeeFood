@@ -1,10 +1,13 @@
 const { createJobRecovery } = require('./recovery');
+const { createJobRetry, canAcceptRetry } = require('./job-retry');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const IMAGE_STAGES = ['image_cards', 'image_translation'];
 function createJobs({ records, backend, network, translationFiles, pollMs = 100 }) {
   const recovery = createJobRecovery({ backend });
+  const retries = createJobRetry({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const previews = new Map();
+  const stageErrors = new Map();
   const keyFor = (id, kind, imageId) => `${id}:${kind}:${imageId}`;
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* A page cannot interrupt result persistence. */ } }); }
   function read(id) { const value = records.getRecord(id); if (!value.ok) throw { code: value.error }; return value.record; }
@@ -41,7 +44,9 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
       if (!image) return { ok: false, error: 'DEPENDENCY_MISSING' };
       checked(job, record, image);
       const previous = image.stageJobs[job.kind]; const key = keyFor(id, job.kind, image.id);
-      if (!previous || previous.jobId !== job.jobId || job.attempt !== previous.attempt || job.revision < previous.revision ||
+      const retry = image.stageRetries && image.stageRetries[job.kind];
+      const nextAttempt = canAcceptRetry(retry, previous, job);
+      if (!previous || previous.jobId !== job.jobId || (job.attempt !== previous.attempt && !nextAttempt) || job.revision < previous.revision ||
           (job.revision === previous.revision && previous.locallySavedRevision === job.revision)) return { ok: false, error: 'stale-job' };
       const waiting = unsaved.get(key);
       if (waiting && waiting.jobId === job.jobId && job !== waiting &&
@@ -50,6 +55,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
       save(id, (draft) => {
         const target = draft.images.find((item) => item.id === image.id);
         target.stageJobs[job.kind] = Object.assign({}, clone(job), { locallySavedRevision: job.revision });
+        if (nextAttempt) delete target.stageRetries[job.kind];
         if (job.state === 'succeeded' && job.kind === 'image_translation') {
           if (job.output.state === 'ready') {
             const local = target.translation && target.translation.id === job.output.artifact.id ? target.translation : { localPath: null, saveState: 'pending' };
@@ -151,6 +157,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
       if (image.stageJobs[kind]) return poll(id, image.id, kind);
       if (network) await network.requireOnline();
       let request = image.jobRequests && image.jobRequests[kind];
+      if (request) return continueSubmission(id, image.id, kind);
       if (!request) {
         request = { contextId: record.contextId, kind, target: { imageId: image.id }, input: {
           contextSnapshotVersion: record.contextSnapshotVersion, assetId: image.assetId, targetLanguage: image.targetLanguage } };
@@ -164,8 +171,82 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
       return poll(id, image.id, kind);
     });
   }
+  function stageRun(id, imageId, kind, action, operation) {
+    const key = keyFor(id, kind, imageId);
+    stageErrors.delete(key);
+    const result = run(`${key}:${action}`, id, operation);
+    notify(id);
+    return result.then((value) => {
+      if (!value.ok && value.error !== 'stale-job') stageErrors.set(key, value.error);
+      notify(id); return value;
+    });
+  }
+  function continueSubmission(id, imageId, kind) {
+    return stageRun(id, imageId, kind, 'continue', async () => {
+      if (!IMAGE_STAGES.includes(kind)) return { ok: false, error: 'INPUT_UNSUPPORTED' };
+      const image = read(id).images.find((item) => item.id === imageId);
+      const request = image && image.jobRequests && image.jobRequests[kind];
+      if (!request) return { ok: false, error: 'DEPENDENCY_MISSING' };
+      if (image.stageJobs[kind]) return poll(id, imageId, kind);
+      const result = await retries.continueSubmission({ request, requestId: image.requests[kind] }, {
+        isCurrent() {
+          const record = read(id); const target = record.images.find((item) => item.id === imageId);
+          return record.contextId === request.contextId && target && JSON.stringify(target.jobRequests?.[kind]) === JSON.stringify(request);
+        },
+        accept: (job) => acceptRecoveredJob(id, job)
+      });
+      if (!result.ok && result.error !== 'stale-job') return result;
+      const job = read(id).images.find((item) => item.id === imageId).stageJobs[kind];
+      if (!job) return { ok: false, error: 'DEPENDENCY_MISSING' };
+      if (job.state === 'succeeded' && kind === 'image_translation') return saveTranslation(id, imageId);
+      return poll(id, imageId, kind);
+    });
+  }
+  function retryStage(id, imageId, kind) {
+    return stageRun(id, imageId, kind, 'retry', async () => {
+      if (!IMAGE_STAGES.includes(kind)) return { ok: false, error: 'INPUT_UNSUPPORTED' };
+      const retained = unsaved.get(keyFor(id, kind, imageId));
+      if (retained) {
+        const restored = applyJob(id, retained);
+        if (!restored.ok) return restored;
+        if (retained.state === 'succeeded' && kind === 'image_translation') return saveTranslation(id, imageId);
+        if (['queued', 'running', 'succeeded'].includes(retained.state)) return poll(id, imageId, kind);
+      }
+      const image = read(id).images.find((item) => item.id === imageId);
+      if (!image || !image.stageJobs[kind]) return { ok: false, error: 'DEPENDENCY_MISSING' };
+      if (network) await network.requireOnline();
+      let intent = image.stageRetries && image.stageRetries[kind];
+      if (!intent) {
+        intent = retries.prepare(image.stageJobs[kind]);
+        save(id, (draft) => {
+          const target = draft.images.find((item) => item.id === imageId);
+          target.stageRetries = Object.assign({}, target.stageRetries, { [kind]: intent });
+        });
+      }
+      const result = await retries.submit(intent, {
+        isCurrent() {
+          const record = read(id); const target = record.images.find((item) => item.id === imageId);
+          return record.contextId === intent.contextId && target && target.stageRetries?.[kind]?.requestId === intent.requestId && target.stageJobs[kind].jobId === intent.jobId;
+        },
+        accept: (job) => acceptRecoveredJob(id, job)
+      });
+      const job = read(id).images.find((item) => item.id === imageId).stageJobs[kind];
+      if (!result.ok && (result.error !== 'stale-job' || job.jobId !== intent.jobId || job.attempt !== intent.body.expectedAttempt + 1)) return result;
+      if (job.state === 'succeeded' && kind === 'image_translation') return saveTranslation(id, imageId);
+      return poll(id, imageId, kind);
+    });
+  }
   return {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+    getStageState(id, imageId, kind) {
+      const record = read(id); const image = record.images.find((item) => item.id === imageId);
+      const key = keyFor(id, kind, imageId); const job = image?.stageJobs?.[kind];
+      const busy = [...active.keys()].some((value) => value === key || value.startsWith(key + ':') ||
+        (record.images[0]?.id === imageId && value === keyFor(id, kind, 'first')));
+      return { busy, canRetry: !busy && job?.state === 'failed' && job.error?.retryable === true,
+        canContinue: !busy && !job && !!image?.jobRequests?.[kind],
+        retryPending: !!image?.stageRetries?.[kind], error: stageErrors.get(key) || null };
+    },
     getState(id) {
       const pending = [...unsaved.entries()].filter(([key]) => key.startsWith(id + ':')).map(([, job]) => clone(job));
       return { running: [...active.keys()].some((key) => key.startsWith(id + ':')), error: errors.get(id) || null,
@@ -173,7 +254,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         savingTranslations: [...active.keys()].filter((key) => key.startsWith(id + ':image_translation:') && key.endsWith(':save'))
           .map((key) => key.slice((id + ':image_translation:').length, -5)) };
     },
-    applyJob, saveTranslation, acceptRecoveredJob,
+    applyJob, saveTranslation, acceptRecoveredJob, retryStage, continueSubmission,
     retrySave(id) {
       const pending = [...unsaved.entries()].filter(([key]) => key.startsWith(id + ':'));
       for (const [, job] of pending) { const result = applyJob(id, job); if (!result.ok) return result; }
@@ -189,7 +270,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
       return run(`${id}:refresh`, id, async () => {
         const record = read(id);
         const requests = record.images.flatMap((image) => IMAGE_STAGES.filter((kind) => image.jobRequests && image.jobRequests[kind] &&
-          (!image.stageJobs[kind] || ['queued', 'running'].includes(image.stageJobs[kind].state) ||
+          (!image.stageJobs[kind] || image.stageRetries?.[kind] || ['queued', 'running'].includes(image.stageJobs[kind].state) ||
             image.stageJobs[kind].locallySavedRevision !== image.stageJobs[kind].revision)).map((kind) => image.jobRequests[kind]));
         const fileSaves = [];
         const recovered = await recovery.recover({ contextId: record.contextId, requests, apply: (job) => {

@@ -34,6 +34,7 @@ export interface ServiceOptions {
   now?: () => number;
   jobHandlers?: Record<string, JobHandler>;
   workerDelayMs?: number;
+  jobPageSize?: number;
   mockScenario?: string;
 }
 export function createService(options: ServiceOptions) {
@@ -92,7 +93,7 @@ export function createService(options: ServiceOptions) {
     });
   }
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
-    handlers: { image_cards: imageCardsHandler(options.mockScenario), chat: chatHandler(), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs });
+    handlers: { image_cards: imageCardsHandler(options.mockScenario), chat: chatHandler(), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
     if (snapshot.purpose !== 'record') reject(400, 'INPUT_UNSUPPORTED');
@@ -230,7 +231,8 @@ export function createService(options: ServiceOptions) {
     return String(session.owner);
   }
   async function handle(req: IncomingMessage, res: ServerResponse) {
-    const route = new URL(req.url || '/', 'http://localhost').pathname;
+    const url = new URL(req.url || '/', 'http://localhost');
+    const route = url.pathname;
     const byteRoute = route.match(/^\/_uploads\/([^/]+)$/);
     if (byteRoute && req.method === 'PUT') {
       await receiveUpload(req, byteRoute[1]); res.writeHead(204); res.end(); return;
@@ -248,6 +250,11 @@ export function createService(options: ServiceOptions) {
       if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req)));
       const jobRoute = route.match(/^\/v1\/jobs\/([^/]+)$/);
       if (jobRoute && req.method === 'GET') return send(res, 200, jobs.get(decodeURIComponent(jobRoute[1]), ownerId));
+      const contextJobs = route.match(/^\/v1\/contexts\/([^/]+)\/jobs$/);
+      if (contextJobs && req.method === 'GET') {
+        if (url.searchParams.getAll('cursor').length > 1) return reject(400, 'INPUT_UNSUPPORTED');
+        return send(res, 200, jobs.list(decodeURIComponent(contextJobs[1]), ownerId, url.searchParams.get('cursor') ?? undefined));
+      }
       const contextRoute = route.match(/^\/v1\/contexts\/([^/]+)$/);
       if (contextRoute && req.method === 'PUT') return send(res, 200, putContext(decodeURIComponent(contextRoute[1]), ownerId, await readJson(req)));
       if (route === '/v1/uploads' && req.method === 'POST') {

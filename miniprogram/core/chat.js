@@ -108,7 +108,8 @@ function createChat({ records, backend, preferences, contexts, getLanguage, poll
           draft.pendingContextSnapshot = snapshot;
         });
         await contexts.publishPending(id);
-        const result = apply(id, await backend.createJob(request, requestId), true);
+        const job = await backend.createJob(request, requestId);
+        const result = apply(id, job, true);
         return result.error === 'stale-job' ? { ok: true, jobId: job.jobId } : result;
       });
       return acceptance.ok ? poll(id, assistantId) : acceptance;

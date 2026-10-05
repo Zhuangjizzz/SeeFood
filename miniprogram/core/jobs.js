@@ -1,5 +1,7 @@
+const { createJobRecovery } = require('./recovery');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function createJobs({ records, backend, pollMs = 100 }) {
+  const recovery = createJobRecovery({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* A page cannot interrupt result persistence. */ } }); }
   function read(id) { const value = records.getRecord(id); if (!value.ok) throw { code: value.error }; return value.record; }
@@ -47,6 +49,20 @@ function createJobs({ records, backend, pollMs = 100 }) {
       unsaved.delete(id); errors.delete(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
+  function acceptRecoveredJob(id, job) {
+    try {
+      const record = read(id); const image = record.images.find((item) => item.id === (job.target && job.target.imageId));
+      if (!image) return { ok: false, error: 'DEPENDENCY_MISSING' };
+      checked(job, record, image);
+      if (!image.stageJobs.image_cards) {
+        // A missing acceptance response is the first attempt, never permission to
+        // adopt a newer attempt the user has not requested on this device.
+        if (job.attempt !== 1) return { ok: false, error: 'stale-job' };
+        save(id, (draft) => { draft.images.find((item) => item.id === image.id).stageJobs.image_cards = Object.assign({}, clone(job), { locallySavedRevision: null }); });
+      }
+      return applyJob(id, job);
+    } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
+  }
   async function poll(id, imageId) {
     for (let count = 0; count < 300; count += 1) {
       const record = read(id); const image = record.images.find((item) => item.id === imageId); const job = image && image.stageJobs.image_cards;
@@ -70,6 +86,7 @@ function createJobs({ records, backend, pollMs = 100 }) {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     getState(id) { return { running: [...active.keys()].some((key) => key.startsWith(id + ':')), error: errors.get(id) || null, unsavedJob: unsaved.has(id) ? clone(unsaved.get(id)) : null }; },
     applyJob,
+    acceptRecoveredJob,
     retrySave(id) { const job = unsaved.get(id); return job ? applyJob(id, job) : { ok: true }; },
     startImageCards(id, imageId) {
       return run(`${id}:cards:${imageId || 'first'}`, id, async () => {
@@ -83,14 +100,19 @@ function createJobs({ records, backend, pollMs = 100 }) {
           save(id, (draft) => { const target = draft.images.find((item) => item.id === image.id); target.jobRequests = Object.assign({}, target.jobRequests, { image_cards: request }); });
         }
         const job = await backend.createJob(request, image.requests.image_cards);
-        checked(job, read(id), read(id).images.find((item) => item.id === image.id));
-        save(id, (draft) => { draft.images.find((item) => item.id === image.id).stageJobs.image_cards = Object.assign({}, clone(job), { locallySavedRevision: null }); });
-        const result = applyJob(id, job);
-        return result.ok ? poll(id, image.id) : result;
+        const result = acceptRecoveredJob(id, job);
+        return result.ok || result.error === 'stale-job' ? poll(id, image.id) : result;
       });
     },
     refreshRecord(id) {
       return run(`${id}:refresh`, id, async () => {
+        const record = read(id);
+        const requests = record.images.filter((image) => image.jobRequests && image.jobRequests.image_cards &&
+          (!image.stageJobs.image_cards || ['queued', 'running'].includes(image.stageJobs.image_cards.state) ||
+            image.stageJobs.image_cards.locallySavedRevision !== image.stageJobs.image_cards.revision))
+          .map((image) => image.jobRequests.image_cards);
+        const recovered = await recovery.recover({ contextId: record.contextId, requests, apply: (job) => acceptRecoveredJob(id, job) });
+        if (!recovered.ok) return recovered;
         for (const image of read(id).images) {
           if (image.stageJobs.image_cards && ['queued', 'running'].includes(image.stageJobs.image_cards.state)) {
             const outcome = await poll(id, image.id); if (!outcome.ok) return outcome;

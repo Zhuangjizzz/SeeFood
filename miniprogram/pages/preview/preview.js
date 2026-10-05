@@ -100,7 +100,11 @@ Page({
     const submission = page.services().records.getSubmission(this.confirmedBatchId);
     this.setData({ saveState: result.ok ? 'saved' : 'failed',
       saveError: recordError(this.data.recordCopy, result.error || (submission && submission.error)) });
-    if (result.ok) recordsPage.openResult(result.recordId, true);
+    if (result.ok) {
+      // Confirmation authorizes the first upload; revisiting a saved record never restarts it.
+      if (page.services().uploads.enabled) void page.services().uploads.uploadRecord(result.recordId);
+      recordsPage.openResult(result.recordId, true);
+    }
   },
   async retrySave() {
     if (this.data.saveState === 'saving') return;

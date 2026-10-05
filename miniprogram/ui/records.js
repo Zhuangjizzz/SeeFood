@@ -1,5 +1,6 @@
 const page = require('./page');
 const { getRecordsCopy, recordError } = require('../core/records-copy');
+const { getUploadCopy } = require('../core/upload-copy');
 
 function dateTime(value) {
   const date = new Date(value);
@@ -46,10 +47,16 @@ function showResult(target, recordId) {
     return;
   }
   const record = result.record;
+  const uploadStatus = page.services().uploads.getState(recordId);
   const currentImage = record.images.find((image) => image.id === target.data.currentImageId) || record.images[0];
   target.setData(Object.assign({}, describe(record, application), { record, copy: application.copy, recordCopy,
+    uploadCopy: getUploadCopy(application.language),
+    uploadLocalFailure: uploadStatus.error === 'storage-write' || uploadStatus.error === 'storage-read',
     recordError: '', canRetryRead: false, currentImageId: currentImage ? currentImage.id : null, currentImage,
     imageStates: record.images.map((image) => Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application), image)) }));
+  if (uploadStatus.error && uploadStatus.error !== 'backend-unavailable' && uploadStatus.error !== 'single-image-only') {
+    target.setData({ uploadState: 'failed', processingLabel: recordCopy.uploadFailed });
+  }
 }
 
 module.exports = { showRecent, openResult, showResult };

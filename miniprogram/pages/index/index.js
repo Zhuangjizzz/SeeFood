@@ -13,7 +13,7 @@ Page({
     page.services().application.skipPreferenceInvite();
     page.showPage(this, 'capture');
   },
-  openPreferences: page.unavailable,
+  openPreferences: page.openPreferences,
   takePhoto() { return capturePage.chooseImages(this, 'camera'); },
   importPhoto() { return capturePage.chooseImages(this, 'album'); },
   openHistory: page.unavailable

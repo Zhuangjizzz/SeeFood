@@ -1,4 +1,5 @@
 const { LANGUAGES, getCopy } = require('./i18n');
+const { createPreferences } = require('./preferences');
 const LANGUAGE_CODES = LANGUAGES.map((item) => item.code);
 
 function matchLanguage(value) {
@@ -11,6 +12,7 @@ function matchLanguage(value) {
 }
 
 function createApplication({ store, systemLanguage }) {
+  const preferences = createPreferences({ store });
   let settings = {};
   let error = null;
   function readSettings() {
@@ -23,6 +25,7 @@ function createApplication({ store, systemLanguage }) {
   let language = LANGUAGE_CODES.includes(settings.language) ? settings.language : matchLanguage(systemLanguage);
   let page = language ? 'capture' : 'language';
   let returnTo = 'capture';
+  let preferencesReturnTo = 'capture';
   function saveSettings(patch) {
     let previous;
     try { previous = readSettings(); }
@@ -35,10 +38,13 @@ function createApplication({ store, systemLanguage }) {
     return { ok: true };
   }
   return {
+    preferences,
     getState() {
+      const preferenceState = preferences.getState(language);
       return {
         language: language || 'en', page, needsLanguage: !language, error,
-        showPreferenceInvite: !settings.preferenceInviteDismissed,
+        showPreferenceInvite: !settings.preferenceInviteDismissed && !preferenceState.isSet && preferenceState.readable,
+        preferences: preferenceState,
         copy: getCopy(language),
         languages: LANGUAGES.map((item) => Object.assign({}, item))
       };
@@ -63,6 +69,16 @@ function createApplication({ store, systemLanguage }) {
     },
     closeLanguage() {
       if (language) page = returnTo;
+    },
+    openPreferences() {
+      if (!language) return;
+      if (page !== 'preferences') preferencesReturnTo = page;
+      preferences.beginEdit();
+      page = 'preferences';
+    },
+    closePreferences() {
+      preferences.cancelEdit();
+      if (page === 'preferences') page = preferencesReturnTo;
     },
     skipPreferenceInvite() {
       return saveSettings({ preferenceInviteDismissed: true });

@@ -1,8 +1,27 @@
-<view class="page" wx:if="{{!needsLanguage}}">
-  <view class="brand-row"><text class="section-title">{{copy.cards}}</text><button class="language-link" bindtap="openLanguage" aria-label="{{copy.language}}" hover-class="press"><image class="small-icon" src="/assets/globe.png" aria-hidden="true" /><text>{{languageName}}</text></button></view>
-  <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
-  <view class="page-heading">{{copy.cardsTitle}}</view>
-  <view class="body-copy">{{copy.cardsBody}}</view>
-  <view class="card-preview" aria-hidden="true"><view class="sheet sheet-back"></view><view class="sheet sheet-middle"></view><view class="sheet sheet-front"><image src="/assets/cards-active.png" /><text>SeeFood</text></view></view>
-  <view class="empty-copy cards-note">{{copy.cardsEmpty}}</view>
+<view class="cards-page" style="height:{{viewportHeight}}px;" wx:if="{{!needsLanguage}}">
+  <view class="library-header">
+    <view class="brand-row"><text class="section-title">{{copy.cards}}</text><button class="language-link" bindtap="openLanguage" aria-label="{{copy.language}}" hover-class="press"><image class="small-icon" src="/assets/globe.png" aria-hidden="true" /><text>{{languageName}}</text></button></view>
+    <view class="page-heading">{{copy.cardsTitle}}</view>
+    <view class="body-copy library-intro">{{copy.cardsBody}}</view>
+    <view class="category-tabs" role="tablist">
+      <button wx:for="{{categories}}" wx:key="id" class="category-tab {{category === item.id ? 'selected' : ''}}" data-category="{{item.id}}" bindtap="selectCategory" aria-role="tab" aria-selected="{{category === item.id}}"><text>{{item.label}}</text><text class="category-count">{{item.count}}</text></button>
+    </view>
+    <view class="library-toolbar"><text class="library-count">{{cardCount}} {{cardCopy.savedCards}}</text><button wx:if="{{expanded && cardCount}}" class="collapse-button" catchtap="collapseCards" aria-label="{{cardCopy.collapse}}"><view class="collapse-arrow"></view></button></view>
+    <view class="card-error" wx:if="{{cardError}}" role="alert"><text>{{cardError}}</text><button bindtap="retryCards">{{cardCopy.retry}}</button></view>
+  </view>
+  <scroll-view class="library-scroll" scroll-y="{{scrollEnabled}}" scroll-top="{{scrollTop}}" bindscroll="onLibraryScroll" show-scrollbar="{{false}}">
+    <view wx:if="{{!cardCount && !cardError}}" class="empty paper"><view class="empty-title">{{totalCount ? cardCopy.emptyCategory : cardCopy.emptyLibrary}}</view></view>
+    <view class="card-stage {{animate ? 'animate' : ''}}" style="height:{{stageHeight}}px;" wx:if="{{cardCount}}">
+      <view wx:for="{{cards}}" wx:key="id" class="communication-card tone-{{item.color}}" style="{{item.placement}}" data-id="{{item.id}}" bindtouchstart="onCardTouchStart" bindtouchmove="onCardTouchMove" bindtouchend="onCardTouchEnd" bindtouchcancel="cancelCardTouch" bindtap="showCard" aria-role="button" aria-label="{{item.title}}">
+        <view class="card-category"><view class="category-dot"></view><text>{{item.categoryLabel}}</text></view>
+        <view class="communication-title">{{item.title}}</view>
+        <view class="communication-source">{{item.sourceText}}</view>
+        <view class="communication-chinese" wx:if="{{item.showChinese}}">{{item.textZh}}</view>
+        <view class="card-footer"><text>SeeFood</text><view class="card-paper-mark"></view></view>
+      </view>
+    </view>
+    <view wx:if="{{showExpandHint}}" class="gesture-hint">{{cardCopy.expandHint}}</view>
+    <view wx:elif="{{cardCount && !expanded}}" class="gesture-hint">{{cardCopy.tapHint}}</view>
+    <view class="scroll-bottom"></view>
+  </scroll-view>
 </view>

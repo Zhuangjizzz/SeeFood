@@ -17,7 +17,8 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
   let suppressTap = false;
   let view = { category: 'all', expanded: false, position: null, expandLearned: false };
   function load() {
-    cancelGesture();
+    if (touch || drag) cancelGesture();
+    else suppressTap = false;
     readable = false;
     let saved;
     let savedView;

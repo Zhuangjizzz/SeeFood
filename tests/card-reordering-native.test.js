@@ -66,3 +66,10 @@ test('native touch events show a lifted card and drop slot, edge-scroll, save on
   assert.equal(navigations.length, 0);
   assert.deepEqual(services.cardLibrary.getState().allCards.map((card) => card.presetId), ['water', 'ingredients', 'less-spicy', 'tableware', 'no-meat', 'bill']);
 });
+
+test('a fresh native card activation opens staff display without requiring a preceding touch sequence', (t) => {
+  const { target, navigations } = openNativePage(t, fileStorage(t));
+  const id = target.data.cards[0].id;
+  target.showCard({ currentTarget: { dataset: { id } } });
+  assert.deepEqual(navigations, ['/pages/card-display/card-display?id=' + id]);
+});

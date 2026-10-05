@@ -1,3 +1,4 @@
+const reading = require('../../ui/history-reading');
 const recordsPage = require('../../ui/records');
 const page = require('../../ui/page');
 const capturePage = require('../../ui/capture');
@@ -5,8 +6,12 @@ const { recordError } = require('../../core/records-copy');
 
 Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
-  onLoad(options) { this.recordId = page.routeValue(options.recordId); },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
+    if (this.unsubscribeNetwork) this.unsubscribeNetwork();
+    this.unsubscribeNetwork = page.services().network.subscribe(() => recordsPage.showResult(this, this.recordId));
+    if (this.unsubscribeChat) this.unsubscribeChat();
+    this.unsubscribeChat = page.services().chat.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     if (this.unsubscribeUpload) this.unsubscribeUpload();
     this.unsubscribeUpload = page.services().uploads.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     if (this.unsubscribeJobs) this.unsubscribeJobs();
@@ -16,12 +21,13 @@ Page({
     if (this.appendReturnPosition) {
       wx.pageScrollTo({ scrollTop: this.appendReturnPosition.scrollTop, duration: 0 });
       this.appendReturnPosition = null;
-    }
+    } else reading.restore(this, 'result', this.recordId);
+
     void page.services().jobs.refreshRecord(this.recordId);
   },
-  onHide() { if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onPageScroll(event) { this.scrollTop = event.scrollTop; reading.capture(this, event); },
+  onHide() { if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
-  onPageScroll(event) { this.scrollTop = event.scrollTop; },
   addPhotos() {
     if (!this.data.record) return;
     this.appendSourcePosition = { scrollTop: this.scrollTop || 0 };
@@ -103,6 +109,7 @@ Page({
   },
   back() {
     if (getCurrentPages().length > 1) wx.navigateBack();
+    else if (this.source && this.source.view === 'history') wx.redirectTo({ url: `/pages/history/history?source=${this.source.historySource}` });
     else wx.switchTab({ url: '/pages/index/index' });
   }
 });

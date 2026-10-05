@@ -1,6 +1,6 @@
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
-function createUploads({ records, preferences, backend, contexts = require('./record-context').createRecordContexts({ records, backend }) }) {
+function createUploads({ records, preferences, backend, network, contexts = require('./record-context').createRecordContexts({ records, backend }) }) {
   const active = new Map();
   const resuming = new Set();
   const errors = new Map();
@@ -43,6 +43,7 @@ function createUploads({ records, preferences, backend, contexts = require('./re
     let targetId;
     const target = (value) => value.images.find((image) => image.id === targetId);
     try {
+      if (network) await network.requireOnline();
       record = read(id);
       const unfinished = record.images.filter((image) => image.uploadState !== 'uploaded');
       if (!imageId && !unfinished.length) return { ok: true, recordId: id };

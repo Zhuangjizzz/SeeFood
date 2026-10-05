@@ -31,11 +31,12 @@ function createImageView({ records, jobs }) {
     }
     if (changed) persist(id, state);
     const variant = state.imageVariants[image.id];
+    const translationSaveState = artifact ?
+      (artifact.saveState === 'saving' && !(jobState.savingTranslations || []).includes(image.id) ? 'pending' : artifact.saveState || 'pending') : null;
+    const canRetryTranslationSave = !!unsaved || translationSaveState === 'failed' || translationSaveState === 'pending' && !jobState.running;
     return { ok: true, imageId: image.id, image, variant, translationAvailable, translationJob: job,
       path: variant === 'translation' ? translatedPath || null : image.original.saveState === 'saved' ? image.localOriginalPath : null,
-      saveError: state.error, translationSaveState: artifact ?
-        (artifact.saveState === 'saving' && !(jobState.savingTranslations || []).includes(image.id) ? 'pending' : artifact.saveState || 'pending') : null,
-      translationUnsaved: !!unsaved };
+      saveError: state.error, translationSaveState, canRetryTranslationSave, translationUnsaved: !!unsaved };
   }
   return { open,
     selectVariant(id, imageId, variant) {

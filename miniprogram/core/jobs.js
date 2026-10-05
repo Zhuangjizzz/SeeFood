@@ -1,14 +1,14 @@
 const { createJobRecovery } = require('./recovery');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const IMAGE_STAGES = ['image_cards', 'image_translation'];
-function createJobs({ records, backend, translationFiles, pollMs = 100 }) {
+function createJobs({ records, backend, network, translationFiles, pollMs = 100 }) {
   const recovery = createJobRecovery({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const previews = new Map();
   const keyFor = (id, kind, imageId) => `${id}:${kind}:${imageId}`;
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* A page cannot interrupt result persistence. */ } }); }
   function read(id) { const value = records.getRecord(id); if (!value.ok) throw { code: value.error }; return value.record; }
-  function save(id, update) { const value = records.updateRecord(id, update); if (!value.ok) throw { code: value.error }; notify(id); return value.record; }
+  function save(id, update, publish = true) { const value = records.updateRecord(id, update); if (!value.ok) throw { code: value.error }; if (publish) notify(id); return value.record; }
   function checked(job, record, image) {
     const request = image.jobRequests && image.jobRequests[job.kind];
     if (!job || !request || job.contextId !== record.contextId || !IMAGE_STAGES.includes(job.kind) || !job.target || job.target.imageId !== image.id ||
@@ -65,8 +65,8 @@ function createJobs({ records, backend, translationFiles, pollMs = 100 }) {
           }
           draft.cardIds = draft.cards.map((card) => card.id);
         }
-      });
-      unsaved.delete(key); errors.delete(id); return { ok: true, jobId: job.jobId };
+      }, false);
+      unsaved.delete(key); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   function acceptRecoveredJob(id, job) {
@@ -149,6 +149,7 @@ function createJobs({ records, backend, translationFiles, pollMs = 100 }) {
       const record = read(id); const image = record.images.find((item) => item.id === imageId) || (!imageId && record.images[0]);
       if (!image || image.uploadState !== 'uploaded' || !image.assetId || !record.contextSnapshotVersion) return { ok: false, error: 'DEPENDENCY_MISSING' };
       if (image.stageJobs[kind]) return poll(id, image.id, kind);
+      if (network) await network.requireOnline();
       let request = image.jobRequests && image.jobRequests[kind];
       if (!request) {
         request = { contextId: record.contextId, kind, target: { imageId: image.id }, input: {

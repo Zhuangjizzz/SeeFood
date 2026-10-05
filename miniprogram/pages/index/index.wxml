@@ -37,13 +37,15 @@
       </button>
     </view>
   </view>
+  <view wx:if="{{offline}}" class="notice history-offline" role="status">{{historyCopy.offline}}</view>
+  <view wx:if="{{positionSaveFailed}}" class="notice" role="status">{{historyCopy.positionFailed}}</view>
   <view class="recent-section">
     <view class="section-heading"><text class="section-title">{{copy.recent}}</text><button class="text-button" bindtap="openHistory" hover-class="press">{{copy.viewAll}} <text class="chevron">›</text></button></view>
     <view class="notice" wx:if="{{historyError}}" role="alert">
       <view>{{historyError}}</view>
       <button class="text-button" bindtap="retryHistory">{{recordCopy.retryRead}}</button>
     </view>
-    <button wx:for="{{recentRecords}}" wx:key="id" class="recent-record paper" data-id="{{item.id}}" bindtap="openRecord" hover-class="press">
+    <button wx:for="{{recentRecords}}" wx:key="id" class="recent-record paper reading-anchor" id="recent-row-{{index}}" data-anchor-id="{{item.id}}" data-id="{{item.id}}" bindtap="openRecord" hover-class="press">
       <image wx:if="{{item.thumbnail}}" class="recent-image" src="{{item.thumbnail}}" mode="aspectFill" />
       <view wx:else class="recent-image missing-thumbnail">▤</view>
       <view class="recent-body">

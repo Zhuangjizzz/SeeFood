@@ -3,15 +3,11 @@ const { getRecordsCopy, recordError } = require('../core/records-copy');
 const { getUploadCopy } = require('../core/upload-copy');
 const { getDishesCopy, presentDish } = require('../core/dishes-copy');
 const { getImagesCopy } = require('../core/images-copy');
+const { getHistoryCopy } = require('../core/history-copy');
 const { getChatCopy } = require('../core/chat-copy');
 
 const { getRecoveryCopy } = require('../core/recovery-copy');
 
-function dateTime(value) {
-  const date = new Date(value);
-  const pad = (number) => String(number).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 function uploadState(images) {
   if (images.some((image) => image.uploadState === 'failed')) return 'failed';
   if (images.some((image) => image.uploadState === 'uploading')) return 'uploading';
@@ -23,26 +19,25 @@ function describe(record, application, uploadStatus) {
   const uploadCopy = getUploadCopy(application.language);
   const status = uploadState(record.images);
   const originalsSaved = record.images.every((image) => image.original.saveState === 'saved');
-  const translationsSaved = record.images.every((image) => !image.translation || image.translation.saveState === 'saved');
-  const uploadLocalFailure = uploadStatus && ['storage-read', 'storage-write'].includes(uploadStatus.error);
-  return { id: record.id, title: record.title || `${record.kind === 'dish' ? application.copy.dish : application.copy.menu} · ${dateTime(record.createdAt).split(' ')[0]}`,
-    createdAtLabel: dateTime(record.createdAt), imageCount: record.images.length,
-    thumbnail: record.images[0] && record.images[0].original.saveState === 'saved' ? record.images[0].localOriginalPath : null,
+  const summary = page.services().history.describe(record);
+  const historyCopy = getHistoryCopy(application.language);
+  return { ...summary,
     uploadState: status, originalsSaved,
-    processingLabel: uploadStatus && uploadStatus.originalMissing ? copy.uploadFailed : uploadStatus && uploadStatus.interrupted ? uploadCopy.interrupted :
+    processingLabel: historyCopy[summary.processingState] || (uploadStatus && uploadStatus.originalMissing ? copy.uploadFailed : uploadStatus && uploadStatus.interrupted ? uploadCopy.interrupted :
       uploadStatus && uploadStatus.resuming ? uploadCopy.resuming :
-        ({ pending: copy.pendingUpload, uploading: copy.uploading, uploaded: copy.uploaded, failed: copy.uploadFailed })[status],
-    saveLabel: uploadLocalFailure ? copy.saveFailed : record.saveState === 'saved' ? (originalsSaved && translationsSaved ? copy.saved : copy.partialSave) : record.saveState === 'saving' ? copy.saving : copy.saveFailed };
+        ({ pending: copy.pendingUpload, uploading: copy.uploading, uploaded: copy.uploaded, failed: copy.uploadFailed })[status]),
+    saveLabel: ({ saved: copy.saved, partial: historyCopy.missingImages, saving: copy.saving, failed: copy.saveFailed })[summary.saveState] };
 
 }
 function showRecent(target) {
   const application = page.services().application.getState();
   const copy = getRecordsCopy(application.language);
   const result = page.services().records.listRecent();
-  target.setData({ recordCopy: copy, recentRecords: result.records.map((record) => describe(record, application, page.services().uploads.getState(record.id))),
+  target.setData({ offline: !page.services().network.getState().online, historyCopy: getHistoryCopy(application.language), recordCopy: copy, recentRecords: result.records.map((record) => describe(record, application, page.services().uploads.getState(record.id))),
     historyReadable: result.ok, historyError: recordError(copy, result.error) });
 }
-function openResult(recordId, replace = false) {
+function openResult(recordId, replace = false, source = { view: 'home' }) {
+  page.services().history.enterRecord(recordId, source);
   const url = `/pages/result/result?recordId=${encodeURIComponent(recordId)}`;
   if (replace) wx.redirectTo({ url });
   else wx.navigateTo({ url });
@@ -75,8 +70,8 @@ function showResult(target, recordId) {
   const cardsAcceptancePending = !cardsJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_cards);
   const cards = jobState.unsavedJob && cardsJob === jobState.unsavedJob && cardsJob.state === 'succeeded' ?
     (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
-  target.setData(Object.assign({}, describe(record, application, uploadStatus), { record, copy: application.copy, recordCopy,
-    chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
+  target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
+    historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: uploadStatus.originalMissing,
@@ -96,4 +91,12 @@ function showResult(target, recordId) {
   }
 }
 
-module.exports = { showRecent, openResult, showResult };
+function showHistory(target) {
+  const application = page.services().application.getState(); const copy = getRecordsCopy(application.language);
+  const result = page.services().records.listHistory();
+  target.setData({ offline: !page.services().network.getState().online, historyCopy: getHistoryCopy(application.language), recordCopy: copy,
+    entries: result.records.map((record) => describe(record, application, page.services().uploads.getState(record.id))),
+    historyReadable: result.ok, historyError: recordError(copy, result.error) });
+}
+function openHistory(source) { wx.navigateTo({ url: `/pages/history/history?source=${source === 'mine' ? 'mine' : 'home'}` }); }
+module.exports = { showRecent, showHistory, openHistory, openResult, showResult };

@@ -1,0 +1,14 @@
+.history-page { padding-bottom: calc(48rpx + env(safe-area-inset-bottom)); }
+.history-heading { display: flex; align-items: center; justify-content: space-between; gap: 24rpx; }
+.history-description { font-size: 25rpx; color: #64765e; line-height: 1.5; margin: 18rpx 0 28rpx; }
+.history-record { display: flex; width: 100%; padding: 24rpx 20rpx; margin: 18rpx 0; gap: 20rpx; text-align: left; align-items: center; border-radius: 24rpx; }
+.history-image { width: 120rpx; height: 152rpx; flex-shrink: 0; border-radius: 14rpx; background: #e4e8dd; }
+.missing-thumbnail { display: flex; align-items: center; justify-content: center; color: #78896c; font-size: 48rpx; }
+.history-body { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.history-title { font-size: 29rpx; line-height: 1.4; font-weight: 600; }
+.history-meta { font-size: 23rpx; line-height: 1.5; color: #7b8772; margin: 6rpx 0 12rpx; }
+.history-processing, .history-saving { font-size: 24rpx; line-height: 1.45; margin-top: 6rpx; }
+.history-processing { color: #715c3c; }.history-saving { color: #577450; }
+.history-chevron { color: #829277; font-size: 38rpx; flex-shrink: 0; }
+.history-empty .primary-button { margin-top: 28rpx; white-space: normal; }
+.history-local-note { color: #78896c; font-size: 23rpx; line-height: 1.6; padding: 28rpx 4rpx 0; }

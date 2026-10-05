@@ -5,7 +5,7 @@ function developmentBackend(platform) {
   } catch (_) { return { enabled: false }; }
 }
 
-function createWechatBackend(platform, store, config) {
+function createWechatBackend(platform, store, config, network) {
   const enabled = config.enabled === true && typeof config.baseUrl === 'string' && typeof config.identity === 'string';
   let sessionPromise;
   function send(url, method, data, header) {
@@ -36,6 +36,7 @@ function createWechatBackend(platform, store, config) {
     return sessionPromise;
   }
   async function business(method, path, data, key) {
+    if (network) await network.requireOnline();
     const accessToken = await session();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` };
     if (key) headers['Idempotency-Key'] = key;
@@ -50,6 +51,7 @@ function createWechatBackend(platform, store, config) {
     createUpload: (body, key) => business('POST', '/v1/uploads', body, key),
     completeUpload: (id, body, key) => business('POST', `/v1/uploads/${encodeURIComponent(id)}/complete`, body, key),
     async downloadArtifact(artifact) {
+      if (network) await network.requireOnline();
       // A business token is attached only to this service's own resource endpoint.
       const prefix = config.baseUrl + '/v1/image-artifacts/';
       if (!artifact.remoteUrl.startsWith(prefix) || artifact.remoteUrl.slice(prefix.length) !== encodeURIComponent(artifact.id)) throw { code: 'DEPENDENCY_MISSING' };
@@ -63,6 +65,7 @@ function createWechatBackend(platform, store, config) {
       }));
     },
     async sendUpload(ticket, filePath) {
+      if (network) await network.requireOnline();
       const bytes = await new Promise((resolve, reject) => platform.getFileSystemManager().readFile({ filePath,
         success: (result) => resolve(result.data), fail: () => reject({ code: 'original-missing' }) }));
       // Dynamic file targets receive only their own capability headers, never business auth.

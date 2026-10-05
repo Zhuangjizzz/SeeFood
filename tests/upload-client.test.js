@@ -102,7 +102,7 @@ test('native confirmation starts upload and result pages show live and saved out
   assert.equal((await services.uploads.uploadRecord(initial.id)).ok, true);
   assert.equal((await services.jobs.startImageProcessing(initial.id)).ok, true);
   assert.equal(result.data.canLeave, true);
-  for (const [language, label] of [['en', 'Uploaded'], ['ja', 'アップロード済み'], ['ko', '업로드됨'], ['es', 'Subida completada'], ['zh-CN', '已上传']]) {
+  for (const [language, label] of [['en', 'Processing complete'], ['ja', '処理完了'], ['ko', '처리 완료'], ['es', 'Procesamiento completado'], ['zh-CN', '处理完成']]) {
     services.application.chooseLanguage(language);
     result.onHide(); result.onShow();
     assert.equal(result.data.processingLabel, label);

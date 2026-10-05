@@ -207,9 +207,14 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
         return record ? { ok: true, record: readableRecord(record) } : { ok: false, error: 'record-missing' };
       } catch (_) { return { ok: false, error: 'storage-read' }; }
     },
+    listHistory() {
+      try {
+        return { ok: true, records: readRecords().reverse().sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(readableRecord) };
+      } catch (_) { return { ok: false, error: 'storage-read', records: [] }; }
+    },
     listRecent(limit = 3) {
       try {
-        return { ok: true, records: readRecords().reverse().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit).map(readableRecord) };
+        return { ok: true, records: readRecords().reverse().sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, limit).map(readableRecord) };
       } catch (_) { return { ok: false, error: 'storage-read', records: [] }; }
     }
   };

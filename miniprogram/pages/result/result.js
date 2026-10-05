@@ -15,6 +15,7 @@ Page({
   onHide() { if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   retryRead() { recordsPage.showResult(this, this.recordId); },
+  retryProgress() { return page.services().jobs.refreshRecord(this.recordId); },
   retryUpload() {
     if (this.retryingUpload) return this.retryingUpload;
     const services = page.services();

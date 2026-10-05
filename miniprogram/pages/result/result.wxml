@@ -36,7 +36,7 @@
     <view wx:elif="{{uploadResuming}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.resumingBody}}</view>
     <view wx:elif="{{uploadState === 'pending' && originalsSaved}}" class="pending-explanation">{{recordCopy.pendingBody}}</view>
     <view wx:elif="{{uploadState === 'uploading'}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadingBody}}</view>
-    <view wx:elif="{{uploadState === 'uploaded' && !cardsJob}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadedBody}}</view>
+    <view wx:elif="{{uploadState === 'uploaded' && !cardsJob && !cardsAcceptancePending}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadedBody}}</view>
     <view wx:elif="{{uploadState === 'failed' && !uploadLocalFailure && !uploadOriginalMissing}}" class="notice upload-error" role="alert">{{uploadCopy.failedBody}}</view>
     <button wx:if="{{canRetryUpload}}" class="primary-button retry-upload" bindtap="retryUpload">{{uploadCopy.retryUpload}}</button>
     <view class="cards-progress" role="status">{{cardsStateLabel}}</view>
@@ -44,7 +44,9 @@
     <view wx:if="{{cardsSaveFailed}}" class="notice result-save-error" role="alert">
       <view>{{dishCopy.saveFailed}}</view><button class="text-button" bindtap="retryResultSave">{{dishCopy.retrySave}}</button>
     </view>
-    <view wx:if="{{cardsReadFailed}}" class="notice result-read-error" role="alert">{{dishCopy.readFailed}}</view>
+    <view wx:if="{{cardsReadFailed}}" class="notice result-read-error" role="alert">
+      <view>{{dishCopy.readFailed}}</view><button class="text-button retry-progress" bindtap="retryProgress">{{recoveryCopy.checkAgain}}</button>
+    </view>
     <view wx:if="{{dishCards.length}}" class="dish-section">
       <view class="dish-section-title">{{dishCopy.dishes}}</view>
       <view class="mock-notice">{{dishCopy.mock}}</view>

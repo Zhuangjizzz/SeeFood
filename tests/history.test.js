@@ -228,3 +228,20 @@ test('history shows unconfirmed processing acceptance until read-only recovery f
   assert.equal(reopened.history.list().entries[0].processingState, 'partial');
   assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length, before);
 });
+
+test('every successfully persisted image progress notification keeps native save status truthful without a false retry alert', async (t) => {
+  const { services, id } = await connected(t, { SEEFOOD_TRANSLATION_DELAY_MS: '180' });
+  const page = mountResult(t, services, id); const snapshots = [];
+  const setData = page.setData; page.setData = function (value) { setData.call(this, value); snapshots.push(structuredClone(this.data)); };
+  const notices = []; const stop = services.jobs.subscribe(() => {
+    const record = services.records.getRecord(id).record;
+    const jobs = Object.values(record.images[0].stageJobs).filter(Boolean);
+    if (jobs.length && jobs.every((job) => job.locallySavedRevision === job.revision)) notices.push({ jobs, state: services.history.list().entries[0].saveState, unsaved: services.jobs.getState(id).unsavedJobs });
+  }); t.after(stop);
+  assert.equal((await services.jobs.startImageProcessing(id)).ok, true);
+  assert.equal(notices.some((notice) => notice.jobs.some((job) => ['queued', 'running'].includes(job.state))), true);
+  assert.equal(notices.every((notice) => notice.jobs.every((job) => job.locallySavedRevision === job.revision)), true);
+  assert.deepEqual(notices.filter((notice) => notice.state === 'failed' || notice.unsaved.length), [], 'successful durable progress must not emit an unsaved failure');
+  assert.equal(snapshots.every((snapshot) => snapshot.imageView.canRetryTranslationSave === false), true, 'an automatic save in progress must not offer a manual failure retry');
+  assert.deepEqual(snapshots.filter((snapshot) => snapshot.cardsSaveFailed || snapshot.imageView.translationUnsaved || snapshot.saveLabel === 'Not saved'), [], 'native progress must not offer saving retries after a successful structure write');
+});

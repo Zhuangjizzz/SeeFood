@@ -37,7 +37,7 @@
       <view>{{imageCopy.originalSave}} · {{originalSaveLabel}}</view>
       <view wx:if="{{translationJob.output.state === 'ready'}}">{{imageCopy.translationSave}} · {{translationSaveLabel}}</view>
     </view>
-    <view wx:if="{{imageView.translationUnsaved || translationJob.output.state === 'ready' && imageView.translationSaveState !== 'saved' && imageView.translationSaveState !== 'saving'}}" class="notice translation-save-error" role="alert">
+    <view wx:if="{{imageView.canRetryTranslationSave}}" class="notice translation-save-error" role="alert">
       <view>{{imageCopy.saveFailed}}</view><button class="text-button" bindtap="retryTranslationSave" disabled="{{offline}}">{{imageCopy.retrySave}}</button>
     </view>
     <view wx:if="{{imageView.saveError}}" class="notice image-choice-error" role="alert"><view>{{imageCopy.choiceFailed}}</view><button class="text-button" bindtap="retryImageChoice">{{imageCopy.retryChoice}}</button></view>

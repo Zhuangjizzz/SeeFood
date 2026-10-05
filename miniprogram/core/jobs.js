@@ -8,7 +8,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
   const keyFor = (id, kind, imageId) => `${id}:${kind}:${imageId}`;
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* A page cannot interrupt result persistence. */ } }); }
   function read(id) { const value = records.getRecord(id); if (!value.ok) throw { code: value.error }; return value.record; }
-  function save(id, update) { const value = records.updateRecord(id, update); if (!value.ok) throw { code: value.error }; notify(id); return value.record; }
+  function save(id, update, publish = true) { const value = records.updateRecord(id, update); if (!value.ok) throw { code: value.error }; if (publish) notify(id); return value.record; }
   function checked(job, record, image) {
     const request = image.jobRequests && image.jobRequests[job.kind];
     if (!job || !request || job.contextId !== record.contextId || !IMAGE_STAGES.includes(job.kind) || !job.target || job.target.imageId !== image.id ||
@@ -65,7 +65,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
           }
           draft.cardIds = draft.cards.map((card) => card.id);
         }
-      });
+      }, false);
       unsaved.delete(key); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }

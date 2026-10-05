@@ -20,11 +20,25 @@
         </button>
       </view>
     </scroll-view>
-    <view class="original-label">{{recordCopy.original}} · {{recordCopy.photo}} {{currentImage.order + 1}}</view>
-    <button wx:if="{{currentImage.original.saveState === 'saved' && !uploadOriginalMissing}}" class="original-button paper" bindtap="viewOriginal" aria-label="{{recordCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
-      <image class="result-original" src="{{currentImage.localOriginalPath}}" mode="aspectFit" />
+    <view class="image-variant-controls">
+      <button class="variant-button {{imageView.variant === 'original' ? 'variant-selected' : ''}}" data-variant="original" bindtap="selectVariant" aria-pressed="{{imageView.variant === 'original'}}">{{imageCopy.original}}</button>
+      <button wx:if="{{translationJob.output.state !== 'not_required'}}" class="variant-button {{imageView.variant === 'translation' ? 'variant-selected' : ''}}" data-variant="translation" bindtap="selectVariant" disabled="{{!imageView.translationAvailable}}" aria-pressed="{{imageView.variant === 'translation'}}">{{imageCopy.translation}}</button>
+    </view>
+    <view class="original-label">{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} · {{recordCopy.photo}} {{currentImage.order + 1}}</view>
+    <button wx:if="{{imageView.path && (imageView.variant === 'translation' || !uploadOriginalMissing)}}" class="original-button paper" bindtap="viewImage" aria-label="{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
+      <image class="result-original" src="{{imageView.path}}" mode="aspectFit" />
+
     </button>
-    <view wx:else class="notice missing-original" role="alert">{{recordCopy.missingOriginal}}</view>
+    <view wx:else class="notice missing-original" role="alert">{{imageView.variant === 'translation' ? imageCopy.missingTranslation : recordCopy.missingOriginal}}</view>
+    <view class="translation-progress" role="status">{{translationStateLabel}}</view>
+    <view class="image-save-states">
+      <view>{{imageCopy.originalSave}} · {{originalSaveLabel}}</view>
+      <view wx:if="{{translationJob.output.state === 'ready'}}">{{imageCopy.translationSave}} · {{translationSaveLabel}}</view>
+    </view>
+    <view wx:if="{{imageView.translationUnsaved || translationJob.output.state === 'ready' && imageView.translationSaveState !== 'saved' && imageView.translationSaveState !== 'saving'}}" class="notice translation-save-error" role="alert">
+      <view>{{imageCopy.saveFailed}}</view><button class="text-button" bindtap="retryTranslationSave">{{imageCopy.retrySave}}</button>
+    </view>
+    <view wx:if="{{imageView.saveError}}" class="notice image-choice-error" role="alert"><view>{{imageCopy.choiceFailed}}</view><button class="text-button" bindtap="retryImageChoice">{{imageCopy.retryChoice}}</button></view>
     <button class="add-photos" bindtap="addPhotos">{{captureCopy.addPhotos}}</button>
     <view wx:if="{{showAppendInput}}" class="append-input paper">
       <view class="append-target">{{captureCopy.appendRecord}} · {{title}}</view>

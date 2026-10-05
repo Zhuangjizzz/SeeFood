@@ -12,7 +12,9 @@ import type { Json } from './contract.ts';
 import { createJobService } from './jobs.ts';
 import type { JobHandler } from './jobs.ts';
 import { imageCardsHandler } from './image-cards.ts';
+import { createImageTranslation } from './image-translation.ts';
 import { chatHandler } from './chat.ts';
+
 async function readJson(req: IncomingMessage): Promise<Json> {
   const chunks = []; let size = 0;
   for await (const chunk of req) {
@@ -36,6 +38,7 @@ export interface ServiceOptions {
   workerDelayMs?: number;
   jobPageSize?: number;
   mockScenario?: string;
+  translationDelayMs?: number;
 }
 export function createService(options: ServiceOptions) {
   const dataDir = resolve(options.dataDir);
@@ -92,8 +95,17 @@ export function createService(options: ServiceOptions) {
       return response;
     });
   }
+  function baseUrl() {
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('No HTTP address');
+    return `http://${address.address.includes(':') ? `[${address.address}]` : address.address}:${address.port}`;
+  }
+  const translations = createImageTranslation({ database, directory: resolve(dataDir, 'translations'), now, getContext, baseUrl,
+    scenario: options.mockScenario, delayMs: options.translationDelayMs });
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
-    handlers: { image_cards: imageCardsHandler(options.mockScenario), chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+    handlers: { image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+
+
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
     if (snapshot.purpose !== 'record') reject(400, 'INPUT_UNSUPPORTED');
@@ -247,13 +259,21 @@ export function createService(options: ServiceOptions) {
     }
     if (route.startsWith('/v1/')) {
       const ownerId = owner(req);
-      if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req)));
+      if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, translations.decorate(jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req))));
       const jobRoute = route.match(/^\/v1\/jobs\/([^/]+)$/);
-      if (jobRoute && req.method === 'GET') return send(res, 200, jobs.get(decodeURIComponent(jobRoute[1]), ownerId));
+      if (jobRoute && req.method === 'GET') return send(res, 200, translations.decorate(jobs.get(decodeURIComponent(jobRoute[1]), ownerId)));
+      const artifactRoute = route.match(/^\/v1\/image-artifacts\/([^/]+)$/);
+      if (artifactRoute && req.method === 'GET') {
+        const bytes = translations.download(decodeURIComponent(artifactRoute[1]), ownerId);
+        res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': bytes.length, 'Cache-Control': 'private, no-store' });
+        return res.end(bytes);
+      }
       const contextJobs = route.match(/^\/v1\/contexts\/([^/]+)\/jobs$/);
       if (contextJobs && req.method === 'GET') {
         if (url.searchParams.getAll('cursor').length > 1) return reject(400, 'INPUT_UNSUPPORTED');
-        return send(res, 200, jobs.list(decodeURIComponent(contextJobs[1]), ownerId, url.searchParams.get('cursor') ?? undefined));
+        const list = jobs.list(decodeURIComponent(contextJobs[1]), ownerId, url.searchParams.get('cursor') ?? undefined);
+        return send(res, 200, { ...list, items: list.items.map(translations.decorate) });
+
       }
       const contextRoute = route.match(/^\/v1\/contexts\/([^/]+)$/);
       if (contextRoute && req.method === 'PUT') return send(res, 200, putContext(decodeURIComponent(contextRoute[1]), ownerId, await readJson(req)));

@@ -116,7 +116,7 @@ Page({
     if (result.ok) {
       // Confirmation authorizes the first upload; revisiting a saved record never restarts it.
       const imageId = submission && submission.batch.images.length === 1 ? submission.batch.images[0].id : undefined;
-      if (page.services().uploads.enabled) void page.services().uploads.uploadRecord(result.recordId, imageId).then((outcome) => outcome.ok ? page.services().jobs.startImageCards(result.recordId, imageId) : outcome);
+      if (page.services().uploads.enabled) void page.services().uploads.uploadRecord(result.recordId, imageId).then((outcome) => outcome.ok ? page.services().jobs.startImageProcessing(result.recordId, imageId) : outcome);
       const stack = getCurrentPages();
       const source = stack[stack.length - 2];
       if (submission && submission.batch.target.kind === 'append' && source && source.route === 'pages/result/result' && source.recordId === result.recordId) wx.navigateBack();

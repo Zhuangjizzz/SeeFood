@@ -2,7 +2,7 @@ const page = require('../../ui/page');
 const { getDishesCopy, presentDish } = require('../../core/dishes-copy');
 Page({
   data: { card: null, dishCopy: {}, error: '', sourceImages: [] },
-  onLoad(options) { this.recordId = options.recordId; this.cardId = options.cardId; },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.cardId = page.routeValue(options.cardId); },
   onShow() {
     const services = page.services(); const dishCopy = getDishesCopy(services.application.getState().language);
     const result = services.records.getRecord(this.recordId);

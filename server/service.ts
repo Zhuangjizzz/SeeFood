@@ -13,6 +13,7 @@ import { createJobService } from './jobs.ts';
 import type { JobHandler } from './jobs.ts';
 import { imageCardsHandler } from './image-cards.ts';
 import { textTranslationHandler } from './text-translation.ts';
+import { chatHandler } from './chat.ts';
 async function readJson(req: IncomingMessage): Promise<Json> {
   const chunks = []; let size = 0;
   for await (const chunk of req) {
@@ -93,7 +94,7 @@ export function createService(options: ServiceOptions) {
     });
   }
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
-    handlers: { image_cards: imageCardsHandler(options.mockScenario), text_translation: textTranslationHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+    handlers: { image_cards: imageCardsHandler(options.mockScenario), text_translation: textTranslationHandler(options.mockScenario), chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
     if (snapshot.purpose !== 'record') reject(400, 'INPUT_UNSUPPORTED');

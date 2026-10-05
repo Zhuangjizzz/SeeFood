@@ -10,6 +10,8 @@ const { createUploads } = require('../core/uploads');
 const { createJobs } = require('../core/jobs');
 const { createTextTranslations } = require('../core/text-translations');
 const { createTextExchange } = require('../core/text-exchange');
+const { createRecordContexts } = require('../core/record-context');
+const { createChat } = require('../core/chat');
 
 function createWechatServices(platform, options = {}) {
   const store = createLocalStore({
@@ -29,11 +31,13 @@ function createWechatServices(platform, options = {}) {
   const cardLibrary = createCardLibrary({ store, getLanguage: () => application.getState().language });
   const records = createRecords({ store, files: createWechatOriginalFiles(platform) });
   const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform));
-  const uploads = createUploads({ records, preferences: application.preferences, backend });
+  const contexts = createRecordContexts({ records, backend });
+  const uploads = createUploads({ records, preferences: application.preferences, backend, contexts });
   const jobs = createJobs({ records, backend });
   const textTranslations = createTextTranslations({ backend });
   const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language });
-  return { textTranslations, textExchange, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  const chat = createChat({ records, backend, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  return { textTranslations, textExchange, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 }
 
 module.exports = { createWechatServices };

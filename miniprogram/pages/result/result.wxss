@@ -1,4 +1,6 @@
-.result-page { padding-bottom: calc(48rpx + env(safe-area-inset-bottom)); }
+.result-page { padding-bottom: calc(172rpx + env(safe-area-inset-bottom)); }
+.result-chat-entry { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom)); background: #f2f0eb; border-top: 1rpx solid #dce1d4; }
+.result-chat-entry button { width: 100%; min-height: 88rpx; white-space: normal; overflow-wrap: anywhere; }
 .record-heading { font-size: 36rpx; font-weight: 600; margin-top: 16rpx; overflow-wrap: anywhere; }
 .record-meta { font-size: 23rpx; color: #7b8772; margin: 8rpx 0 22rpx; }
 .record-status { padding: 18rpx 24rpx; }

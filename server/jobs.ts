@@ -64,8 +64,33 @@ export function createJobService(options: JobServiceOptions) {
       }
       const handler = handlers[request.kind];
       if (!handler) reject(400, 'INPUT_UNSUPPORTED');
+      if (request.kind === 'chat') {
+        const existingChats = database.prepare("SELECT j.*,c.scope FROM jobs j JOIN contexts c ON c.id=j.context_id WHERE j.owner=? AND j.kind='chat'").all(owner);
+        for (const previousChat of existingChats) {
+          const target = JSON.parse(String(previousChat.target));
+          const reused = [target.userMessageId, target.assistantMessageId].some((id) => [request.target.userMessageId, request.target.assistantMessageId].includes(id));
+          if (reused) reject(409, previousChat.scope === context.scope ? 'IDEMPOTENCY_CONFLICT' : 'DEPENDENCY_MISSING');
+          if (previousChat.scope === context.scope && ['queued', 'running'].includes(JSON.parse(String(previousChat.response)).state)) reject(409, 'JOB_STATE_CONFLICT');
+        }
+      }
       const snapshot = getSnapshot(request.contextId, owner, request.input.contextSnapshotVersion);
       if (snapshot.purpose !== handler.purpose) reject(409, 'DEPENDENCY_MISSING');
+      if (request.kind === 'chat') {
+        const cardIds = new Set(snapshot.snapshot.cards.map((card: Json) => card.id));
+        const messageIds = new Set(snapshot.snapshot.messages.map((message: Json) => message.id));
+        // Known identities retain their record/owner even if a client rewrites their fields.
+        // Missing provenance is allowed for locally saved history after temporary expiry.
+        const sourceJobs = database.prepare("SELECT j.*,c.scope FROM jobs j JOIN contexts c ON c.id=j.context_id WHERE j.kind IN ('image_cards','chat')").all();
+        for (const source of sourceJobs) {
+          const output = JSON.parse(String(source.response)).output;
+          const target = JSON.parse(String(source.target));
+          const referenced = source.kind === 'image_cards' ? output?.cards.some((card: Json) => cardIds.has(card.id)) :
+            [target.userMessageId, target.assistantMessageId].some((id) => messageIds.has(id));
+          if (!referenced) continue;
+          if (source.owner !== owner) reject(403, 'FORBIDDEN');
+          if (source.scope !== context.scope) reject(409, 'DEPENDENCY_MISSING');
+        }
+      }
       const assets = handler.prepare(request, snapshot, (id, imageId, kind) => {
         const asset = database.prepare('SELECT a.*,u.kind FROM assets a JOIN uploads u ON u.id=a.upload_id WHERE a.id=?').get(id);
         if (!asset) return reject(409, 'DEPENDENCY_MISSING');

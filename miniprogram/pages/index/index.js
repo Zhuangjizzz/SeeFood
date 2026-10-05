@@ -26,9 +26,12 @@ Page({
     page.showPage(this, 'capture');
   },
   openPreferences: page.openPreferences,
-  takePhoto() { return capturePage.chooseImages(this, 'camera'); },
-  importPhoto() { return capturePage.chooseImages(this, 'album'); },
-  handleCaptureConfirmed(batch) { return page.services().records.confirmCapture(batch); },
+  takePhoto() { return capturePage.chooseImages(this, 'camera', { kind: 'new' }); },
+  importPhoto() { return capturePage.chooseImages(this, 'album', { kind: 'new' }); },
+  handleCaptureConfirmed(batch) {
+    if (!batch.target || batch.target.kind !== 'new') return Promise.resolve({ ok: false, error: 'capture-conflict' });
+    return page.services().records.confirmCapture(batch);
+  },
   onPageScroll(event) { reading.capture(this, event); },
   onHide() { if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } if (this.unsubscribeHistory) { this.unsubscribeHistory(); this.unsubscribeHistory = null; } reading.save(this, 'home'); },
   onUnload() { this.onHide(); },

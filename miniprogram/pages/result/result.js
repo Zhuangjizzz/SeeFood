@@ -1,6 +1,8 @@
 const reading = require('../../ui/history-reading');
 const recordsPage = require('../../ui/records');
 const page = require('../../ui/page');
+const capturePage = require('../../ui/capture');
+const { recordError } = require('../../core/records-copy');
 
 Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
@@ -13,20 +15,59 @@ Page({
     if (this.unsubscribeJobs) this.unsubscribeJobs();
     this.unsubscribeJobs = page.services().jobs.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     recordsPage.showResult(this, this.recordId);
-    reading.restore(this, 'result', this.recordId);
+    capturePage.showCapture(this);
+    if (this.appendReturnPosition) {
+      wx.pageScrollTo({ scrollTop: this.appendReturnPosition.scrollTop, duration: 0 });
+      this.appendReturnPosition = null;
+    } else reading.restore(this, 'result', this.recordId);
+
     void page.services().jobs.refreshRecord(this.recordId);
   },
-  onPageScroll(event) { reading.capture(this, event); },
+  onPageScroll(event) { this.scrollTop = event.scrollTop; reading.capture(this, event); },
   onHide() { if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
+  addPhotos() {
+    if (!this.data.record) return;
+    this.appendSourcePosition = { scrollTop: this.scrollTop || 0 };
+    this.setData({ showAppendInput: true, appendError: '' });
+    capturePage.showCapture(this);
+  },
+  chooseMode(event) {
+    page.services().capture.chooseMode(event.currentTarget.dataset.mode);
+    capturePage.showCapture(this);
+  },
+  closeAppendInput() { this.setData({ showAppendInput: false, appendError: '', inputError: '' }); },
+  takePhoto() { return this.chooseAppendPhoto('camera'); },
+  importPhoto() { return this.chooseAppendPhoto('album'); },
+  async chooseAppendPhoto(source) {
+    const value = page.services().records.getRecord(this.recordId);
+    if (!value.ok || value.record.deletedAt || value.record.saveState !== 'saved') {
+      this.setData({ appendError: recordError(this.data.recordCopy, 'append-target-unavailable') });
+      return { ok: false, error: 'append-target-unavailable' };
+    }
+    recordsPage.showResult(this, this.recordId);
+    const result = await capturePage.chooseImages(this, source, { kind: 'append', recordId: this.recordId, title: this.data.title });
+    if (result.ok) {
+      this.appendReturnPosition = this.appendSourcePosition;
+      this.setData({ showAppendInput: false });
+    }
+    return result;
+  },
+  handleCaptureConfirmed(batch) {
+    if (!batch.target || batch.target.kind !== 'append' || batch.target.recordId !== this.recordId) return Promise.resolve({ ok: false, error: 'capture-conflict' });
+    return page.services().records.confirmCapture(batch);
+  },
   retryRead() { recordsPage.showResult(this, this.recordId); },
   retryProgress() { return page.services().jobs.refreshRecord(this.recordId); },
   retryUpload() {
     if (this.retryingUpload) return this.retryingUpload;
     const services = page.services();
     if (!services.uploads.getState(this.recordId).canRetry) return Promise.resolve({ ok: false, error: 'upload-unavailable' });
-    this.retryingUpload = services.uploads.uploadRecord(this.recordId).then((result) => {
-      if (result.ok && services.jobs) return services.jobs.startImageProcessing(this.recordId);
+    const stored = services.records.getRecord(this.recordId);
+    const unfinished = stored.ok ? stored.record.images.filter((image) => image.uploadState !== 'uploaded') : [];
+    const imageId = unfinished.length === 1 ? unfinished[0].id : undefined;
+    this.retryingUpload = services.uploads.uploadRecord(this.recordId, imageId).then((result) => {
+      if (result.ok && services.jobs) return services.jobs.startImageProcessing(this.recordId, imageId);
       return result;
     }).finally(() => { this.retryingUpload = null; recordsPage.showResult(this, this.recordId); });
     return this.retryingUpload;

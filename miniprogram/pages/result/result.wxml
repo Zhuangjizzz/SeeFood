@@ -40,6 +40,21 @@
       <view>{{imageCopy.saveFailed}}</view><button class="text-button" bindtap="retryTranslationSave" disabled="{{offline}}">{{imageCopy.retrySave}}</button>
     </view>
     <view wx:if="{{imageView.saveError}}" class="notice image-choice-error" role="alert"><view>{{imageCopy.choiceFailed}}</view><button class="text-button" bindtap="retryImageChoice">{{imageCopy.retryChoice}}</button></view>
+    <button class="add-photos" bindtap="addPhotos">{{captureCopy.addPhotos}}</button>
+    <view wx:if="{{showAppendInput}}" class="append-input paper">
+      <view class="append-target">{{captureCopy.appendRecord}} · {{title}}</view>
+      <view class="append-mode">
+        <button data-mode="menu" bindtap="chooseMode" class="{{inputMode === 'menu' ? 'active' : ''}}" aria-pressed="{{inputMode === 'menu'}}">{{copy.menu}}</button>
+        <button data-mode="dish" bindtap="chooseMode" class="{{inputMode === 'dish' ? 'active' : ''}}" aria-pressed="{{inputMode === 'dish'}}">{{copy.dish}}</button>
+      </view>
+      <view wx:if="{{inputMode === 'dish'}}" class="append-hint">{{captureCopy.dishHint}}</view>
+      <view wx:if="{{inputError || appendError}}" class="notice" role="alert">{{appendError || inputError}}</view>
+      <view class="append-sources">
+        <button bindtap="takePhoto" disabled="{{choosing}}">{{copy.takePhoto}}</button>
+        <button bindtap="importPhoto" disabled="{{choosing}}">{{copy.importPhoto}}</button>
+      </view>
+      <button class="text-button" bindtap="closeAppendInput">{{captureCopy.cancel}}</button>
+    </view>
     <view class="image-progress-list paper">
       <view wx:for="{{imageStates}}" wx:key="id" class="image-progress">
         <view class="image-progress-name">{{recordCopy.photo}} {{item.order + 1}} · {{item.kind === 'dish' ? copy.dish : copy.menu}}</view>

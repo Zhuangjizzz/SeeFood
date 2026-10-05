@@ -1,12 +1,15 @@
 const page = require('../../ui/page');
 const capturePage = require('../../ui/capture');
+const recordsPage = require('../../ui/records');
+const { getRecordsCopy, recordError } = require('../../core/records-copy');
 
 Page({
-  data: { copy: {}, images: [], scrollTop: 0, draggingId: null, dropIndex: -1, confirmed: false },
+  data: { copy: {}, images: [], scrollTop: 0, draggingId: null, dropIndex: -1, confirmed: false, saveState: 'pending', saveError: '', recordCopy: {} },
   onShow() {
     const state = capturePage.previewState();
     this.actualScrollTop = state.previewPosition;
-    this.setData(Object.assign({}, state, { scrollTop: state.previewPosition }));
+    this.setData(Object.assign({}, state, { scrollTop: state.previewPosition,
+      recordCopy: getRecordsCopy(page.services().application.getState().language) }));
     wx.setNavigationBarTitle({ title: state.copy.preview });
     this.measureRows();
   },
@@ -28,7 +31,7 @@ Page({
     page.services().capture.setPreviewPosition(this.actualScrollTop);
   },
   viewOriginal(event) {
-    if (this.data.draggingId) return;
+    if (this.data.draggingId || this.data.saveState === 'saving') return;
     page.services().capture.openOriginal(event.currentTarget.dataset.id);
     wx.navigateTo({ url: '/pages/preview-image/preview-image' });
   },
@@ -82,14 +85,39 @@ Page({
     if (this.data.draggingId) return;
     const result = page.services().capture.confirm();
     this.refresh();
-    if (result.ok) this.getOpenerEventChannel().emit('captureConfirmed', result.batch);
+    if (!result.ok) return Promise.resolve(result);
+    this.confirmedBatchId = result.batch.id;
+    this.setData({ saveState: 'saving', saveError: '' });
+    return new Promise((resolve) => {
+      this.getOpenerEventChannel().emit('captureConfirmed', result.batch, (outcome) => {
+        this.finishSave(outcome);
+        resolve(outcome);
+      });
+    });
+  },
+  finishSave(result) {
+    if (this.unloaded) return;
+    const submission = page.services().records.getSubmission(this.confirmedBatchId);
+    this.setData({ saveState: result.ok ? 'saved' : 'failed',
+      saveError: recordError(this.data.recordCopy, result.error || (submission && submission.error)) });
+    if (result.ok) recordsPage.openResult(result.recordId, true);
+  },
+  async retrySave() {
+    if (this.data.saveState === 'saving') return;
+    this.setData({ saveState: 'saving', saveError: '' });
+    const result = await page.services().records.retrySave(this.confirmedBatchId);
+    this.finishSave(result);
+    return result;
   },
   cancel() {
+    if (this.data.saveState === 'saving') return;
     page.services().capture.cancel();
     capturePage.leavePreview();
   },
   onHide() { this.clearDrag(); },
   onUnload() {
+    this.unloaded = true;
+    if (this.confirmedBatchId) page.services().records.discardSubmission(this.confirmedBatchId);
     clearInterval(this.dragTimer);
     page.services().capture.cancel();
   }

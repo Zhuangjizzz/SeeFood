@@ -2,21 +2,22 @@
   <view class="preview-heading">
     <view class="heading-row">
       <view class="target-label">{{target.kind === 'append' ? copy.appendRecord : copy.newRecord}}</view>
-      <button class="cancel-button" bindtap="cancel">{{confirmed ? copy.back : copy.cancel}}</button>
+      <button class="cancel-button" bindtap="cancel" disabled="{{saveState === 'saving'}}">{{confirmed ? copy.back : copy.cancel}}</button>
     </view>
     <view class="target-title" wx:if="{{target.kind === 'append'}}">{{target.title || target.recordId}}</view>
     <view class="preview-hint">{{copy.previewHint}}</view>
   </view>
   <scroll-view class="preview-list" scroll-y scroll-top="{{scrollTop}}" bindscroll="onListScroll">
     <view class="list-content">
-      <view class="notice" wx:if="{{confirmed}}" role="status">{{copy.photosConfirmed}}</view>
+      <view class="notice save-progress" wx:if="{{saveState === 'saving'}}" role="status">{{recordCopy.saving}}</view>
+      <view class="notice save-error" wx:if="{{saveError}}" role="alert">{{saveError}}</view>
       <view class="empty paper" wx:if="{{!images.length}}">
         <view class="empty-title">{{copy.emptyPreview}}</view>
         <view class="empty-copy">{{copy.emptyPreviewBody}}</view>
       </view>
       <view wx:for="{{images}}" wx:key="id" class="preview-row paper {{draggingId === item.id ? 'moving' : ''}} {{draggingId && dropIndex === index ? 'drop-target' : ''}}">
         <view class="drop-indicator" wx:if="{{draggingId && dropIndex === index}}">{{copy.dropHere}}</view>
-        <button class="thumbnail-button" data-id="{{item.id}}" bindtap="viewOriginal" aria-label="{{copy.photo}} {{index + 1}}">
+        <button class="thumbnail-button" disabled="{{saveState === 'saving'}}" data-id="{{item.id}}" bindtap="viewOriginal" aria-label="{{copy.photo}} {{index + 1}}">
           <image class="thumbnail" src="{{item.localPath}}" mode="aspectFill" />
           <text class="photo-number">{{index + 1}}</text>
         </button>
@@ -39,6 +40,7 @@
   </scroll-view>
   <view class="preview-footer">
     <view class="selection-count"><text class="count-number">{{images.length}}</text><text>{{copy.selectedPhotos}}</text></view>
-    <button class="confirm-button" bindtap="confirm" disabled="{{!canConfirm || draggingId}}">{{copy.confirmPhotos}}</button>
+    <button wx:if="{{confirmed && saveState === 'failed'}}" class="confirm-button retry-save" bindtap="retrySave">{{recordCopy.retrySave}}</button>
+    <button wx:else class="confirm-button" bindtap="confirm" disabled="{{!canConfirm || draggingId || saveState === 'saving'}}">{{saveState === 'saving' ? recordCopy.saving : copy.confirmPhotos}}</button>
   </view>
 </view>

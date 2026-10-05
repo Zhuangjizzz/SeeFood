@@ -39,7 +39,22 @@
   </view>
   <view class="recent-section">
     <view class="section-heading"><text class="section-title">{{copy.recent}}</text><button class="text-button" bindtap="openHistory" hover-class="press">{{copy.viewAll}} <text class="chevron">›</text></button></view>
-    <view class="empty paper">
+    <view class="notice" wx:if="{{historyError}}" role="alert">
+      <view>{{historyError}}</view>
+      <button class="text-button" bindtap="retryHistory">{{recordCopy.retryRead}}</button>
+    </view>
+    <button wx:for="{{recentRecords}}" wx:key="id" class="recent-record paper" data-id="{{item.id}}" bindtap="openRecord" hover-class="press">
+      <image wx:if="{{item.thumbnail}}" class="recent-image" src="{{item.thumbnail}}" mode="aspectFill" />
+      <view wx:else class="recent-image missing-thumbnail">▤</view>
+      <view class="recent-body">
+        <view class="recent-title">{{item.title}}</view>
+        <view class="recent-meta">{{item.createdAtLabel}} · {{item.imageCount}} {{recordCopy.photos}}</view>
+        <view class="recent-progress">{{item.processingLabel}}</view>
+        <view class="recent-save">{{item.saveLabel}}</view>
+      </view>
+      <text class="recent-chevron">›</text>
+    </button>
+    <view class="empty paper" wx:if="{{historyReadable && !recentRecords.length}}">
       <view class="empty-title">{{copy.emptyRecent}}</view>
       <view class="empty-copy">{{copy.emptyRecentBody}}</view>
     </view>

@@ -15,9 +15,12 @@ async function chooseImages(target, source, recordTarget) {
   showCapture(target);
   if (result.ok) {
     wx.navigateTo({ url: '/pages/preview/preview', events: {
-      captureConfirmed(batch) {
-        // The next ticket connects this public handoff to local record creation.
-        if (target.handleCaptureConfirmed) target.handleCaptureConfirmed(batch);
+      async captureConfirmed(batch, complete) {
+        let outcome;
+        try {
+          outcome = target.handleCaptureConfirmed ? await target.handleCaptureConfirmed(batch) : { ok: false, error: 'save-unavailable' };
+        } catch (_) { outcome = { ok: false, error: 'save-unavailable' }; }
+        if (complete) complete(outcome);
       }
     } });
   }

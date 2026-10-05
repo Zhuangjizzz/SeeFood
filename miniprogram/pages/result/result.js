@@ -59,8 +59,11 @@ Page({
     if (this.retryingUpload) return this.retryingUpload;
     const services = page.services();
     if (!services.uploads.getState(this.recordId).canRetry) return Promise.resolve({ ok: false, error: 'upload-unavailable' });
-    this.retryingUpload = services.uploads.uploadRecord(this.recordId).then((result) => {
-      if (result.ok && services.jobs) return services.jobs.startImageProcessing(this.recordId);
+    const stored = services.records.getRecord(this.recordId);
+    const unfinished = stored.ok ? stored.record.images.filter((image) => image.uploadState !== 'uploaded') : [];
+    const imageId = unfinished.length === 1 ? unfinished[0].id : undefined;
+    this.retryingUpload = services.uploads.uploadRecord(this.recordId, imageId).then((result) => {
+      if (result.ok && services.jobs) return services.jobs.startImageProcessing(this.recordId, imageId);
       return result;
     }).finally(() => { this.retryingUpload = null; recordsPage.showResult(this, this.recordId); });
     return this.retryingUpload;

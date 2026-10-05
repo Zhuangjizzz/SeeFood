@@ -81,3 +81,27 @@ test('native append confirmation returns to the existing result while a later ho
   assert.deepEqual(ui.navigation.pop(), ['replace', `/pages/result/result?recordId=${encodeURIComponent(other.recordId)}`]);
   fresh.onUnload(); result.onUnload();
 });
+
+test('append preview reports an unavailable target in every language and retains the selection without creating a new record', async (t) => {
+  const disk = recordPlatform(t); const ui = nativePages(t, disk);
+  await ui.services.capture.chooseImages({ source: 'album' });
+  const id = (await ui.services.records.confirmCapture(ui.services.capture.confirm().batch)).recordId;
+  const result = ui.load('result'); result.onLoad({ recordId: id }); result.onShow();
+  for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN']) {
+    ui.services.application.chooseLanguage(language); result.onShow(); result.addPhotos(); await result.importPhoto();
+    const preview = ui.load('preview'); preview.onShow();
+    const selected = structuredClone(preview.data.images);
+    ui.services.records.updateRecord(id, (record) => { record.deletedAt = '2026-10-06T00:00:00.000Z'; });
+    assert.equal((await preview.confirm()).error, 'append-target-unavailable');
+    assert.equal(preview.data.saveState, 'failed');
+    assert.equal(preview.data.saveError, preview.data.recordCopy.appendTargetUnavailable);
+    assert.ok(preview.data.saveError.length > 0);
+    assert.deepEqual(preview.data.images, selected);
+    assert.equal((await preview.retrySave()).error, 'append-target-unavailable');
+    assert.equal(ui.services.records.getRecord(id).record.images.length, 1);
+    assert.equal(ui.services.records.listRecent().records.length, 1);
+    preview.onUnload();
+    ui.services.records.updateRecord(id, (record) => { delete record.deletedAt; });
+  }
+  result.onUnload();
+});

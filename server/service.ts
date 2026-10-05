@@ -3,34 +3,15 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, statSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID, createHash } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { Ajv2020 } from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
 import sharp from 'sharp';
 
-type Json = Record<string, any>;
-export class ApiError extends Error {
-  status: number; code: string; retryable: boolean; details: Json;
-  constructor(status: number, code: string, retryable = false, details: Json = {}) {
-    super(code); this.status = status; this.code = code; this.retryable = retryable; this.details = details;
-  }
-}
-export function reject(status: number, code: string, details: Json = {}): never { throw new ApiError(status, code, false, details); }
-export function hash(value: string | Buffer) { return createHash('sha256').update(value).digest('hex'); }
-export function canonical(value: any): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value && typeof value === 'object') return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
-  return JSON.stringify(value);
-}
-const contract = JSON.parse(readFileSync(new URL('../docs/technical/openapi.json', import.meta.url), 'utf8'));
-const validator = new Ajv2020({ strict: false, allErrors: true });
-(addFormats as unknown as (instance: Ajv2020) => void)(validator);
-validator.addSchema({ $id: 'seefood', components: contract.components });
-export function validate(name: string, body: unknown): asserts body is Json {
-  const check = validator.getSchema(`seefood#/components/schemas/${name}`)!;
-  if (!check(body)) reject(400, 'INPUT_UNSUPPORTED');
-}
+import { ApiError, reject, hash, canonical, validate } from './contract.ts';
+import type { Json } from './contract.ts';
+import { createJobService } from './jobs.ts';
+import type { JobHandler } from './jobs.ts';
+import { imageCardsHandler } from './image-cards.ts';
 async function readJson(req: IncomingMessage): Promise<Json> {
   const chunks = []; let size = 0;
   for await (const chunk of req) {
@@ -50,6 +31,9 @@ export interface ServiceOptions {
   enableDevSession?: boolean;
   devIdentities?: string[];
   now?: () => number;
+  jobHandlers?: Record<string, JobHandler>;
+  workerDelayMs?: number;
+  mockScenario?: string;
 }
 export function createService(options: ServiceOptions) {
   const dataDir = resolve(options.dataDir);
@@ -106,6 +90,8 @@ export function createService(options: ServiceOptions) {
       return response;
     });
   }
+  const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
+    handlers: { image_cards: imageCardsHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs });
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
     if (snapshot.purpose !== 'record') reject(400, 'INPUT_UNSUPPORTED');
@@ -256,6 +242,9 @@ export function createService(options: ServiceOptions) {
     }
     if (route.startsWith('/v1/')) {
       const ownerId = owner(req);
+      if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req)));
+      const jobRoute = route.match(/^\/v1\/jobs\/([^/]+)$/);
+      if (jobRoute && req.method === 'GET') return send(res, 200, jobs.get(decodeURIComponent(jobRoute[1]), ownerId));
       const contextRoute = route.match(/^\/v1\/contexts\/([^/]+)$/);
       if (contextRoute && req.method === 'PUT') return send(res, 200, putContext(decodeURIComponent(contextRoute[1]), ownerId, await readJson(req)));
       if (route === '/v1/uploads' && req.method === 'POST') {
@@ -275,5 +264,5 @@ export function createService(options: ServiceOptions) {
       else res.destroy();
     });
   });
-  return { server, close: () => new Promise<void>((done) => server.close(() => { database.close(); done(); })) };
+  return { server, close: async () => { await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
 }

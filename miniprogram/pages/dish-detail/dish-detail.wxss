@@ -1,0 +1,9 @@
+@import "../result/result.wxss";
+.dish-detail-page { padding-top: 30rpx; padding-bottom: calc(36rpx + env(safe-area-inset-bottom)); }
+.dish-summary.paper { padding: 24rpx; }
+.dish-detail-section { margin: 22rpx 0; padding: 26rpx; }
+.section-title { font-size: 29rpx; font-weight: 600; color: #315d43; line-height: 1.5; }
+.detail-line { margin-top: 20rpx; font-size: 27rpx; line-height: 1.65; color: #435c40; overflow-wrap: anywhere; }
+.uncertainty-section { border-left: 6rpx solid #b8955e; }
+.original-source { margin-top: 28rpx; white-space: normal; height: auto; padding: 20rpx; line-height: 1.5; }
+.detail-back { margin-top: 24rpx; }

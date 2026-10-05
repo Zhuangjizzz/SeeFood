@@ -56,9 +56,13 @@ test('a reordered confirmed batch uploads in parallel and exposes a completed im
   draft.removeImage(chosen[1].id); draft.moveImage(chosen[2].id, 0);
   const batch = draft.confirm().batch;
   const id = (await services.records.confirmCapture(batch)).recordId;
-  let held;
+  let held; const uploadImages = new Map();
   disk.platform.request = (options) => {
-    if (options.url.includes('/_uploads/') && !held) { held = options; return; }
+    if (options.url.endsWith('/v1/uploads')) {
+      const success = options.success;
+      send({ ...options, success(response) { uploadImages.set(response.data.uploadUrl, options.data.imageId); success(response); } }); return;
+    }
+    if (uploadImages.get(options.url) === chosen[2].id && !held) { held = options; return; }
     send(options);
   };
   const pending = services.imageBatches.startBatch(id, batch.id);
@@ -113,9 +117,13 @@ test('native confirmation processes every new and appended image while preservin
   const append = ui.load('preview'); append.onShow(); const selected = append.data.images;
   append.removeImage({ currentTarget: { dataset: { id: selected[1].id } } });
   append.moveOne({ currentTarget: { dataset: { id: selected[2].id, direction: -1 } } });
-  let held;
+  let held; const uploadImages = new Map();
   disk.platform.request = (options) => {
-    if (options.url.includes('/_uploads/') && !held) { held = options; return; }
+    if (options.url.endsWith('/v1/uploads')) {
+      const success = options.success;
+      send({ ...options, success(response) { uploadImages.set(response.data.uploadUrl, options.data.imageId); success(response); } }); return;
+    }
+    if (uploadImages.get(options.url) === selected[2].id && !held) { held = options; return; }
     send(options);
   };
   global.getCurrentPages = () => [{ route: 'pages/index/index' }, { route: 'pages/result/result', recordId: id }, { route: 'pages/preview/preview' }];

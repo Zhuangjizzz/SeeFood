@@ -3,6 +3,7 @@
     <view class="brand-row"><text class="section-title">{{copy.cards}}</text><button class="language-link" bindtap="openLanguage" aria-label="{{copy.language}}" hover-class="press"><image class="small-icon" src="/assets/globe.png" aria-hidden="true" /><text>{{languageName}}</text></button></view>
     <view class="page-heading">{{copy.cardsTitle}}</view>
     <view class="body-copy library-intro">{{copy.cardsBody}}</view>
+    <button class="create-card-entry" bindtap="createCard" hover-class="press">＋ {{createCardTitle}}</button>
     <button class="exchange-entry" bindtap="openTextExchange" hover-class="press">{{exchangeTitle}} <text aria-hidden="true">→</text></button>
     <view class="category-tabs" role="tablist">
       <button wx:for="{{categories}}" wx:key="id" class="category-tab {{category === item.id ? 'selected' : ''}}" data-category="{{item.id}}" bindtap="selectCategory" aria-role="tab" aria-selected="{{category === item.id}}"><text>{{item.label}}</text><text class="category-count">{{item.count}}</text></button>

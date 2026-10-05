@@ -47,3 +47,5 @@
 .card-menu-cancel { margin-top: 12rpx; color: #436044; }
 .card-menu-error { margin-bottom: 18rpx; font-size: 25rpx; line-height: 1.5; color: #873d31; }
 .exchange-entry { display: flex; justify-content: space-between; align-items: center; min-height: 88rpx; padding: 18rpx 24rpx; margin: 16rpx 0; border-radius: 18rpx; background: #e0e8d5; color: #315d43; font-size: 27rpx; }
+
+.create-card-entry{padding:18rpx 22rpx;margin:22rpx 0 12rpx;min-height:82rpx;background:#dce9d2;border:1rpx solid #bdcdb0;border-radius:14rpx;color:#31563b;font-size:28rpx;line-height:1.5;text-align:left;}

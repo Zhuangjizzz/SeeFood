@@ -9,7 +9,7 @@ Page({
     page.services().application.skipPreferenceInvite();
     page.showPage(this, 'capture');
   },
-  openPreferences: page.unavailable,
+  openPreferences: page.openPreferences,
   takePhoto: page.unavailable,
   importPhoto: page.unavailable,
   openHistory: page.unavailable

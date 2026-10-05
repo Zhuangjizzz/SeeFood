@@ -14,7 +14,8 @@ function createWechatServices(platform) {
   } catch (_) {
     // An unavailable platform locale falls through to the explicit language picker.
   }
-  return { store, application: createApplication({ store, systemLanguage }) };
+  const application = createApplication({ store, systemLanguage });
+  return { store, application, preferences: application.preferences };
 }
 
 module.exports = { createWechatServices };

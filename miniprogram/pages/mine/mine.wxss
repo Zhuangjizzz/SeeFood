@@ -1,6 +1,9 @@
 .preference-panel { padding: 34rpx 36rpx 24rpx; width: 100%; text-align: left; border-radius: 26rpx; background: #1e3932; color: #fffdf2; box-shadow: inset 0 2rpx #ffffff33, 0 4rpx #a2b09c, 0 8rpx #e3e5da, 0 12rpx #c0c7b5; margin: 14rpx 0 50rpx; }
 .preference-title { font-size: 34rpx; font-weight: 550; }
 .preference-summary { font-size: 27rpx; line-height: 1.6; color: #d0dec8; margin-top: 22rpx; }
+.summary-group + .summary-group { margin-top: 16rpx; }
+.summary-label { display: block; color: #a7c0a3; font-size: 22rpx; line-height: 1.4; }
+.summary-content { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; white-space: pre-wrap; margin-top: 3rpx; }
 .preference-action { display: flex; justify-content: space-between; gap: 20rpx; align-items: center; font-size: 25rpx; color: #e7efe0; margin-top: 26rpx; padding-top: 24rpx; border-top: 1rpx solid #637d6544; min-height: 80rpx; }
 .settings-list { padding: 0 28rpx; }
 .setting { display: flex; align-items: center; gap: 22rpx; text-align: left; width: 100%; border-radius: 0; padding: 32rpx 0; border-bottom: 1rpx solid #e6e9dd; }

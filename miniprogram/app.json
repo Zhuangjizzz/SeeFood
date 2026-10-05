@@ -1,5 +1,5 @@
 {
-  "pages": ["pages/index/index", "pages/cards/cards", "pages/mine/mine", "pages/language/language"],
+  "pages": ["pages/index/index", "pages/cards/cards", "pages/mine/mine", "pages/language/language", "pages/preferences/preferences"],
   "window": {
     "navigationBarTitleText": "SeeFood",
     "navigationBarBackgroundColor": "#f2f0eb",

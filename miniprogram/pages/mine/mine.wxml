@@ -1,14 +1,22 @@
 <view class="page" wx:if="{{!needsLanguage}}">
   <view class="brand-row"><text class="section-title">{{copy.mine}}</text><text class="brand-seal">sf</text></view>
   <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
-  <button class="preference-panel" bindtap="openPreferences" hover-class="press">
+  <button class="preference-panel" data-action="preferences" bindtap="openPreferences" hover-class="press">
     <view class="preference-title">{{copy.preferences}}</view>
-    <view class="preference-summary">{{copy.noPreferences}}</view>
-    <view class="preference-action"><text>{{copy.setPreferences}}</text><text>›</text></view>
+    <view class="preference-summary" wx:if="{{!preferences.readable}}">{{preferences.copy.storageRead}}</view>
+    <view class="preference-summary" wx:elif="{{!preferences.isSet}}">{{copy.noPreferences}}</view>
+    <view class="preference-summary" wx:elif="{{!preferences.summary.length}}">{{preferences.copy.savedEmpty}}</view>
+    <view class="preference-summary" wx:else>
+      <view wx:for="{{preferences.summary}}" wx:key="category" class="summary-group">
+        <text class="summary-label">{{item.label}}</text>
+        <text class="summary-content">{{item.text}}</text>
+      </view>
+    </view>
+    <view class="preference-action"><text>{{!preferences.readable ? copy.retry : preferences.isSet ? preferences.copy.edit : copy.setPreferences}}</text><text>›</text></view>
   </button>
   <view class="settings-list paper">
-    <button class="setting" bindtap="openHistory" hover-class="press"><image class="setting-icon" src="/assets/history.png" aria-hidden="true" /><view class="setting-copy"><text class="setting-title">{{copy.history}}</text><text class="setting-detail">{{copy.historyDescription}}</text></view><text class="chevron">›</text></button>
-    <button class="setting" bindtap="openLanguage" hover-class="press"><image class="setting-icon" src="/assets/globe.png" aria-hidden="true" /><view class="setting-copy"><text class="setting-title">{{copy.language}}</text><text class="setting-detail">{{languageName}}</text></view><text class="chevron">›</text></button>
+    <button class="setting setting-history" data-action="history" bindtap="openHistory" hover-class="press"><image class="setting-icon" src="/assets/history.png" aria-hidden="true" /><view class="setting-copy"><text class="setting-title">{{copy.history}}</text><text class="setting-detail">{{copy.historyDescription}}</text></view><text class="chevron">›</text></button>
+    <button class="setting setting-language" data-action="language" bindtap="openLanguage" hover-class="press"><image class="setting-icon" src="/assets/globe.png" aria-hidden="true" /><view class="setting-copy"><text class="setting-title">{{copy.language}}</text><text class="setting-detail">{{languageName}}</text></view><text class="chevron">›</text></button>
   </view>
   <view class="local-note"><text class="local-title">{{copy.localData}}</text><text>{{copy.localDataBody}}</text></view>
 </view>

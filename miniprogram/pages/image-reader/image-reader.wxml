@@ -1,0 +1,33 @@
+<view class="reader-page">
+  <view class="reader-toolbar">
+    <text class="reader-number">{{count ? index + 1 : 0}} / {{count}}</text>
+    <button class="reader-close" bindtap="close">{{copy.close}}</button>
+  </view>
+  <view wx:if="{{error}}" class="reader-notice" role="alert">{{error}}</view>
+  <block wx:else>
+    <view class="reader-variants">
+      <button class="reader-variant {{variant === 'original' ? 'selected' : ''}}" data-variant="original" bindtap="selectVariant" aria-pressed="{{variant === 'original'}}">{{imageCopy.original}}</button>
+      <button wx:if="{{!translationNotRequired}}" class="reader-variant {{variant === 'translation' ? 'selected' : ''}}" data-variant="translation" bindtap="selectVariant" disabled="{{!translationAvailable}}" aria-pressed="{{variant === 'translation'}}">{{imageCopy.translation}}</button>
+    </view>
+    <view class="reader-navigation">
+      <button class="reader-previous" data-direction="-1" bindtap="changeImage" disabled="{{index === 0}}">‹ {{copy.previous}}</button>
+      <button class="reader-next" data-direction="1" bindtap="changeImage" disabled="{{index === count - 1}}">{{copy.next}} ›</button>
+    </view>
+    <view wx:if="{{choiceSaveError}}" class="reader-notice" role="alert"><text>{{imageCopy.choiceFailed}}</text><button bindtap="retryChoice">{{imageCopy.retryChoice}}</button></view>
+    <view wx:if="{{!imagePath || imageError}}" class="reader-notice" role="alert">{{imageError ? copy.imageUnreadable : missingImage}}</view>
+    <scroll-view class="reader-viewport" scroll-x="{{!pinching}}" scroll-y="{{!pinching}}" scroll-top="{{scrollTop}}" scroll-left="{{scrollLeft}}" bindscroll="scrollImage">
+      <view wx:if="{{imagePath}}" class="reader-canvas" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" bindtouchstart="startTouch" bindtouchmove="moveTouch" bindtouchend="finishTouch" bindtouchcancel="finishTouch">
+        <image class="reader-image" src="{{imagePath}}" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" mode="scaleToFill" binderror="failedImage" />
+      </view>
+    </scroll-view>
+    <view class="reader-footer">
+      <view class="reader-zoom">
+        <button class="reader-zoom-out" bindtap="zoomOut" disabled="{{scale <= 1 || !imagePath}}" aria-label="{{copy.zoomOut}}">−</button>
+        <button class="reader-fit" bindtap="fitWidth" disabled="{{!imagePath}}">{{copy.fitWidth}} · {{zoomPercent}}%</button>
+        <button class="reader-zoom-in" bindtap="zoomIn" disabled="{{scale >= 4 || !imagePath}}" aria-label="{{copy.zoomIn}}">＋</button>
+      </view>
+      <view class="reader-hint">{{copy.zoomHint}}</view>
+      <view class="reader-status" role="status">{{translationNotice}}</view>
+    </view>
+  </block>
+</view>

@@ -27,8 +27,10 @@ export function imageCardsHandler(scenario = 'menu'): JobHandler {
     },
     validateOutput(output, frozen) {
       validate('ImageCardsOutput', output);
+      const sourceIds = new Set(frozen.snapshot.snapshot.images.filter((image: any) => image.assetId).map((image: any) => image.imageId));
       if (new Set(output.cards.map((card: any) => card.id)).size !== output.cards.length || output.cards.some((card: any) =>
-        card.recordId !== frozen.snapshot.recordId || card.sourceImageIds.some((id: string) => id !== frozen.request.target.imageId))) reject(409, 'DEPENDENCY_MISSING');
+        card.recordId !== frozen.snapshot.recordId || !card.sourceImageIds.includes(frozen.request.target.imageId) ||
+        card.sourceImageIds.some((id: string) => !sourceIds.has(id)))) reject(409, 'DEPENDENCY_MISSING');
     }
   };
 }

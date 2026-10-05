@@ -85,9 +85,9 @@ test('local result write failure preserves originals and previous cards and can 
 test('native results show source cards, full details and original-image return while language changes preserve generated text', async (t) => {
   const { services, id, traffic } = await setup(t); await services.jobs.startImageCards(id);
   const old = { Page: global.Page, wx: global.wx, getApp: global.getApp, getCurrentPages: global.getCurrentPages }; t.after(() => Object.assign(global, old));
-  let navigation; let preview; let returned = false;
+  let navigation; let returned = false;
   global.getApp = () => ({ services }); global.getCurrentPages = () => [{}, {}];
-  global.wx = { setNavigationBarTitle() {}, navigateTo(value) { navigation = value.url; }, previewImage(value) { preview = value; }, navigateBack() { returned = true; } };
+  global.wx = { setNavigationBarTitle() {}, navigateTo(value) { navigation = value.url; }, navigateBack() { returned = true; } };
   function load(name) {
     let definition; global.Page = (value) => { definition = value; }; const file = require.resolve(`../miniprogram/pages/${name}/${name}`); delete require.cache[file]; require(file);
     return { ...definition, data: { ...definition.data }, setData(value) { Object.assign(this.data, value); } };
@@ -99,7 +99,8 @@ test('native results show source cards, full details and original-image return w
   assert.match(navigation, /dish-detail/);
   const detail = load('dish-detail'); detail.onLoad({ recordId: id, cardId: card.id }); detail.onShow();
   assert.equal(detail.data.card.details.length, 6); assert.ok(detail.data.card.uncertainty.length);
-  detail.viewOriginal(); assert.equal(preview.current, services.records.getRecord(id).record.images[0].localOriginalPath);
+  detail.viewOriginal(); assert.match(navigation, /\/pages\/image-reader\/image-reader\?/);
+  assert.equal(services.imageView.open(id).path, services.records.getRecord(id).record.images[0].localOriginalPath);
   const before = traffic.length;
   for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN']) {
     services.application.chooseLanguage(language); result.onShow(); detail.onShow();

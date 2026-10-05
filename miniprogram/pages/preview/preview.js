@@ -117,6 +117,7 @@ Page({
   onHide() { this.clearDrag(); },
   onUnload() {
     this.unloaded = true;
+    if (this.confirmedBatchId) page.services().records.discardSubmission(this.confirmedBatchId);
     clearInterval(this.dragTimer);
     page.services().capture.cancel();
   }

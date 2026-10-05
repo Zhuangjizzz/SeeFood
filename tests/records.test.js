@@ -222,3 +222,46 @@ test('a missing original remains an identifiable pending record and is never pre
   assert.equal(record.requestId, original.requestId);
   assert.equal(reopened.listRecent().records[0].images[0].original.saveState, 'failed');
 });
+
+test('abandoning a failed submission removes only its uncommitted original copies and preserves saved history', async (t) => {
+  const disk = recordPlatform(t);
+  const services = createWechatServices(disk.platform);
+  const photo = disk.material('menu-photo.png');
+  const oldId = (await services.records.confirmCapture(await confirmedBatch([photo]))).recordId;
+  const oldOriginal = services.records.getRecord(oldId).record.images[0].localOriginalPath;
+  const batch = await confirmedBatch([disk.material('menu-screenshot.png')]);
+  const write = disk.storage.set;
+  disk.storage.set = () => { throw new Error('storage quota exceeded'); };
+  await services.records.confirmCapture(batch);
+  const copiedOriginal = services.records.getSubmission(batch.id).record.images[0].localOriginalPath;
+  assert.equal(fs.existsSync(copiedOriginal), true);
+  disk.storage.set = write;
+  assert.deepEqual(await services.records.discardSubmission(batch.id), { ok: true });
+  assert.equal(fs.existsSync(copiedOriginal), false);
+  assert.equal(fs.existsSync(oldOriginal), true);
+  assert.equal(fs.existsSync(batch.images[0].localPath), true);
+  assert.equal(services.records.getSubmission(batch.id), null);
+  assert.deepEqual(createWechatServices(disk.platform).records.listRecent().records.map((record) => record.id), [oldId]);
+});
+
+test('a failed discard keeps its cleanup association so releasing uncommitted files can be retried honestly', async (t) => {
+  const disk = recordPlatform(t);
+  const services = createWechatServices(disk.platform);
+  const batch = await confirmedBatch([disk.material('menu-photo.png')]);
+  const write = disk.storage.set;
+  disk.storage.set = () => { throw new Error('quota'); };
+  await services.records.confirmCapture(batch);
+  const copied = services.records.getSubmission(batch.id).record.images[0].localOriginalPath;
+  disk.storage.set = write;
+  const access = disk.fileSystem.accessSync;
+  const remove = disk.fileSystem.rmdirSync;
+  disk.fileSystem.accessSync = () => { const error = new Error('permission denied'); error.code = 'EACCES'; throw error; };
+  disk.fileSystem.rmdirSync = disk.fileSystem.accessSync;
+  assert.deepEqual(await services.records.discardSubmission(batch.id), { ok: false, error: 'original-cleanup' });
+  assert.equal(fs.existsSync(copied), true);
+  assert.equal(services.records.getSubmission(batch.id).discarding, true);
+  disk.fileSystem.accessSync = access;
+  disk.fileSystem.rmdirSync = remove;
+  assert.deepEqual(await services.records.discardSubmission(batch.id), { ok: true });
+  assert.equal(fs.existsSync(copied), false);
+});

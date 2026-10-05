@@ -112,6 +112,7 @@ function createRecords({ store, files, now = () => new Date().toISOString() }) {
     async confirmCapture(batch) {
       if (!validBatch(batch)) return { ok: false, error: 'capture-invalid' };
       const previous = submissions.get(batch.id);
+      if (previous && previous.discarding) return { ok: false, error: 'submission-discarded' };
       if (previous && previous.record.captureSignature !== signature(batch)) {
         return { ok: false, error: 'capture-conflict', batchId: batch.id };
       }
@@ -121,8 +122,26 @@ function createRecords({ store, files, now = () => new Date().toISOString() }) {
     retrySave(batchId) {
       const submission = submissions.get(batchId);
       if (!submission) return Promise.resolve({ ok: false, error: 'submission-missing' });
+      if (submission.discarding) return Promise.resolve({ ok: false, error: 'submission-discarded' });
       if (submission.saveState === 'saved') return Promise.resolve({ ok: true, recordId: submission.record.id });
       return startSave(submission);
+    },
+    async discardSubmission(batchId) {
+      const submission = submissions.get(batchId);
+      if (!submission) return { ok: true };
+      submission.discarding = true;
+      if (activeSaves.has(batchId)) await activeSaves.get(batchId);
+      if (submission.saveState !== 'saved') {
+        let records;
+        try { records = readRecords(); }
+        catch (_) { return { ok: false, error: 'storage-read' }; }
+        if (!records.some((record) => record.id === submission.record.id)) {
+          try { files.removeUncommittedOriginals(submission.record.id); }
+          catch (_) { return { ok: false, error: 'original-cleanup' }; }
+        }
+      }
+      submissions.delete(batchId);
+      return { ok: true };
     },
     getSubmission(batchId) {
       const submission = submissions.get(batchId);

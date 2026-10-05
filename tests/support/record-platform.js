@@ -10,6 +10,7 @@ function recordPlatform(t) {
   const fileSystem = {
     accessSync: (filename) => fs.accessSync(filename),
     mkdirSync: (directory, recursive) => fs.mkdirSync(directory, { recursive }),
+    rmdirSync: (directory, recursive) => fs.rmSync(directory, { recursive, force: true }),
     statSync: (filename) => fs.statSync(filename),
     copyFile({ srcPath, destPath, success, fail }) {
       fs.copyFile(srcPath, destPath, (error) => error ? fail(error) : success({}));

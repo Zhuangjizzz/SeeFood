@@ -1,0 +1,37 @@
+<view class="page result-page">
+  <view wx:if="{{recordError}}" class="notice record-error" role="alert">
+    <view>{{recordError}}</view>
+    <button wx:if="{{canRetryRead}}" class="text-button" bindtap="retryRead">{{recordCopy.retryRead}}</button>
+    <button wx:else class="text-button" bindtap="back">{{recordCopy.back}}</button>
+  </view>
+  <block wx:if="{{record}}">
+    <view class="record-heading">{{title}}</view>
+    <view class="record-meta">{{createdAtLabel}} · {{imageCount}} {{recordCopy.photos}}</view>
+    <view class="record-status paper">
+      <view class="status-row"><text class="status-label">{{recordCopy.uploadLabel}}</text><text class="processing-state">{{processingLabel}}</text></view>
+      <view class="status-row"><text class="status-label">{{recordCopy.saveLabel}}</text><text class="local-save-state">{{saveLabel}}</text></view>
+    </view>
+    <scroll-view class="image-selector" scroll-x>
+      <view class="thumbnail-strip">
+        <button wx:for="{{record.images}}" wx:key="id" class="image-selector-button {{currentImageId === item.id ? 'selected-image' : ''}}" data-id="{{item.id}}" bindtap="selectImage" aria-label="{{recordCopy.photo}} {{index + 1}}" aria-pressed="{{currentImageId === item.id}}">
+          <image wx:if="{{item.original.saveState === 'saved'}}" src="{{item.localOriginalPath}}" mode="aspectFill" class="selector-thumbnail" />
+          <view wx:else class="selector-thumbnail missing-thumbnail">▤</view>
+          <text class="selector-number">{{index + 1}}</text>
+        </button>
+      </view>
+    </scroll-view>
+    <view class="original-label">{{recordCopy.original}} · {{recordCopy.photo}} {{currentImage.order + 1}}</view>
+    <button wx:if="{{currentImage.original.saveState === 'saved'}}" class="original-button paper" bindtap="viewOriginal" aria-label="{{recordCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
+      <image class="result-original" src="{{currentImage.localOriginalPath}}" mode="aspectFit" />
+    </button>
+    <view wx:else class="notice missing-original" role="alert">{{recordCopy.missingOriginal}}</view>
+    <view class="image-progress-list paper">
+      <view wx:for="{{imageStates}}" wx:key="id" class="image-progress">
+        <view class="image-progress-name">{{recordCopy.photo}} {{item.order + 1}} · {{item.kind === 'dish' ? copy.dish : copy.menu}}</view>
+        <view class="image-progress-states"><text>{{item.processingLabel}}</text><text class="image-local-state">{{item.saveLabel}}</text></view>
+      </view>
+    </view>
+    <view wx:if="{{uploadState === 'pending' && originalsSaved}}" class="pending-explanation">{{recordCopy.pendingBody}}</view>
+    <view class="empty paper result-empty"><view class="empty-copy">{{recordCopy.noDishes}}</view></view>
+  </block>
+</view>

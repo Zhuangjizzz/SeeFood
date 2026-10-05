@@ -1,3 +1,5 @@
+const { makeId } = require('./identity');
+
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const INPUT_LIMITS = { scope: 'local-integration', maxImages: 9, maxImageBytes: 20 * 1024 * 1024,
   mimeTypes: ['image/jpeg', 'image/png', 'image/webp'] };
@@ -6,7 +8,6 @@ function createCapture({ media, getLanguage = () => 'en' }) {
   let inputMode = 'menu';
   let batch = null;
   let confirmed = false;
-  let sequence = 0;
   let error = null;
   let previewPosition = 0;
   let original = null;
@@ -46,7 +47,7 @@ function createCapture({ media, getLanguage = () => 'en' }) {
         else if (image.sizeBytes > INPUT_LIMITS.maxImageBytes) error = 'image-too-large';
       }
       if (error) return { ok: false, error };
-      const id = `batch-${Date.now()}-${++sequence}`;
+      const id = makeId('batch');
       batch = { id, target: clone(target), targetLanguage: getLanguage(),
         images: selected.map((image, index) => Object.assign({}, image, { id: `${id}-${index}`, kind: mode, order: index })) };
       confirmed = false;

@@ -29,13 +29,17 @@ Page({
     const copy = getCardsCopy(language);
     const stride = CARD_STRIDE * this.unit;
     const collapseOffset = this.collapseOffset || 0;
+    const drag = state.drag;
     const cards = state.cards.map((card, index) => {
       const layer = Math.min(index, 3);
+      const lifted = !!drag && drag.cardId === card.id;
+      const y = lifted ? drag.fromIndex * stride + drag.translationY : state.expanded ? index * stride : collapseOffset + layer * 8 * this.unit;
       return Object.assign({}, card, {
+        lifted,
         sourceText: card.pairedLanguage === 'zh-CN' ? card.textZh : card.pairedText,
         showChinese: card.pairedLanguage !== 'zh-CN' && card.pairedText !== card.textZh,
         categoryLabel: copy[card.category] || copy.service,
-        placement: 'transform:translateY(' + (state.expanded ? index * stride : collapseOffset + layer * 8 * this.unit) + 'px) rotate(' + (state.expanded || index === 0 ? 0 : index % 2 ? -1.3 : 1.3) + 'deg) scale(' + (state.expanded ? 1 : 1 - layer * .012) + ');z-index:' + (state.cards.length - index) + ';opacity:' + (state.expanded || index < 4 ? 1 : 0) + ';pointer-events:' + (state.expanded || index === 0 ? 'auto' : 'none') + ';'
+        placement: 'transform:translateY(' + y + 'px) rotate(' + (lifted ? 1 : state.expanded || index === 0 ? 0 : index % 2 ? -1.3 : 1.3) + 'deg) scale(' + (lifted ? 1.025 : state.expanded ? 1 : 1 - layer * .012) + ');z-index:' + (lifted ? state.cards.length + 1 : state.cards.length - index) + ';opacity:' + (state.expanded || index < 4 ? 1 : 0) + ';pointer-events:' + (state.expanded || index === 0 ? 'auto' : 'none') + ';'
       });
     });
     const patch = {
@@ -44,7 +48,10 @@ Page({
       categories: CATEGORIES.map((id) => ({ id, label: copy[id], count: state.counts[id] })),
       cardCount: state.cards.length, totalCount: state.counts.all,
       showExpandHint: state.showExpandHint && state.cards.length > 0,
-      cardError: state.error ? copy[state.error === 'storage-read' ? 'storageRead' : 'storageWrite'] : '',
+      showSortHint: state.showSortHint, dragging: !!drag, dropPosition: drag ? drag.toIndex + 1 : 0,
+      dropPlacement: drag ? 'transform:translateY(' + drag.toIndex * stride + 'px);' : '',
+      reorderStatus: drag ? copy.dragHint : state.reorderFeedback === 'cancelled' ? copy.dragCancelled : state.reorderFeedback === 'saved' ? copy.orderSaved : '',
+      cardError: state.error ? copy[state.error === 'storage-read' ? 'storageRead' : state.pendingReorder ? 'orderFailed' : 'storageWrite'] : '',
       stageHeight: state.expanded ? Math.max(0, cards.length * stride) + 24 * this.unit : collapseOffset + Math.max((CARD_HEIGHT + 70) * this.unit, collapseOffset ? this.data.viewportHeight : 0)
     };
     if (restorePosition) {
@@ -52,7 +59,12 @@ Page({
       this.currentScroll = state.expanded ? index * stride + Math.min(state.position.offset, stride - 1) : 0;
       patch.scrollTop = this.currentScroll;
     }
-    this.setData(patch);
+    this.setData(patch, () => { if (restorePosition || !this.libraryBounds) this.measureLibrary(); });
+  },
+  measureLibrary() {
+    this.createSelectorQuery().select('.library-scroll').boundingClientRect((bounds) => {
+      if (bounds) this.libraryBounds = bounds;
+    }).exec();
   },
   selectCategory(event) {
     this.stopGestures();
@@ -64,20 +76,60 @@ Page({
     if (event.touches.length !== 1) { this.cancelCardTouch(); return; }
     this.stopHold();
     const touch = event.touches[0];
-    this.library.beginTouch({ cardId: event.currentTarget.dataset.id, x: touch.clientX, y: touch.clientY });
+    this.dragPointer = touch;
+    const bounds = this.libraryBounds || { top: 0, bottom: this.data.viewportHeight, height: this.data.viewportHeight };
+    this.library.beginTouch({ cardId: event.currentTarget.dataset.id, x: touch.clientX, y: touch.clientY,
+      layout: { stride: CARD_STRIDE * this.unit, scrollTop: this.currentScroll || 0, top: bounds.top, bottom: bounds.bottom,
+        maxScroll: Math.max(0, this.data.stageHeight + 32 * this.unit - bounds.height) } });
     this.holdTimer = setTimeout(() => {
       const result = this.library.longPress();
       if (result.action === 'expand') this.renderLibrary(true, true);
+      else if (result.action === 'drag') {
+        clearTimeout(this.positionTimer);
+        this.renderLibrary(false, false);
+        this.scheduleDragScroll();
+      }
       else if (!result.ok) this.renderLibrary(false, false);
     }, GESTURE.holdMs);
   },
   onCardTouchMove(event) {
     if (event.touches.length !== 1) { this.cancelCardTouch(); return; }
     const touch = event.touches[0];
-    this.library.moveTouch({ x: touch.clientX, y: touch.clientY });
+    this.dragPointer = touch;
+    this.library.moveTouch({ x: touch.clientX, y: touch.clientY, scrollTop: this.currentScroll || 0 });
+    if (this.library.getState().drag) this.renderLibrary(false, false);
   },
-  onCardTouchEnd() { this.stopHold(); this.library.endTouch(); },
-  cancelCardTouch() { this.stopHold(); if (this.library) this.library.cancelTouch(); },
+  onCardTouchEnd() {
+    this.stopHold();
+    clearTimeout(this.dragScrollTimer);
+    const wasDragging = !!this.library.getState().drag;
+    this.library.endTouch();
+    this.dragPointer = null;
+    if (wasDragging) { this.renderLibrary(true, false); this.flushPosition(); }
+  },
+  cancelCardTouch() {
+    this.stopHold();
+    clearTimeout(this.dragScrollTimer);
+    this.dragPointer = null;
+    if (this.library) {
+      const wasDragging = !!this.library.getState().drag;
+      this.library.cancelTouch();
+      if (wasDragging) this.renderLibrary(true, false);
+    }
+  },
+  scheduleDragScroll() {
+    clearTimeout(this.dragScrollTimer);
+    this.dragScrollTimer = setTimeout(() => {
+      if (!this.library.getState().drag) return;
+      const result = this.library.advanceDragScroll();
+      if (result.action === 'scroll') {
+        this.currentScroll = result.scrollTop;
+        this.setData({ scrollTop: result.scrollTop });
+        this.renderLibrary(false, false);
+      }
+      this.scheduleDragScroll();
+    }, GESTURE.edgeTickMs);
+  },
   stopHold() { clearTimeout(this.holdTimer); this.holdTimer = null; },
   stopGestures() {
     this.cancelCardTouch();
@@ -105,16 +157,25 @@ Page({
   onLibraryScroll(event) {
     if (!this.data.expanded) return;
     this.currentScroll = Math.max(0, event.detail.scrollTop);
+    if (this.library.getState().drag && this.dragPointer) {
+      this.library.moveTouch({ x: this.dragPointer.clientX, y: this.dragPointer.clientY, scrollTop: this.currentScroll });
+      this.renderLibrary(false, false);
+      return;
+    }
     clearTimeout(this.positionTimer);
     this.positionTimer = setTimeout(() => this.flushPosition(), 160);
   },
   flushPosition() {
     clearTimeout(this.positionTimer);
-    if (!this.library || !this.data.expanded || !this.data.cards.length) return;
+    if (!this.library || this.library.getState().drag || !this.data.expanded || !this.data.cards.length) return;
     const stride = CARD_STRIDE * this.unit;
     const index = Math.min(this.data.cards.length - 1, Math.floor((this.currentScroll || 0) / stride));
     const result = this.library.rememberPosition({ cardId: this.data.cards[index].id, offset: Math.max(0, (this.currentScroll || 0) - index * stride) });
     if (!result.ok) this.renderLibrary(false, false);
   },
-  retryCards() { this.library.reload(); this.renderLibrary(false, true); }
+  retryCards() {
+    if (this.library.getState().pendingReorder) this.library.retryReorder();
+    else this.library.reload();
+    this.renderLibrary(false, true);
+  }
 });

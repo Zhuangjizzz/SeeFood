@@ -7,12 +7,14 @@
       <button wx:for="{{categories}}" wx:key="id" class="category-tab {{category === item.id ? 'selected' : ''}}" data-category="{{item.id}}" bindtap="selectCategory" aria-role="tab" aria-selected="{{category === item.id}}"><text>{{item.label}}</text><text class="category-count">{{item.count}}</text></button>
     </view>
     <view class="library-toolbar"><text class="library-count">{{cardCount}} {{cardCopy.savedCards}}</text><button wx:if="{{expanded && cardCount}}" class="collapse-button" catchtap="collapseCards" aria-label="{{cardCopy.collapse}}"><view class="collapse-arrow"></view></button></view>
+    <view wx:if="{{expanded && cardCount > 1}}" class="reorder-row" role="status"><text wx:if="{{dragging}}">{{cardCopy.dragHint}} · {{cardCopy.dropPosition}} {{dropPosition}} / {{cardCount}}</text><text wx:elif="{{reorderStatus}}">{{reorderStatus}}</text><text wx:elif="{{showSortHint}}">{{cardCopy.sortHint}}</text><button wx:if="{{dragging}}" class="cancel-drag" catchtap="cancelCardTouch">{{cardCopy.cancelDrag}}</button></view>
     <view class="card-error" wx:if="{{cardError}}" role="alert"><text>{{cardError}}</text><button bindtap="retryCards">{{cardCopy.retry}}</button></view>
   </view>
-  <scroll-view class="library-scroll" scroll-y="{{scrollEnabled}}" scroll-top="{{scrollTop}}" bindscroll="onLibraryScroll" show-scrollbar="{{false}}">
+  <scroll-view class="library-scroll" scroll-y="{{scrollEnabled}}" scroll-top="{{scrollTop}}" bindscroll="onLibraryScroll" capture-catch:touchmove="{{dragging ? 'onCardTouchMove' : ''}}" show-scrollbar="{{false}}">
     <view wx:if="{{!cardCount && !cardError}}" class="empty paper"><view class="empty-title">{{totalCount ? cardCopy.emptyCategory : cardCopy.emptyLibrary}}</view></view>
-    <view class="card-stage {{animate ? 'animate' : ''}}" style="height:{{stageHeight}}px;" wx:if="{{cardCount}}">
-      <view wx:for="{{cards}}" wx:key="id" class="communication-card tone-{{item.color}}" style="{{item.placement}}" data-id="{{item.id}}" bindtouchstart="onCardTouchStart" bindtouchmove="onCardTouchMove" bindtouchend="onCardTouchEnd" bindtouchcancel="cancelCardTouch" bindtap="showCard" aria-role="button" aria-label="{{item.title}}">
+    <view class="card-stage {{animate ? 'animate' : ''}} {{dragging ? 'is-dragging' : ''}}" style="height:{{stageHeight}}px;" wx:if="{{cardCount}}">
+      <view wx:if="{{dragging}}" class="card-drop-slot" style="{{dropPlacement}}" aria-hidden="true"><text>{{cardCopy.dropPosition}} {{dropPosition}}</text></view>
+      <view wx:for="{{cards}}" wx:key="id" class="communication-card tone-{{item.color}} {{item.lifted ? 'lifted-card' : ''}}" style="{{item.placement}}" data-id="{{item.id}}" bindtouchstart="onCardTouchStart" bindtouchmove="onCardTouchMove" bindtouchend="onCardTouchEnd" bindtouchcancel="cancelCardTouch" bindtap="showCard" aria-role="button" aria-label="{{item.title}}">
         <view class="card-category"><view class="category-dot"></view><text>{{item.categoryLabel}}</text></view>
         <view class="communication-title">{{item.title}}</view>
         <view class="communication-source">{{item.sourceText}}</view>

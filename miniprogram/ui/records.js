@@ -14,6 +14,11 @@ function uploadState(images) {
   if (images.some((image) => image.uploadState === 'pending')) return 'pending';
   return 'uploaded';
 }
+function uploadLabel(images, status, copy, uploadCopy) {
+  return status && status.originalMissing ? copy.uploadFailed : status && status.interrupted ? uploadCopy.interrupted :
+    status && status.resuming ? uploadCopy.resuming :
+      ({ pending: copy.pendingUpload, uploading: copy.uploading, uploaded: copy.uploaded, failed: copy.uploadFailed })[uploadState(images)];
+}
 function translationLabel(job, pending, imageCopy, recoveryCopy) {
   if (!job) return pending ? recoveryCopy.checking : imageCopy.unstarted;
   if (job.state !== 'succeeded') return imageCopy[job.state];
@@ -30,9 +35,7 @@ function describe(record, application, uploadStatus) {
   const historyCopy = getHistoryCopy(application.language);
   return { ...summary,
     uploadState: status, originalsSaved,
-    processingLabel: historyCopy[summary.processingState] || (uploadStatus && uploadStatus.originalMissing ? copy.uploadFailed : uploadStatus && uploadStatus.interrupted ? uploadCopy.interrupted :
-      uploadStatus && uploadStatus.resuming ? uploadCopy.resuming :
-        ({ pending: copy.pendingUpload, uploading: copy.uploading, uploaded: copy.uploaded, failed: copy.uploadFailed })[status]),
+    processingLabel: historyCopy[summary.processingState] || uploadLabel(record.images, uploadStatus, copy, uploadCopy),
     saveLabel: ({ saved: copy.saved, partial: historyCopy.missingImages, saving: copy.saving, failed: copy.saveFailed })[summary.saveState] };
 
 }
@@ -98,6 +101,7 @@ function showResult(target, recordId) {
       const saving = artifact && artifact.saveState === 'saving' && (jobState.savingTranslations || []).includes(image.id);
       const imageUpload = page.services().uploads.getState(recordId, image.id);
       return Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, imageUpload), image, {
+        processingLabel: uploadLabel([image], imageUpload, recordCopy, getUploadCopy(application.language)),
         canRetryUpload: imageUpload.canRetry,
         cardsStateLabel: cards ? dishCopy[cards.state] : image.jobRequests && image.jobRequests.image_cards ? recoveryCopy.checking : dishCopy.unstarted,
         translationStateLabel: translationLabel(translation, image.jobRequests && image.jobRequests.image_translation, imageCopy, recoveryCopy),

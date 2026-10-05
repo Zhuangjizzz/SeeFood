@@ -153,9 +153,14 @@ test('native confirmation processes every new and appended image while preservin
   assert.equal(services.records.listRecent().records.length, 1);
   assert.equal(traffic.filter((request) => request.method === 'POST' && request.data.kind === 'image_cards').length, 4);
   for (const image of done.images) { assert.equal(fs.existsSync(image.localOriginalPath), true); assert.equal(fs.existsSync(image.translation.localPath), true); }
-  result.onUnload(); await server.stop();
+  result.onUnload();
+  const savedAfterLeaving = services.records.getRecord(id).record;
+  assert.deepEqual(savedAfterLeaving.browseState.resultPosition, { anchorId: null, offset: 0, scrollTop: 420 });
+  assert.deepEqual(savedAfterLeaving.images, done.images);
+  assert.deepEqual(savedAfterLeaving.cards, done.cards);
+  await server.stop();
   const reopened = createWechatServices(disk.platform, { backend });
-  assert.deepEqual(reopened.records.getRecord(id).record, done);
+  assert.deepEqual(reopened.records.getRecord(id).record, savedAfterLeaving);
   assert.deepEqual(reopened.chat.getState(id).messages, before.messages);
 });
 

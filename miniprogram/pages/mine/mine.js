@@ -4,6 +4,6 @@ Page({
   data: { copy: {} },
   onShow() { page.showPage(this, 'mine'); },
   openLanguage: page.openLanguage,
-  openPreferences: page.unavailable,
+  openPreferences: page.openPreferences,
   openHistory: page.unavailable
 });

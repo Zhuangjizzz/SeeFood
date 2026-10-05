@@ -1,6 +1,7 @@
 const ROUTES = {
   capture: '/pages/index/index', cards: '/pages/cards/cards',
-  mine: '/pages/mine/mine', language: '/pages/language/language'
+  mine: '/pages/mine/mine', language: '/pages/language/language',
+  preferences: '/pages/preferences/preferences'
 };
 
 function services() { return getApp().services; }
@@ -49,8 +50,20 @@ function finishLanguage() {
   else wx.switchTab({ url: ROUTES[destination] || ROUTES.capture });
 }
 
+function openPreferences() {
+  services().application.openPreferences();
+  wx.navigateTo({ url: ROUTES.preferences });
+}
+
+function finishPreferences() {
+  services().application.closePreferences();
+  const destination = services().application.getState().page;
+  if (getCurrentPages().length > 1) wx.navigateBack();
+  else wx.switchTab({ url: ROUTES[destination] || ROUTES.capture });
+}
+
 function unavailable() {
   wx.showToast({ title: services().application.getState().copy.notAvailable, icon: 'none' });
 }
 
-module.exports = { ROUTES, services, showPage, openLanguage, finishLanguage, unavailable };
+module.exports = { ROUTES, services, showPage, openLanguage, finishLanguage, openPreferences, finishPreferences, unavailable };

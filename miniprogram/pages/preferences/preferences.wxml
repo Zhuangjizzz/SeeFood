@@ -1,0 +1,30 @@
+<view class="preferences-page" wx:if="{{!needsLanguage}}">
+  <scroll-view class="preferences-scroll" scroll-y enhanced>
+    <view class="preferences-content">
+      <view class="body-copy preferences-intro">{{preferences.copy.intro}}</view>
+      <view class="notice" wx:if="{{errorMessage}}" role="alert">{{errorMessage}}</view>
+      <view class="notice" wx:if="{{preferences.error === 'storage-read'}}" role="alert">
+        <text>{{preferences.copy.storageRead}}</text>
+        <button class="text-button read-retry" bindtap="retryRead">{{copy.retry}}</button>
+      </view>
+      <block wx:if="{{preferences.readable}}">
+        <view class="preference-group" wx:for="{{preferences.groups}}" wx:key="category" wx:for-item="group">
+          <view class="group-heading"><text class="group-number">{{group.number}}</text><text>{{group.label}}</text></view>
+          <view class="preference-options">
+            <button wx:for="{{group.options}}" wx:key="value" class="preference-option {{item.selected ? 'selected' : ''}}" data-category="{{group.category}}" data-value="{{item.value}}" bindtap="toggleOption" aria-pressed="{{item.selected}}" hover-class="press">
+              <text class="option-mark" aria-hidden="true">{{item.selected ? '✓' : '○'}}</text><text>{{item.label}}</text>
+            </button>
+          </view>
+          <view class="group-hint">{{group.hint}}</view>
+          <view class="notes-label"><text>{{preferences.copy.additional}}</text><text class="optional">{{preferences.copy.optional}}</text></view>
+          <textarea class="preference-notes" data-category="{{group.category}}" value="{{group.notes}}" bindinput="updateNotes" maxlength="-1" placeholder="{{preferences.copy.placeholder}}" placeholder-class="notes-placeholder" aria-label="{{group.label + ' · ' + preferences.copy.additional}}" auto-height adjust-position cursor-spacing="28" />
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+  <view class="preference-footer">
+    <view class="save-error" wx:if="{{preferences.error === 'storage-write'}}" role="alert">{{preferences.copy.storageWrite}}</view>
+    <button class="save-preferences" bindtap="savePreferences" disabled="{{!preferences.readable}}" hover-class="press">{{preferences.copy.save}}</button>
+    <button class="text-button skip-preferences" wx:if="{{preferences.readable && !preferences.isSet}}" bindtap="skipPreferences" hover-class="press">{{copy.skip}}</button>
+  </view>
+</view>

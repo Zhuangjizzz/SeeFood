@@ -32,6 +32,9 @@
       </view>
     </view>
     <view wx:if="{{uploadState === 'pending' && originalsSaved}}" class="pending-explanation">{{recordCopy.pendingBody}}</view>
+    <view wx:elif="{{uploadState === 'uploading'}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadingBody}}</view>
+    <view wx:elif="{{uploadState === 'uploaded'}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadedBody}}</view>
+    <view wx:elif="{{uploadState === 'failed'}}" class="notice upload-error" role="alert">{{uploadLocalFailure ? uploadCopy.localFailure : uploadCopy.failedBody}}</view>
     <view class="empty paper result-empty"><view class="empty-copy">{{recordCopy.noDishes}}</view></view>
   </block>
 </view>

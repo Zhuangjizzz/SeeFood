@@ -19,6 +19,7 @@
 | 架构选择的原因与代价 | ADR：[保存边界](adr/0001-local-history-temporary-processing.md)、[实现路线](adr/0002-native-miniprogram-node-service.md)、[访问身份](adr/0003-wechat-session-business-token.md) |
 | HTTP 请求、响应与精确类型 | [OpenAPI](technical/openapi.json)；跨对象与生命周期语义见技术设计 |
 | 固定联调数据与异常场景 | [模拟样例](technical/mocks/README.md) |
+| 启动本地 HTTP 服务、连接小程序与运行检查 | [本地联调](technical/local-development.md) |
 | 饮食偏好选项与内容核验 | [偏好内容](product/preferences-content.md) |
 | 色彩、字体和组件外观参考 | [页面设计的视觉方向](design/README.md#视觉方向与多语言)；按需进入 `references/` 中的外部材料 |
 | 外部方案的依据与实测 | [技术调研](research/README.md) |

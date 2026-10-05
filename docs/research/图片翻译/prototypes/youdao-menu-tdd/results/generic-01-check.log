@@ -1,0 +1,6 @@
+test_changed_item_identities_do_not_produce_a_completed_translation (test_menu_translation.MenuTranslationTests.test_changed_item_identities_do_not_produce_a_completed_translation) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.015s
+
+OK

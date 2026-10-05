@@ -1,0 +1,37 @@
+FFFF
+======================================================================
+FAIL: test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings (__main__.RealMenuAcceptance.test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings) (language='en')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/bytedance/Desktop/SeeFood/docs/research/图片翻译/prototypes/youdao-menu-tdd/acceptance_real.py", line 41, in test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings
+    self.assertTrue(path.exists(), 'Missing successful contextual API evidence: '+path.name)
+AssertionError: False is not true : Missing successful contextual API evidence: test1-en.json
+
+======================================================================
+FAIL: test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings (__main__.RealMenuAcceptance.test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings) (language='ja')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/bytedance/Desktop/SeeFood/docs/research/图片翻译/prototypes/youdao-menu-tdd/acceptance_real.py", line 41, in test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings
+    self.assertTrue(path.exists(), 'Missing successful contextual API evidence: '+path.name)
+AssertionError: False is not true : Missing successful contextual API evidence: test1-ja.json
+
+======================================================================
+FAIL: test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings (__main__.RealMenuAcceptance.test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings) (language='ko')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/bytedance/Desktop/SeeFood/docs/research/图片翻译/prototypes/youdao-menu-tdd/acceptance_real.py", line 41, in test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings
+    self.assertTrue(path.exists(), 'Missing successful contextual API evidence: '+path.name)
+AssertionError: False is not true : Missing successful contextual API evidence: test1-ko.json
+
+======================================================================
+FAIL: test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings (__main__.RealMenuAcceptance.test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings) (language='es')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/bytedance/Desktop/SeeFood/docs/research/图片翻译/prototypes/youdao-menu-tdd/acceptance_real.py", line 41, in test_four_languages_have_successful_real_api_evidence_and_correct_key_meanings
+    self.assertTrue(path.exists(), 'Missing successful contextual API evidence: '+path.name)
+AssertionError: False is not true : Missing successful contextual API evidence: test1-es.json
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=4)

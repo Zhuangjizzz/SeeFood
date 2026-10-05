@@ -1,0 +1,15 @@
+test_changed_item_identities_do_not_produce_a_completed_translation (test_menu_translation.MenuTranslationTests.test_changed_item_identities_do_not_produce_a_completed_translation) ... ok
+test_changed_protected_price_is_rejected_even_if_original_is_also_quoted (test_menu_translation.MenuTranslationTests.test_changed_protected_price_is_rejected_even_if_original_is_also_quoted) ... FAIL
+
+======================================================================
+FAIL: test_changed_protected_price_is_rejected_even_if_original_is_also_quoted (test_menu_translation.MenuTranslationTests.test_changed_protected_price_is_rejected_even_if_original_is_also_quoted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/bytedance/Desktop/SeeFood/docs/research/图片翻译/prototypes/youdao-menu-tdd/test_menu_translation.py", line 50, in test_changed_protected_price_is_rejected_even_if_original_is_also_quoted
+    self.assertTrue(all(r['translation'] is None and r['review'] for r in result['regions']))
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.039s
+
+FAILED (failures=1)

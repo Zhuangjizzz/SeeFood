@@ -1,0 +1,11 @@
+test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved (test_menu_translation.MenuTranslationTests.test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved) ... ok
+test_changed_item_identities_do_not_produce_a_completed_translation (test_menu_translation.MenuTranslationTests.test_changed_item_identities_do_not_produce_a_completed_translation) ... ok
+test_changed_protected_price_is_rejected_even_if_original_is_also_quoted (test_menu_translation.MenuTranslationTests.test_changed_protected_price_is_rejected_even_if_original_is_also_quoted) ... ok
+test_chinese_target_returns_original_without_supplier_dependencies (test_menu_translation.MenuTranslationTests.test_chinese_target_returns_original_without_supplier_dependencies) ... ok
+test_missing_text_api_preserves_image_as_an_incomplete_result (test_menu_translation.MenuTranslationTests.test_missing_text_api_preserves_image_as_an_incomplete_result) ... ok
+test_overlapping_long_image_text_is_retained_once_at_original_coordinates (test_menu_translation.MenuTranslationTests.test_overlapping_long_image_text_is_retained_once_at_original_coordinates) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.080s
+
+OK

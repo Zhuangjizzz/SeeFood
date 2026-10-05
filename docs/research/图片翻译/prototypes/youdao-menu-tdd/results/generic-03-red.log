@@ -1,0 +1,19 @@
+test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved (test_menu_translation.MenuTranslationTests.test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved) ... FAIL
+test_changed_item_identities_do_not_produce_a_completed_translation (test_menu_translation.MenuTranslationTests.test_changed_item_identities_do_not_produce_a_completed_translation) ... ok
+test_changed_protected_price_is_rejected_even_if_original_is_also_quoted (test_menu_translation.MenuTranslationTests.test_changed_protected_price_is_rejected_even_if_original_is_also_quoted) ... ok
+
+======================================================================
+FAIL: test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved (test_menu_translation.MenuTranslationTests.test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/bytedance/Desktop/SeeFood/docs/research/图片翻译/prototypes/youdao-menu-tdd/test_menu_translation.py", line 63, in test_arbitrary_api_translation_is_used_and_price_pixels_are_preserved
+    self.assertEqual(result['regions'][1].get('basis'), 'original-price')
+AssertionError: 'youdao-contextual-api' != 'original-price'
+- youdao-contextual-api
++ original-price
+
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.042s
+
+FAILED (failures=1)

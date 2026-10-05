@@ -1,0 +1,15 @@
+__pycache__/
+.env*
+.venv/
+fixtures/
+results/*-raw/
+results/*.jpg
+results/*.png
+results/*.json
+results/*.html
+results/local-*/
+acceptance_previous.txt
+results/abandoned-local-fixes/*.png
+results/abandoned-local-fixes/*.jpg
+results/abandoned-local-fixes/*.json
+results/abandoned-local-fixes/*.log

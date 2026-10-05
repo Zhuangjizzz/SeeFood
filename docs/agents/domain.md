@@ -1,25 +1,25 @@
-# Domain Docs
+# 领域文档
 
-This repo uses a single-context domain layout.
+本仓库采用单一上下文的领域文档结构，共享一套领域术语和架构决策记录。
 
-## Before exploring, read these
+## 探索代码库前先阅读
 
-- `GLOSSARY.md` at the repo root, for the project's domain vocabulary.
-- ADRs in `docs/adr/` that touch the area you are about to work in.
+- 根目录的 `GLOSSARY.md`：了解项目使用的领域术语。
+- `docs/adr/` 中与你即将处理的部分相关的架构决策记录（ADR）。
 
-If either is missing, proceed silently. The `domain-modeling` skill creates domain docs lazily when terms or decisions are resolved.
+如果其中任一项缺失，直接继续，无需提示。`domain-modeling` 技能会在术语或决策确定后，按需创建领域文档。
 
-## File structure
+## 文件结构
 
-- `GLOSSARY.md`: shared domain terms and definitions.
-- `docs/adr/NNNN-short-title.md`: numbered architecture decision records.
+- `GLOSSARY.md`：共享的领域术语及其定义。
+- `docs/adr/NNNN-short-title.md`：带编号的架构决策记录。
 
-## Use the glossary's vocabulary
+## 使用术语表中的词汇
 
-Use glossary terms when naming domain concepts in issue titles, proposals, hypotheses, and tests. Follow any distinctions and avoided synonyms recorded there.
+在工单标题、方案、假设和测试中命名领域概念时，使用术语表中的词汇。遵循术语表记录的概念区别，以及需要避免使用的同义词约定。
 
-If a needed concept is missing, check whether the project already uses another term. Record a genuine vocabulary gap for `domain-modeling`.
+如果术语表中缺少所需概念，先检查项目是否已经使用其他名称。确认属于真正的术语缺口后，记录下来，供 `domain-modeling` 技能处理。
 
-## Flag ADR conflicts
+## 指出与架构决策记录的冲突
 
-If a proposal contradicts an existing ADR, identify the ADR and explain why the decision should be revisited before changing the documented direction.
+如果方案与已有的架构决策记录冲突，在改变文档中确定的方向前，先指出具体的记录，并说明为什么需要重新审视该决策。

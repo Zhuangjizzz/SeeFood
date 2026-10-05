@@ -1,15 +1,19 @@
 # SeeFood
 
-## Agent skills
+## 智能体技能
 
-### Issue tracker
+### 问题跟踪
 
-Track issues and specs in GitHub Issues for `Zhuangjizzz/SeeFood`. Before ticket operations, read `docs/agents/issue-tracker.md`.
+在 `Zhuangjizzz/SeeFood` 的 GitHub Issues 中管理问题和需求说明。操作工单前，先阅读 `docs/agents/issue-tracker.md`。
 
-### Triage labels
+### 问题分流标签
 
-Use the five default triage labels. Before assigning a triage role, read `docs/agents/triage-labels.md`.
+使用五个默认的问题分流标签。为工单分配分流类别前，先阅读 `docs/agents/triage-labels.md`。
 
-### Domain docs
+### 领域文档
 
-Use a single-context layout: root `GLOSSARY.md` and `docs/adr/`. Before exploring the codebase, read `docs/agents/domain.md`.
+采用单一上下文的文档结构：领域术语统一放在根目录的 `GLOSSARY.md`，架构决策记录统一放在 `docs/adr/`。探索代码库前，先阅读 `docs/agents/domain.md`。
+
+### 界面开发检查
+
+开发小程序前端界面时，按对应流程使用 `wechatide` 编译并检查模拟器中的受影响页面。

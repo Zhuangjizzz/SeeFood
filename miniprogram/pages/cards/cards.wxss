@@ -17,7 +17,7 @@
 .animate .communication-card { transition: transform 380ms cubic-bezier(.2,.7,.2,1), opacity 300ms ease; }
 .tone-blue { background: #e2e9e9; border-color: #c3cfcf; box-shadow: inset 0 2rpx #ffffffb8, 0 3rpx #d0dada, 0 6rpx #c0cbcb, 0 13rpx 22rpx #2f493018; }
 .tone-orange { background: #eee4d4; border-color: #d6c9b8; box-shadow: inset 0 2rpx #ffffffb8, 0 3rpx #e0d5c4, 0 6rpx #d0c4b2, 0 13rpx 22rpx #2f493018; }
-.card-category { display: flex; align-items: center; gap: 10rpx; color: #61735b; font-size: 22rpx; padding-right: 24rpx; }
+.card-category { display: flex; align-items: center; gap: 10rpx; color: #61735b; font-size: 22rpx; padding-right: 70rpx; min-height: 42rpx; }
 .category-dot { width: 10rpx; height: 10rpx; flex-shrink: 0; border-radius: 50%; background: #6f8760; }
 .communication-title { font-size: 32rpx; font-weight: 600; line-height: 1.3; margin-top: 14rpx; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .communication-source { color: #35533a; font-size: 29rpx; line-height: 1.43; margin-top: 14rpx; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; white-space: pre-wrap; }
@@ -30,3 +30,19 @@
 .card-error { display: flex; align-items: center; gap: 12rpx; padding: 18rpx; margin-bottom: 14rpx; background: #f0e4d3; color: #755236; border-radius: 16rpx; font-size: 24rpx; }
 .card-error text { flex: 1; }
 .card-error button { flex-shrink: 0; min-height: 88rpx; padding: 12rpx; display: flex; align-items: center; }
+.reorder-row { display: flex; align-items: center; gap: 12rpx; min-height: 88rpx; color: #61735b; font-size: 23rpx; line-height: 1.4; padding-bottom: 12rpx; }
+.reorder-row text { flex: 1; min-width: 0; }
+.cancel-drag { flex-shrink: 0; min-width: 88rpx; min-height: 88rpx; padding: 12rpx; color: #315d43; }
+.card-drop-slot { position: absolute; top: 12rpx; left: 0; right: 0; height: 370rpx; border: 3rpx dashed #7a9570; border-radius: 24rpx; background: #dce6d880; color: #53714e; padding: 22rpx; font-size: 24rpx; }
+.is-dragging .communication-card { transition: transform 150ms ease; }
+.is-dragging .lifted-card { transition: none; opacity: .94; box-shadow: inset 0 2rpx #ffffffb8, 0 5rpx #cbd5c1, 0 18rpx 36rpx #294b3640; }
+.card-menu-button { position: absolute; top: 2rpx; right: 6rpx; z-index: 2; width: 88rpx; min-height: 88rpx; display: flex; justify-content: center; align-items: center; color: #435f42; font-size: 38rpx; letter-spacing: 3rpx; border-radius: 22rpx; }
+.card-menu-overlay { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; background: #263d285e; padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom)); }
+.card-menu { width: 100%; padding: 30rpx; border-radius: 28rpx; background: #faf8f2; box-shadow: 0 12rpx 40rpx #1e352b38; }
+.card-menu-heading { color: #64735d; font-size: 24rpx; }
+.card-menu-title { color: #294f35; font-size: 32rpx; line-height: 1.4; font-weight: 600; margin-top: 12rpx; overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.card-menu-explanation { color: #64735d; font-size: 25rpx; line-height: 1.5; margin: 16rpx 0 22rpx; }
+.card-menu-delete, .card-menu-cancel { min-height: 88rpx; display: flex; justify-content: center; align-items: center; border-radius: 18rpx; padding: 16rpx 22rpx; font-size: 28rpx; line-height: 1.4; }
+.card-menu-delete { color: #873d31; background: #f2e3db; }
+.card-menu-cancel { margin-top: 12rpx; color: #436044; }
+.card-menu-error { margin-bottom: 18rpx; font-size: 25rpx; line-height: 1.5; color: #873d31; }

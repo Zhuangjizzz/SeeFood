@@ -1,5 +1,6 @@
 const { makeId } = require('./identity');
 const { CATEGORIES, COLORS } = require('./card-repository');
+function has(value, key) { return Object.prototype.hasOwnProperty.call(value, key); }
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function defaultTitle(text) { return Array.from(text.trim().replace(/\s+/g, ' ')).slice(0, 32).join(''); }
 
@@ -73,17 +74,17 @@ function createCardDrafts({ repository, library, translations, getLanguage }) {
       if (!draft || needsResume) return { ok: false, error: 'draft-not-found' };
       if (saveError === 'storage-read') return { ok: false, error: saveError };
       if (Object.keys(patch).some((key) => !['text', 'textZh', 'title', 'category', 'color'].includes(key) || typeof patch[key] !== 'string') ||
-          (Object.hasOwn(patch, 'category') && !CATEGORIES.includes(patch.category)) || (Object.hasOwn(patch, 'color') && !COLORS.includes(patch.color))) return { ok: false, error: 'INPUT_UNSUPPORTED' };
+          (has(patch, 'category') && !CATEGORIES.includes(patch.category)) || (has(patch, 'color') && !COLORS.includes(patch.color))) return { ok: false, error: 'INPUT_UNSUPPORTED' };
       const next = clone(draft);
       if (!Object.keys(patch).some((key) => next[key] !== patch[key])) return { ok: true };
       Object.assign(next, patch); next.inputVersion += 1; next.operation = null; next.job = null; next.error = null;
-      if (Object.hasOwn(patch, 'title')) next.titleEdited = !!patch.title.trim();
+      if (has(patch, 'title')) next.titleEdited = !!patch.title.trim();
       if (!next.titleEdited) next.title = defaultTitle(next.text);
-      if (Object.hasOwn(patch, 'text')) {
+      if (has(patch, 'text')) {
         next.needsChineseReview = next.sourceLanguage !== 'zh-CN';
         if (next.sourceLanguage === 'zh-CN') next.textZh = next.text;
       }
-      if (Object.hasOwn(patch, 'textZh')) next.needsChineseReview = false;
+      if (has(patch, 'textZh')) next.needsChineseReview = false;
       return persist(next);
     },
     translate() {

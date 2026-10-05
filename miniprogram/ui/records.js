@@ -5,6 +5,7 @@ const { getDishesCopy, presentDish } = require('../core/dishes-copy');
 const { getImagesCopy } = require('../core/images-copy');
 const { getHistoryCopy } = require('../core/history-copy');
 const { getChatCopy } = require('../core/chat-copy');
+const { getStageRetryCopy } = require('../core/stage-retry-copy');
 
 const { getRecoveryCopy } = require('../core/recovery-copy');
 
@@ -68,11 +69,14 @@ function showResult(target, recordId) {
     output.reasonKey === 'images.no_translatable_text' ? imageCopy.noText : imageCopy.notRequired;
   const cardsJob = jobState.unsavedJob && jobState.unsavedJob.target.imageId === currentImage.id ? jobState.unsavedJob : currentImage.stageJobs.image_cards;
   const cardsAcceptancePending = !cardsJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_cards);
+  const cardsRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_cards');
+  const translationRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_translation');
   const cards = jobState.unsavedJob && cardsJob === jobState.unsavedJob && cardsJob.state === 'succeeded' ?
     (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
     historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
+    stageCopy: getStageRetryCopy(application.language), cardsRetry, translationRetry,
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: uploadStatus.originalMissing,
     originalSaveLabel: currentImage.original.saveState === 'saved' ? imageCopy.saved : imageCopy.saveFailed,

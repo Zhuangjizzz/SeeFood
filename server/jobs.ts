@@ -108,6 +108,20 @@ export function createJobService(options: JobServiceOptions) {
       return job;
     });
   }
+  function retry(id: string, owner: string, key: unknown, request: Json) {
+    validate('RetryRequest', request);
+    row(id, owner);
+    return idempotent(owner, 'POST', `/v1/jobs/${id}/retry`, key, request, () => {
+      const job = get(id, owner);
+      if (job.state !== 'failed' || job.error?.retryable !== true || job.attempt !== request.expectedAttempt) {
+        return reject(409, 'JOB_STATE_CONFLICT', { currentAttempt: job.attempt, state: job.state });
+      }
+      const next = { ...job, state: 'queued', attempt: job.attempt + 1, revision: job.revision + 1, error: null };
+      validate('Job', next);
+      database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(next), id);
+      return next;
+    });
+  }
   async function execute(saved: any) {
       if (stopped) return;
       let job = JSON.parse(String(saved.response));
@@ -155,6 +169,6 @@ export function createJobService(options: JobServiceOptions) {
     if (!stopped) work();
   }, interval);
   timer.unref();
-  return { accept, get, list, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
+  return { accept, retry, get, list, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
 
 }

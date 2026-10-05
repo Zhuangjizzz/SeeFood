@@ -51,3 +51,4 @@
 .variant-button[disabled] { background: #f0f0e9; color: #929c89; }
 .translation-progress { font-size: 25rpx; line-height: 1.6; color: #536b4c; margin: 16rpx 6rpx 6rpx; overflow-wrap: anywhere; }
 .image-save-states { font-size: 22rpx; line-height: 1.6; color: #6b7d62; margin: 8rpx 6rpx 16rpx; overflow-wrap: anywhere; }
+.stage-actions .text-button { min-height: 88rpx; white-space: normal; line-height: 1.45; padding: 20rpx 24rpx; text-align: left; }

@@ -33,6 +33,12 @@
     </button>
     <view wx:else class="notice missing-original" role="alert">{{imageView.variant === 'translation' ? imageCopy.missingTranslation : recordCopy.missingOriginal}}</view>
     <view class="translation-progress" role="status">{{translationStateLabel}}</view>
+    <view class="stage-actions">
+      <view wx:if="{{translationRetry.retryPending}}" class="notice" role="status">{{stageCopy.retryPending}}</view>
+      <view wx:if="{{translationRetry.error}}" class="notice" role="alert">{{stageCopy.retryError}}</view>
+      <button wx:if="{{translationRetry.canRetry}}" class="text-button retry-image-stage" data-id="{{currentImageId}}" data-kind="image_translation" bindtap="retryImageStage" disabled="{{offline}}">{{stageCopy.retryTranslation}}</button>
+      <button wx:if="{{translationRetry.canContinue}}" class="text-button continue-image-stage" data-id="{{currentImageId}}" data-kind="image_translation" bindtap="continueImageStage" disabled="{{offline}}">{{stageCopy.continueTranslation}}</button>
+    </view>
     <view class="image-save-states">
       <view>{{imageCopy.originalSave}} · {{originalSaveLabel}}</view>
       <view wx:if="{{translationJob.output.state === 'ready'}}">{{imageCopy.translationSave}} · {{translationSaveLabel}}</view>
@@ -71,6 +77,12 @@
     <view wx:elif="{{uploadState === 'failed' && !uploadLocalFailure && !uploadOriginalMissing}}" class="notice upload-error" role="alert">{{uploadCopy.failedBody}}</view>
     <button wx:if="{{canRetryUpload}}" class="primary-button retry-upload" bindtap="retryUpload" disabled="{{offline}}">{{uploadCopy.retryUpload}}</button>
     <view class="cards-progress" role="status">{{cardsStateLabel}}</view>
+    <view class="stage-actions">
+      <view wx:if="{{cardsRetry.retryPending}}" class="notice" role="status">{{stageCopy.retryPending}}</view>
+      <view wx:if="{{cardsRetry.error}}" class="notice" role="alert">{{stageCopy.retryError}}</view>
+      <button wx:if="{{cardsRetry.canRetry}}" class="text-button retry-image-stage" data-id="{{currentImageId}}" data-kind="image_cards" bindtap="retryImageStage" disabled="{{offline}}">{{stageCopy.retryCards}}</button>
+      <button wx:if="{{cardsRetry.canContinue}}" class="text-button continue-image-stage" data-id="{{currentImageId}}" data-kind="image_cards" bindtap="continueImageStage" disabled="{{offline}}">{{stageCopy.continueCards}}</button>
+    </view>
     <view wx:if="{{canLeave}}" class="pending-explanation accepted-explanation">{{dishCopy.accepted}}</view>
     <view wx:if="{{cardsSaveFailed}}" class="notice result-save-error" role="alert">
       <view>{{dishCopy.saveFailed}}</view><button class="text-button" bindtap="retryResultSave">{{dishCopy.retrySave}}</button>

@@ -3,7 +3,7 @@ const { LANGUAGES } = require('./i18n');
 const { INPUT_LIMITS } = require('./capture');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
-function createRecords({ store, files, now = () => new Date().toISOString() }) {
+function createRecords({ store, files, translationFiles, now = () => new Date().toISOString() }) {
   const submissions = new Map();
   const activeSaves = new Map();
   function readRecords() {
@@ -21,6 +21,10 @@ function createRecords({ store, files, now = () => new Date().toISOString() }) {
       if (image.original.saveState === 'saved' && !files.hasOriginal(image.localOriginalPath, image.sizeBytes)) {
         image.original.saveState = 'failed';
         image.original.error = 'original-missing';
+      }
+      if (image.translation && image.translation.saveState === 'saved' &&
+          (!translationFiles || !translationFiles.hasTranslation(image.translation.localPath, image.translation.sizeBytes))) {
+        image.translation.saveState = 'failed'; image.translation.error = 'translation-missing';
       }
     });
     return result;

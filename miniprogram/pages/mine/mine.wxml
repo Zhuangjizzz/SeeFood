@@ -18,5 +18,5 @@
     <button class="setting setting-history" data-action="history" bindtap="openHistory" hover-class="press"><image class="setting-icon" src="/assets/history.png" aria-hidden="true" /><view class="setting-copy"><text class="setting-title">{{copy.history}}</text><text class="setting-detail">{{copy.historyDescription}}</text></view><text class="chevron">›</text></button>
     <button class="setting setting-language" data-action="language" bindtap="openLanguage" hover-class="press"><image class="setting-icon" src="/assets/globe.png" aria-hidden="true" /><view class="setting-copy"><text class="setting-title">{{copy.language}}</text><text class="setting-detail">{{languageName}}</text></view><text class="chevron">›</text></button>
   </view>
-  <view class="local-note"><text class="local-title">{{copy.localData}}</text><text>{{copy.localDataBody}}</text></view>
+  <view class="local-note"><text class="local-title">{{copy.localData}}</text><text>{{historyCopy.localBody}}</text></view>
 </view>

@@ -7,12 +7,12 @@ function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
   return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
 }
-function createChat({ records, backend, preferences, contexts, getLanguage, pollMs = 100 }) {
+function createChat({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const recovery = createJobRecovery({ backend });
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* Page lifetime does not control persistence. */ } }); }
   function read(id) { const result = records.getRecord(id); if (!result.ok) throw { code: result.error }; return result.record; }
-  function save(id, update) { const result = records.updateRecord(id, update); if (!result.ok) throw { code: result.error }; notify(id); return result.record; }
+  function save(id, update, publish = true) { const result = records.updateRecord(id, update); if (!result.ok) throw { code: result.error }; if (publish) notify(id); return result.record; }
   function pendingMessage(record) { return (record.messages || []).find((message) => message.role === 'assistant' && ['sending', 'waiting', 'partial'].includes(message.state)); }
   function checked(record, job) {
     const target = job && job.target; const entry = target && record.chatRequests && record.chatRequests[target.assistantMessageId];
@@ -58,8 +58,8 @@ function createChat({ records, backend, preferences, contexts, getLanguage, poll
         assistant.state = job.state === 'succeeded' ? 'complete' : ['failed', 'cancelled', 'expired'].includes(job.state) ? 'failed' : job.output ? 'partial' : 'waiting';
         assistant.jobId = job.jobId;
         if (job.output) Object.assign(assistant, { text: job.output.text, contentLanguage: job.output.contentLanguage, attachments: clone(job.output.attachments) });
-      });
-      unsaved.delete(id); errors.delete(id); return { ok: true, jobId: job.jobId };
+      }, false);
+      unsaved.delete(id); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   async function poll(id, assistantId) {
@@ -85,6 +85,7 @@ function createChat({ records, backend, preferences, contexts, getLanguage, poll
     const language = getLanguage();
     if (typeof text !== 'string' || !text.trim() || !LANGUAGES.some((item) => item.code === language)) return Promise.resolve({ ok: false, error: 'INPUT_UNSUPPORTED' });
     return run(id, async () => {
+      if (network) await network.requireOnline();
       if (!backend.enabled) throw { code: 'backend-unavailable' };
       if (pendingMessage(read(id))) throw { code: 'JOB_STATE_CONFLICT' };
       const assistantId = makeId('assistant'); const userId = makeId('user');

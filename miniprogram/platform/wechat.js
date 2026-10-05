@@ -15,7 +15,10 @@ const { createCardDrafts } = require('../core/card-drafts');
 const { createImageView } = require('../core/image-view');
 const { createWechatTranslationFiles } = require('./translation-files');
 const { createRecordContexts } = require('../core/record-context');
+const { createWechatNetwork } = require('./network');
+const { createHistory } = require('../core/history');
 const { createChat } = require('../core/chat');
+const { createImageBatches } = require('../core/image-batches');
 
 
 function createWechatServices(platform, options = {}) {
@@ -35,18 +38,21 @@ function createWechatServices(platform, options = {}) {
   const capture = createCapture({ media: createWechatMedia(platform), getLanguage: () => application.getState().language });
   const cardLibrary = createCardLibrary({ store, getLanguage: () => application.getState().language });
   const translationFiles = createWechatTranslationFiles(platform);
-  const records = createRecords({ store, files: createWechatOriginalFiles(platform), translationFiles });
-  const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform));
+  const records = createRecords({ store, now: options.now, files: createWechatOriginalFiles(platform), translationFiles });
+  const network = createWechatNetwork(platform);
+  const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform), network);
   const contexts = createRecordContexts({ records, backend });
-  const uploads = createUploads({ records, preferences: application.preferences, backend, contexts });
-  const jobs = createJobs({ records, backend, translationFiles });
+  const uploads = createUploads({ records, network, preferences: application.preferences, backend, contexts });
+  const jobs = createJobs({ records, backend, translationFiles, network });
+  const imageBatches = createImageBatches({ records, uploads, jobs });
   const textTranslations = createTextTranslations({ backend });
   const cardRepository = createCardRepository({ store, getLanguage: () => application.getState().language });
   const cardDrafts = createCardDrafts({ repository: cardRepository, library: cardLibrary, translations: textTranslations, getLanguage: () => application.getState().language });
   const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language });
-  const chat = createChat({ records, backend, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const chat = createChat({ records, backend, network, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
-  return { cardRepository, cardDrafts, textTranslations, textExchange, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  const history = createHistory({ records, application, jobs, chat, uploads, store });
+  return { imageBatches, cardRepository, cardDrafts, textTranslations, textExchange, network, history, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 }
 
 module.exports = { createWechatServices };

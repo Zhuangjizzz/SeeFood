@@ -145,6 +145,7 @@ test('a reopened client exposes an interrupted translated-file save for manual r
   assert.equal(services.records.getRecord(id).record.images[0].translation.saveState, 'saving');
   const reopened = createWechatServices(disk.platform, { backend });
   assert.equal(reopened.imageView.open(id).translationSaveState, 'pending');
+  assert.equal(reopened.imageView.open(id).canRetryTranslationSave, true);
   disk.platform.downloadFile = download; const before = traffic.filter((entry) => entry.method === 'POST').length;
   const page = resultPage(t, reopened); page.onLoad({ recordId: id }); page.onShow();
   await page.retryTranslationSave();
@@ -168,6 +169,7 @@ test('failed translated-file writes retain cards, original and viewing choice; m
   assert.equal(page.data.imageView.variant, 'original'); assert.equal(page.data.dishCards.length, 1);
   assert.notEqual(page.data.saveLabel, page.data.recordCopy.saved); assert.equal(page.data.originalSaveLabel, page.data.imageCopy.saved);
   assert.equal(page.data.translationSaveLabel, page.data.imageCopy.saveFailed);
+  assert.equal(page.data.imageView.canRetryTranslationSave, true);
   assert.equal(page.data.imageView.translationAvailable, true);
   const before = traffic.filter((entry) => entry.method === 'POST').length;
   disk.fileSystem.copyFile = copy; await page.retryTranslationSave();
@@ -191,7 +193,7 @@ test('unsaved translated metadata stays distinct from successful cards and saves
   };
   assert.equal((await services.jobs.startImageTranslation(id)).error, 'storage-write');
   assert.equal(page.data.dishCards.length, 1); assert.equal(page.data.imageView.variant, 'original');
-  assert.equal(page.data.translationJob.state, 'succeeded'); assert.equal(page.data.imageView.translationUnsaved, true);
+  assert.equal(page.data.translationJob.state, 'succeeded'); assert.equal(page.data.imageView.translationUnsaved, true); assert.equal(page.data.imageView.canRetryTranslationSave, true);
   assert.equal(page.data.saveLabel, page.data.recordCopy.saveFailed); assert.equal(page.data.originalSaveLabel, page.data.imageCopy.saved);
   const ready = services.jobs.getState(id).unsavedJobs.find((job) => job.kind === 'image_translation');
   assert.equal(services.jobs.applyJob(id, { ...ready, state: 'running', output: null, revision: ready.revision - 1 }).error, 'stale-job');

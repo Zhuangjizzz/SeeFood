@@ -20,8 +20,8 @@ Page({
     this.library.reload();
     this.renderLibrary(false, true);
   },
-  onHide() { this.stopGestures(); this.flushPosition(); },
-  onUnload() { this.stopGestures(); this.flushPosition(); },
+  onHide() { this.stopGestures(); this.flushPosition(); if (this.library) this.library.closeMenu(); },
+  onUnload() { this.stopGestures(); this.flushPosition(); if (this.library) this.library.closeMenu(); },
   openLanguage: page.openLanguage,
   renderLibrary(animate, restorePosition) {
     const state = this.library.getState();
@@ -43,8 +43,10 @@ Page({
       scrollEnabled: state.expanded || collapseOffset > 0,
       categories: CATEGORIES.map((id) => ({ id, label: copy[id], count: state.counts[id] })),
       cardCount: state.cards.length, totalCount: state.counts.all,
+      menuCard: state.menuCard,
+      deletionError: state.deleteError ? copy[state.deleteError === 'storage-read' ? 'deleteReadFailed' : 'deleteFailed'] : '',
       showExpandHint: state.showExpandHint && state.cards.length > 0,
-      cardError: state.error ? copy[state.error === 'storage-read' ? 'storageRead' : 'storageWrite'] : '',
+      cardError: state.deleteError ? copy[state.deleteError === 'storage-read' ? 'deleteReadFailed' : 'deleteFailed'] : state.error ? copy[state.error === 'storage-read' ? 'storageRead' : 'storageWrite'] : '',
       stageHeight: state.expanded ? Math.max(0, cards.length * stride) + 24 * this.unit : collapseOffset + Math.max((CARD_HEIGHT + 70) * this.unit, collapseOffset ? this.data.viewportHeight : 0)
     };
     if (restorePosition) {
@@ -90,6 +92,25 @@ Page({
     const card = this.library.getState().displayCard;
     if (card) wx.navigateTo({ url: '/pages/card-display/card-display?id=' + encodeURIComponent(card.id) });
   },
+  onMenuTouchStart() { this.stopGestures(); },
+  ignoreMenuEvent() {},
+  openCardMenu(event) {
+    this.stopGestures();
+    this.flushPosition();
+    this.library.openMenu(event.currentTarget.dataset.id);
+    this.renderLibrary(false, false);
+  },
+  closeCardMenu() {
+    this.library.closeMenu();
+    this.renderLibrary(false, false);
+  },
+  deleteMenuCard() {
+    if (!this.data.menuCard) return;
+    this.stopGestures();
+    clearTimeout(this.positionTimer);
+    const result = this.library.deleteCard(this.data.menuCard.id);
+    this.renderLibrary(false, result.ok);
+  },
   collapseCards() {
     this.stopGestures();
     this.flushPosition();
@@ -116,5 +137,9 @@ Page({
     const result = this.library.rememberPosition({ cardId: this.data.cards[index].id, offset: Math.max(0, (this.currentScroll || 0) - index * stride) });
     if (!result.ok) this.renderLibrary(false, false);
   },
-  retryCards() { this.library.reload(); this.renderLibrary(false, true); }
+  retryCards() {
+    if (this.library.getState().pendingDeletionId) this.library.retryDeletion();
+    else this.library.reload();
+    this.renderLibrary(false, true);
+  }
 });

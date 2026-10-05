@@ -14,6 +14,13 @@ function uploadState(images) {
   if (images.some((image) => image.uploadState === 'pending')) return 'pending';
   return 'uploaded';
 }
+function translationLabel(job, pending, imageCopy, recoveryCopy) {
+  if (!job) return pending ? recoveryCopy.checking : imageCopy.unstarted;
+  if (job.state !== 'succeeded') return imageCopy[job.state];
+  const output = job.output;
+  return output.state === 'ready' ? imageCopy.ready : output.reasonKey === 'images.already_chinese' ? imageCopy.alreadyChinese :
+    output.reasonKey === 'images.no_translatable_text' ? imageCopy.noText : imageCopy.notRequired;
+}
 function describe(record, application, uploadStatus) {
   const copy = getRecordsCopy(application.language);
   const uploadCopy = getUploadCopy(application.language);
@@ -61,31 +68,44 @@ function showResult(target, recordId) {
   const imageView = page.services().imageView.open(recordId, target.data.currentImageId);
   const currentImage = record.images.find((image) => image.id === imageView.imageId) || record.images[0];
   const translationJob = imageView.translationJob;
-  const output = translationJob && translationJob.output;
   const translationAcceptancePending = !translationJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_translation);
-  const translationStateLabel = !translationJob ? (translationAcceptancePending ? recoveryCopy.checking : imageCopy.unstarted) : translationJob.state !== 'succeeded' ? imageCopy[translationJob.state] :
-    output.state === 'ready' ? imageCopy.ready : output.reasonKey === 'images.already_chinese' ? imageCopy.alreadyChinese :
-    output.reasonKey === 'images.no_translatable_text' ? imageCopy.noText : imageCopy.notRequired;
-  const cardsJob = jobState.unsavedJob && jobState.unsavedJob.target.imageId === currentImage.id ? jobState.unsavedJob : currentImage.stageJobs.image_cards;
+  const translationStateLabel = translationLabel(translationJob, translationAcceptancePending, imageCopy, recoveryCopy);
+  const unsavedCards = (jobState.unsavedJobs || []).find((job) => job.kind === 'image_cards' && job.target.imageId === currentImage.id);
+  const cardsJob = unsavedCards || currentImage.stageJobs.image_cards;
   const cardsAcceptancePending = !cardsJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_cards);
-  const cards = jobState.unsavedJob && cardsJob === jobState.unsavedJob && cardsJob.state === 'succeeded' ?
+  const cards = unsavedCards && cardsJob.state === 'succeeded' ?
     (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
     historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
-    uploadOriginalMissing: uploadStatus.originalMissing,
+    uploadOriginalMissing: currentImage.original.saveState !== 'saved' || currentImage.uploadError === 'original-missing',
     originalSaveLabel: currentImage.original.saveState === 'saved' ? imageCopy.saved : imageCopy.saveFailed,
     translationSaveLabel: imageView.translationSaveState === 'failed' || imageView.translationUnsaved ? imageCopy.saveFailed : imageCopy[imageView.translationSaveState] || imageCopy.pending,
     dishCards: cards.filter((card) => card.sourceImageIds.includes(currentImage.id)).map((card) => presentDish(card, dishCopy)),
     cardsStateLabel: cardsJob ? dishCopy[cardsJob.state] : cardsAcceptancePending ? recoveryCopy.checking : dishCopy.unstarted,
     saveLabel: (jobState.unsavedJobs || []).length ? recordCopy.saveFailed : describe(record, application, uploadStatus).saveLabel,
-    cardsSaveFailed: !!jobState.unsavedJob, cardsReadFailed: !!jobState.error && !(jobState.unsavedJobs || []).length && (!cardsJob || !translationJob || ['queued', 'running'].includes(cardsJob.state) || ['queued', 'running'].includes(translationJob.state)),
-    canLeave: record.images.every((image) => image.uploadState === 'uploaded' && image.stageJobs.image_cards && image.stageJobs.image_translation),
+    cardsSaveFailed: !!unsavedCards, cardsReadFailed: !!jobState.error && !(jobState.unsavedJobs || []).length && (!cardsJob || !translationJob || ['queued', 'running'].includes(cardsJob.state) || ['queued', 'running'].includes(translationJob.state)),
+    canLeave: page.services().imageBatches.getState(recordId).canLeave,
 
     uploadLocalFailure: uploadStatus.error === 'storage-write' || uploadStatus.error === 'storage-read',
     recordError: '', canRetryRead: false, currentImageId: currentImage ? currentImage.id : null, currentImage,
-    imageStates: record.images.map((image) => Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, uploadStatus), image)) }));
+    imageStates: record.images.map((image) => {
+      const pending = (jobState.unsavedJobs || []).filter((job) => job.target.imageId === image.id);
+      const cards = pending.find((job) => job.kind === 'image_cards') || image.stageJobs.image_cards;
+      const translation = pending.find((job) => job.kind === 'image_translation') || image.stageJobs.image_translation;
+      const artifact = image.translation || (translation && translation.output && translation.output.artifact);
+      const saving = artifact && artifact.saveState === 'saving' && (jobState.savingTranslations || []).includes(image.id);
+      const imageUpload = page.services().uploads.getState(recordId, image.id);
+      return Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, imageUpload), image, {
+        canRetryUpload: imageUpload.canRetry,
+        cardsStateLabel: cards ? dishCopy[cards.state] : image.jobRequests && image.jobRequests.image_cards ? recoveryCopy.checking : dishCopy.unstarted,
+        translationStateLabel: translationLabel(translation, image.jobRequests && image.jobRequests.image_translation, imageCopy, recoveryCopy),
+        translationSaveLabel: pending.some((job) => job.kind === 'image_translation') ? imageCopy.saveFailed :
+          artifact && artifact.saveState === 'saved' ? imageCopy.saved : saving ? imageCopy.saving : artifact && artifact.saveState === 'failed' ? imageCopy.saveFailed : imageCopy.pending,
+        translationReady: !!artifact, resultSaveFailed: pending.length > 0
+      });
+    }) }));
   if (uploadStatus.originalMissing || uploadStatus.error && uploadStatus.error !== 'backend-unavailable' && uploadStatus.error !== 'single-image-only') {
     target.setData({ uploadState: 'failed', processingLabel: recordCopy.uploadFailed });
   }

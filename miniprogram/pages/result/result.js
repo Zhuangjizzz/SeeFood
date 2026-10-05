@@ -61,18 +61,14 @@ Page({
   },
   retryRead() { recordsPage.showResult(this, this.recordId); },
   retryProgress() { return page.services().jobs.refreshRecord(this.recordId); },
-  retryUpload() {
-    if (this.retryingUpload) return this.retryingUpload;
+  retryUpload(event) {
     const services = page.services();
-    if (!services.uploads.getState(this.recordId).canRetry) return Promise.resolve({ ok: false, error: 'upload-unavailable' });
-    const stored = services.records.getRecord(this.recordId);
-    const unfinished = stored.ok ? stored.record.images.filter((image) => image.uploadState !== 'uploaded') : [];
-    const imageId = unfinished.length === 1 ? unfinished[0].id : undefined;
-    this.retryingUpload = services.uploads.uploadRecord(this.recordId, imageId).then((result) => {
-      if (result.ok && services.jobs) return services.jobs.startImageProcessing(this.recordId, imageId);
-      return result;
-    }).finally(() => { this.retryingUpload = null; recordsPage.showResult(this, this.recordId); });
-    return this.retryingUpload;
+    const imageId = event && event.currentTarget.dataset.id;
+    const key = imageId || 'all';
+    if (!this.uploadRetries) this.uploadRetries = new Map();
+    if (!this.uploadRetries.has(key)) this.uploadRetries.set(key, services.imageBatches.retryUploads(this.recordId, imageId)
+      .finally(() => { this.uploadRetries.delete(key); recordsPage.showResult(this, this.recordId); }));
+    return this.uploadRetries.get(key);
   },
   selectImage(event) {
     this.setData({ currentImageId: event.currentTarget.dataset.id });

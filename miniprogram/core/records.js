@@ -52,6 +52,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     const record = { id, createdAt, updatedAt: createdAt, title: null, kind: batch.images[0].kind,
       sourceBatchId: batch.id, captureSignature: signature(batch), requestId: makeId('request'), contextId: makeId('context'), contextSnapshotVersion: 0,
       imageIds: batch.images.map((image) => image.id), cardIds: [], messageIds: [], saveState: 'pending',
+      captureBatches: { [batch.id]: { signature: signature(batch), imageIds: batch.images.map((image) => image.id) } },
       images: batch.images.map((image) => ({
         id: image.id, recordId: id, kind: image.kind, order: image.order,
         width: image.width, height: image.height, orientation: image.orientation || 'up',

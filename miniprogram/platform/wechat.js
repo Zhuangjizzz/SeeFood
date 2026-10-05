@@ -14,6 +14,7 @@ const { createImageView } = require('../core/image-view');
 const { createWechatTranslationFiles } = require('./translation-files');
 const { createRecordContexts } = require('../core/record-context');
 const { createChat } = require('../core/chat');
+const { createImageBatches } = require('../core/image-batches');
 
 
 function createWechatServices(platform, options = {}) {
@@ -38,11 +39,12 @@ function createWechatServices(platform, options = {}) {
   const contexts = createRecordContexts({ records, backend });
   const uploads = createUploads({ records, preferences: application.preferences, backend, contexts });
   const jobs = createJobs({ records, backend, translationFiles });
+  const imageBatches = createImageBatches({ records, uploads, jobs });
   const textTranslations = createTextTranslations({ backend });
   const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language });
   const chat = createChat({ records, backend, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
-  return { textTranslations, textExchange, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  return { imageBatches, textTranslations, textExchange, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 }
 
 module.exports = { createWechatServices };

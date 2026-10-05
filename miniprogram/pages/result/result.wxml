@@ -58,6 +58,11 @@
       <view wx:for="{{imageStates}}" wx:key="id" class="image-progress">
         <view class="image-progress-name">{{recordCopy.photo}} {{item.order + 1}} · {{item.kind === 'dish' ? copy.dish : copy.menu}}</view>
         <view class="image-progress-states"><text>{{item.processingLabel}}</text><text class="image-local-state">{{item.saveLabel}}</text></view>
+        <view class="image-stage-state cards-stage-state" role="status">{{item.cardsStateLabel}}</view>
+        <view class="image-stage-state translation-stage-state" role="status">{{item.translationStateLabel}}</view>
+        <view wx:if="{{item.translationReady}}" class="image-local-state">{{imageCopy.translationSave}} · {{item.translationSaveLabel}}</view>
+        <view wx:if="{{item.resultSaveFailed}}" class="image-local-state" role="alert">{{imageCopy.saveFailed}}</view>
+        <button wx:if="{{item.canRetryUpload && imageStates.length > 1}}" class="text-button retry-image-upload" data-id="{{item.id}}" bindtap="retryUpload">{{uploadCopy.retryUpload}}</button>
       </view>
     </view>
     <view wx:if="{{uploadLocalFailure}}" class="notice upload-save-error" role="alert">{{uploadCopy.localFailure}}</view>
@@ -67,7 +72,7 @@
     <view wx:elif="{{uploadState === 'uploading'}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadingBody}}</view>
     <view wx:elif="{{uploadState === 'uploaded' && !cardsJob && !cardsAcceptancePending}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadedBody}}</view>
     <view wx:elif="{{uploadState === 'failed' && !uploadLocalFailure && !uploadOriginalMissing}}" class="notice upload-error" role="alert">{{uploadCopy.failedBody}}</view>
-    <button wx:if="{{canRetryUpload}}" class="primary-button retry-upload" bindtap="retryUpload">{{uploadCopy.retryUpload}}</button>
+    <button wx:if="{{canRetryUpload && imageStates.length === 1}}" class="primary-button retry-upload" bindtap="retryUpload">{{uploadCopy.retryUpload}}</button>
     <view class="cards-progress" role="status">{{cardsStateLabel}}</view>
     <view wx:if="{{canLeave}}" class="pending-explanation accepted-explanation">{{dishCopy.accepted}}</view>
     <view wx:if="{{cardsSaveFailed}}" class="notice result-save-error" role="alert">

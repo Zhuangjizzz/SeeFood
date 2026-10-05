@@ -2,6 +2,7 @@ const page = require('./page');
 const { getRecordsCopy, recordError } = require('../core/records-copy');
 const { getUploadCopy } = require('../core/upload-copy');
 const { getDishesCopy, presentDish } = require('../core/dishes-copy');
+const { getChatCopy } = require('../core/chat-copy');
 
 function dateTime(value) {
   const date = new Date(value);
@@ -60,7 +61,7 @@ function showResult(target, recordId) {
   const cards = jobState.unsavedJob && cardsJob === jobState.unsavedJob && cardsJob.state === 'succeeded' ?
     (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { record, copy: application.copy, recordCopy,
-    uploadCopy: getUploadCopy(application.language), dishCopy, cardsJob,
+    uploadCopy: getUploadCopy(application.language), dishCopy, cardsJob, chatCopy: getChatCopy(application.language),
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: uploadStatus.originalMissing,
     dishCards: cards.filter((card) => card.sourceImageIds.includes(currentImage.id)).map((card) => presentDish(card, dishCopy)),

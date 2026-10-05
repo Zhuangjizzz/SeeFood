@@ -1,6 +1,6 @@
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
-function createUploads({ records, preferences, backend }) {
+function createUploads({ records, preferences, backend, contexts = require('./record-context').createRecordContexts({ records, backend }) }) {
   const active = new Map();
   const resuming = new Set();
   const errors = new Map();
@@ -23,15 +23,7 @@ function createUploads({ records, preferences, backend }) {
         cards: clone(record.cards || []), messages: clone(record.messages || []), preferences: preferences.getSnapshot() } };
   }
   async function publishContext(id) {
-    const record = read(id);
-    const pending = record.pendingContextSnapshot;
-    const result = await backend.putContext(record.contextId, pending);
-    if (result.contextId !== record.contextId || result.snapshotVersion !== pending.snapshotVersion) throw { code: 'SNAPSHOT_CONFLICT' };
-    return save(id, (draft) => {
-      draft.contextSnapshotVersion = result.snapshotVersion;
-      draft.contextSnapshot = pending;
-      delete draft.pendingContextSnapshot;
-    });
+    const result = await contexts.publishPending(id); notify(id); return result;
   }
   async function upload(id) {
     let record;
@@ -135,7 +127,7 @@ function createUploads({ records, preferences, backend }) {
         const previous = records.getRecord(id);
         if (previous.ok && previous.record.images.some((image) => image.uploadState !== 'pending')) resuming.add(id);
         errors.delete(id);
-        active.set(id, Promise.resolve().then(() => upload(id)).then((result) => {
+        active.set(id, contexts.run(id, () => upload(id)).then((result) => {
           if (!result.ok) errors.set(id, result.error);
           return result;
         }).finally(() => { active.delete(id); resuming.delete(id); notify(id); }));

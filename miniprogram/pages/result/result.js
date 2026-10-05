@@ -34,6 +34,10 @@ Page({
     if (!this.data.dishCards.some((card) => card.id === cardId)) return;
     wx.navigateTo({ url: `/pages/dish-detail/dish-detail?recordId=${encodeURIComponent(this.recordId)}&cardId=${encodeURIComponent(cardId)}` });
   },
+  openChat() {
+    if (!this.data.record) return;
+    wx.navigateTo({ url: `/pages/chat/chat?recordId=${encodeURIComponent(this.recordId)}` });
+  },
   retryResultSave() { page.services().jobs.retrySave(this.recordId); recordsPage.showResult(this, this.recordId); },
   viewOriginal() {
     if (!this.data.currentImage || this.data.currentImage.original.saveState !== 'saved' || !this.data.currentImage.localOriginalPath) return;

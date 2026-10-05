@@ -1,0 +1,3931 @@
+{
+  "orientation": "Up",
+  "RequestId": "3ebe18c6-ca83-45f2-9908-4e6092b9a1bb",
+  "image_size": [
+    4800,
+    900
+  ],
+  "lanFrom": "zh-CHS",
+  "render_image": {
+    "binary_removed": true,
+    "bytes": 406245,
+    "size": [
+      900,
+      4800
+    ],
+    "format": "JPEG"
+  },
+  "textAngle": "0.0",
+  "errorCode": "0",
+  "AIGC": {
+    "Label": "1",
+    "ContentProducer": "001191110108785503985K00000",
+    "ProduceID": "9111010878_1791217132878_8deb8856",
+    "ContentPropagator": "001191110108785503985K00000",
+    "PropagateID": "9111010878_1791217132878_2f9d5a77",
+    "ReservedCode1": {
+      "SecurityData": {
+        "Type": "TC260PG",
+        "Version": 1,
+        "Bindings": [
+          {
+            "params": null,
+            "AlgID": "1.2.156.10197.1.401",
+            "Type": "Hash",
+            "Value": "9be5816ba221ca89f7af3b9ae36c254c6d2d359af35d667c7b277f837667722e",
+            "ID": 1,
+            "CntSel": "DFT"
+          }
+        ],
+        "PubSD": [
+          {
+            "Type": "DS",
+            "AlgID": "1.2.156.10197.1.501",
+            "ID": 1,
+            "TBSData": {
+              "Type": "Bnd",
+              "ID": 1
+            },
+            "Signature": "1a5dab99f7e8ea5fb97d5ac9d3e56d3c40b9d39ef9bc152ccd8594884b76a9084ec6b538e7aa18d8bf2ab81cc17ad0d47234aa0ba3a70b86044129fef8669dc8"
+          },
+          {
+            "Type": "PubKey",
+            "AlgID": "1.2.156.10197.1.501",
+            "KeyValue": "043215711283c6bd1e4cb1ecd648d1c39517706b556404093c9ec7f9dc2242dfd17f2c22f862a497b62d26066f8cea5077d5aea08a9f72581f9ccc4957647a5a59"
+          }
+        ]
+      }
+    },
+    "ReservedCode2": {
+      "SecurityData": {
+        "Type": "TC260PG",
+        "Version": 1,
+        "Bindings": [
+          {
+            "params": null,
+            "AlgID": "1.2.156.10197.1.401",
+            "Type": "Hash",
+            "Value": "9be5816ba221ca89f7af3b9ae36c254c6d2d359af35d667c7b277f837667722e",
+            "ID": 1,
+            "CntSel": "DFT"
+          }
+        ],
+        "PubSD": [
+          {
+            "Type": "DS",
+            "AlgID": "1.2.156.10197.1.501",
+            "ID": 1,
+            "TBSData": {
+              "Type": "Bnd",
+              "ID": 1
+            },
+            "Signature": "1a5dab99f7e8ea5fb97d5ac9d3e56d3c40b9d39ef9bc152ccd8594884b76a9084ec6b538e7aa18d8bf2ab81cc17ad0d47234aa0ba3a70b86044129fef8669dc8"
+          },
+          {
+            "Type": "PubKey",
+            "AlgID": "1.2.156.10197.1.501",
+            "KeyValue": "043215711283c6bd1e4cb1ecd648d1c39517706b556404093c9ec7f9dc2242dfd17f2c22f862a497b62d26066f8cea5077d5aea08a9f72581f9ccc4957647a5a59"
+          }
+        ]
+      }
+    }
+  },
+  "lanTo": "ja",
+  "lines": [
+    {
+      "textHeight": 63,
+      "boundingBox": "51,45,414,50",
+      "words": [
+        {
+          "boundingBox": "51,40,41,63",
+          "text": "中",
+          "word": "中"
+        },
+        {
+          "boundingBox": "94,40,40,63",
+          "text": "文",
+          "word": "文"
+        },
+        {
+          "boundingBox": "136,40,41,63",
+          "text": "菜",
+          "word": "菜"
+        },
+        {
+          "boundingBox": "179,40,56,63",
+          "text": "单",
+          "word": "单"
+        },
+        {
+          "boundingBox": "237,40,21,63",
+          "text": "·",
+          "word": "·"
+        },
+        {
+          "boundingBox": "279,40,45,63",
+          "text": "原",
+          "word": "原"
+        },
+        {
+          "boundingBox": "326,40,44,63",
+          "text": "型",
+          "word": "型"
+        },
+        {
+          "boundingBox": "372,40,40,63",
+          "text": "测",
+          "word": "测"
+        },
+        {
+          "boundingBox": "414,40,51,63",
+          "text": "试",
+          "word": "试"
+        }
+      ],
+      "text": "中文菜单· 原型测试",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 33,
+      "boundingBox": "51,115,317,30",
+      "words": [
+        {
+          "boundingBox": "51,115,25,33",
+          "text": "合",
+          "word": "合"
+        },
+        {
+          "boundingBox": "77,115,24,33",
+          "text": "成",
+          "word": "成"
+        },
+        {
+          "boundingBox": "102,115,25,33",
+          "text": "样",
+          "word": "样"
+        },
+        {
+          "boundingBox": "128,115,28,33",
+          "text": "本",
+          "word": "本"
+        },
+        {
+          "boundingBox": "157,115,26,33",
+          "text": "，",
+          "word": "，"
+        },
+        {
+          "boundingBox": "184,115,23,33",
+          "text": "价",
+          "word": "价"
+        },
+        {
+          "boundingBox": "208,115,24,33",
+          "text": "格",
+          "word": "格"
+        },
+        {
+          "boundingBox": "233,115,26,33",
+          "text": "仅",
+          "word": "仅"
+        },
+        {
+          "boundingBox": "260,115,25,33",
+          "text": "用",
+          "word": "用"
+        },
+        {
+          "boundingBox": "286,115,24,33",
+          "text": "于",
+          "word": "于"
+        },
+        {
+          "boundingBox": "311,115,26,33",
+          "text": "测",
+          "word": "测"
+        },
+        {
+          "boundingBox": "338,115,30,33",
+          "text": "试",
+          "word": "试"
+        }
+      ],
+      "text": "合成样本，价格仅用于测试",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "51,225,163,40",
+      "words": [
+        {
+          "boundingBox": "51,225,37,43",
+          "text": "宫",
+          "word": "宫"
+        },
+        {
+          "boundingBox": "90,225,37,43",
+          "text": "保",
+          "word": "保"
+        },
+        {
+          "boundingBox": "129,225,37,43",
+          "text": "鸡",
+          "word": "鸡"
+        },
+        {
+          "boundingBox": "168,225,47,43",
+          "text": "丁",
+          "word": "丁"
+        }
+      ],
+      "text": "宫保鸡丁",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,220,62,35",
+      "words": [
+        {
+          "boundingBox": "716,218,61,43",
+          "text": "¥38",
+          "word": "¥38"
+        }
+      ],
+      "text": "¥38",
+      "lang": "ca",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "51,365,163,40",
+      "words": [
+        {
+          "boundingBox": "51,365,37,43",
+          "text": "麻",
+          "word": "麻"
+        },
+        {
+          "boundingBox": "90,365,37,43",
+          "text": "婆",
+          "word": "婆"
+        },
+        {
+          "boundingBox": "129,365,37,43",
+          "text": "豆",
+          "word": "豆"
+        },
+        {
+          "boundingBox": "168,365,47,43",
+          "text": "腐",
+          "word": "腐"
+        }
+      ],
+      "text": "麻婆豆腐",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,360,62,35",
+      "words": [
+        {
+          "boundingBox": "716,358,61,43",
+          "text": "¥22",
+          "word": "¥22"
+        }
+      ],
+      "text": "¥22",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "51,505,163,40",
+      "words": [
+        {
+          "boundingBox": "51,505,40,43",
+          "text": "番",
+          "word": "番"
+        },
+        {
+          "boundingBox": "92,505,35,43",
+          "text": "茄",
+          "word": "茄"
+        },
+        {
+          "boundingBox": "129,505,37,43",
+          "text": "炒",
+          "word": "炒"
+        },
+        {
+          "boundingBox": "168,505,47,43",
+          "text": "蛋",
+          "word": "蛋"
+        }
+      ],
+      "text": "番茄炒蛋",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,500,62,35",
+      "words": [
+        {
+          "boundingBox": "716,498,61,43",
+          "text": "¥18",
+          "word": "¥18"
+        }
+      ],
+      "text": "¥18",
+      "lang": "ko",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,640,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,638,40,53",
+          "text": "清",
+          "word": "清"
+        },
+        {
+          "boundingBox": "93,638,36,53",
+          "text": "蒸",
+          "word": "蒸"
+        },
+        {
+          "boundingBox": "131,638,37,53",
+          "text": "鲈",
+          "word": "鲈"
+        },
+        {
+          "boundingBox": "169,638,46,53",
+          "text": "鱼",
+          "word": "鱼"
+        }
+      ],
+      "text": "清蒸鲈鱼",
+      "lang": "zh",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,780,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,778,37,53",
+          "text": "鱼",
+          "word": "鱼"
+        },
+        {
+          "boundingBox": "89,778,40,53",
+          "text": "香",
+          "word": "香"
+        },
+        {
+          "boundingBox": "131,778,37,53",
+          "text": "肉",
+          "word": "肉"
+        },
+        {
+          "boundingBox": "169,778,46,53",
+          "text": "丝",
+          "word": "丝"
+        }
+      ],
+      "text": "鱼香肉丝",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,640,62,35",
+      "words": [
+        {
+          "boundingBox": "716,638,61,43",
+          "text": "¥68",
+          "word": "¥68"
+        }
+      ],
+      "text": "¥68",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,920,158,45",
+      "words": [
+        {
+          "boundingBox": "51,918,42,53",
+          "text": "夫",
+          "word": "夫"
+        },
+        {
+          "boundingBox": "94,918,36,53",
+          "text": "妻",
+          "word": "妻"
+        },
+        {
+          "boundingBox": "132,918,35,53",
+          "text": "肺",
+          "word": "肺"
+        },
+        {
+          "boundingBox": "169,918,41,53",
+          "text": "片",
+          "word": "片"
+        }
+      ],
+      "text": "夫妻肺片",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,780,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,778,61,43",
+          "text": "¥32",
+          "word": "¥32"
+        }
+      ],
+      "text": "¥32",
+      "lang": "en",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,920,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,918,61,43",
+          "text": "¥42",
+          "word": "¥42"
+        }
+      ],
+      "text": "¥42",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1060,163,45",
+      "words": [
+        {
+          "boundingBox": "51,1058,34,53",
+          "text": "蚂",
+          "word": "蚂"
+        },
+        {
+          "boundingBox": "86,1058,40,53",
+          "text": "蚁",
+          "word": "蚁"
+        },
+        {
+          "boundingBox": "128,1058,40,53",
+          "text": "上",
+          "word": "上"
+        },
+        {
+          "boundingBox": "169,1058,46,53",
+          "text": "树",
+          "word": "树"
+        }
+      ],
+      "text": "蚂蚁上树",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1200,204,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,1198,37,53",
+          "text": "蒜",
+          "word": "蒜"
+        },
+        {
+          "boundingBox": "90,1198,37,53",
+          "text": "蓉",
+          "word": "蓉"
+        },
+        {
+          "boundingBox": "129,1198,37,53",
+          "text": "西",
+          "word": "西"
+        },
+        {
+          "boundingBox": "168,1198,40,53",
+          "text": "兰",
+          "word": "兰"
+        },
+        {
+          "boundingBox": "210,1198,46,53",
+          "text": "花",
+          "word": "花"
+        }
+      ],
+      "text": "蒜蓉西兰花",
+      "lang": "ja",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1340,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,1338,37,53",
+          "text": "宫",
+          "word": "宫"
+        },
+        {
+          "boundingBox": "89,1338,40,53",
+          "text": "保",
+          "word": "保"
+        },
+        {
+          "boundingBox": "131,1338,37,53",
+          "text": "鸡",
+          "word": "鸡"
+        },
+        {
+          "boundingBox": "169,1338,46,53",
+          "text": "丁",
+          "word": "丁"
+        }
+      ],
+      "text": "宫保鸡丁",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1060,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,1058,61,43",
+          "text": "¥28",
+          "word": "¥28"
+        }
+      ],
+      "text": "¥28",
+      "lang": "no",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1200,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,1198,61,43",
+          "text": "¥26",
+          "word": "¥26"
+        }
+      ],
+      "text": "¥26",
+      "lang": "no",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1340,62,35",
+      "words": [
+        {
+          "boundingBox": "716,1338,61,43",
+          "text": "¥38",
+          "word": "¥38"
+        }
+      ],
+      "text": "¥38",
+      "lang": "ca",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1480,163,45",
+      "words": [
+        {
+          "boundingBox": "51,1478,37,53",
+          "text": "麻",
+          "word": "麻"
+        },
+        {
+          "boundingBox": "89,1478,37,53",
+          "text": "婆",
+          "word": "婆"
+        },
+        {
+          "boundingBox": "128,1478,36,53",
+          "text": "豆",
+          "word": "豆"
+        },
+        {
+          "boundingBox": "166,1478,49,53",
+          "text": "腐",
+          "word": "腐"
+        }
+      ],
+      "text": "麻婆豆腐",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1480,62,35",
+      "words": [
+        {
+          "boundingBox": "716,1478,61,43",
+          "text": "¥22",
+          "word": "¥22"
+        }
+      ],
+      "text": "¥22",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1620,163,45",
+      "words": [
+        {
+          "boundingBox": "51,1618,40,53",
+          "text": "番",
+          "word": "番"
+        },
+        {
+          "boundingBox": "93,1618,36,53",
+          "text": "茄",
+          "word": "茄"
+        },
+        {
+          "boundingBox": "131,1618,37,53",
+          "text": "炒",
+          "word": "炒"
+        },
+        {
+          "boundingBox": "169,1618,46,53",
+          "text": "蛋",
+          "word": "蛋"
+        }
+      ],
+      "text": "番茄炒蛋",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1620,62,35",
+      "words": [
+        {
+          "boundingBox": "716,1618,61,43",
+          "text": "¥18",
+          "word": "¥18"
+        }
+      ],
+      "text": "¥18",
+      "lang": "ko",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1760,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,1758,40,53",
+          "text": "清",
+          "word": "清"
+        },
+        {
+          "boundingBox": "93,1758,36,53",
+          "text": "蒸",
+          "word": "蒸"
+        },
+        {
+          "boundingBox": "131,1758,37,53",
+          "text": "鲈",
+          "word": "鲈"
+        },
+        {
+          "boundingBox": "169,1758,46,53",
+          "text": "鱼",
+          "word": "鱼"
+        }
+      ],
+      "text": "清蒸鲈鱼",
+      "lang": "ja",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,1900,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,1898,37,53",
+          "text": "鱼",
+          "word": "鱼"
+        },
+        {
+          "boundingBox": "89,1898,40,53",
+          "text": "香",
+          "word": "香"
+        },
+        {
+          "boundingBox": "131,1898,37,53",
+          "text": "肉",
+          "word": "肉"
+        },
+        {
+          "boundingBox": "169,1898,46,53",
+          "text": "丝",
+          "word": "丝"
+        }
+      ],
+      "text": "鱼香肉丝",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2040,158,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,2038,42,53",
+          "text": "夫",
+          "word": "夫"
+        },
+        {
+          "boundingBox": "94,2038,36,53",
+          "text": "妻",
+          "word": "妻"
+        },
+        {
+          "boundingBox": "132,2038,35,53",
+          "text": "肺",
+          "word": "肺"
+        },
+        {
+          "boundingBox": "169,2038,41,53",
+          "text": "片",
+          "word": "片"
+        }
+      ],
+      "text": "夫妻肺片",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2180,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,2178,34,53",
+          "text": "蚂",
+          "word": "蚂"
+        },
+        {
+          "boundingBox": "86,2178,40,53",
+          "text": "蚁",
+          "word": "蚁"
+        },
+        {
+          "boundingBox": "128,2178,40,53",
+          "text": "上",
+          "word": "上"
+        },
+        {
+          "boundingBox": "169,2178,46,53",
+          "text": "树",
+          "word": "树"
+        }
+      ],
+      "text": "蚂蚁上树",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1760,62,35",
+      "words": [
+        {
+          "boundingBox": "716,1758,61,43",
+          "text": "¥68",
+          "word": "¥68"
+        }
+      ],
+      "text": "¥68",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,1900,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,1898,61,43",
+          "text": "¥32",
+          "word": "¥32"
+        }
+      ],
+      "text": "¥32",
+      "lang": "no",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2040,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,2038,61,43",
+          "text": "¥42",
+          "word": "¥42"
+        }
+      ],
+      "text": "¥42",
+      "lang": "no",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2180,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,2178,61,43",
+          "text": "¥28",
+          "word": "¥28"
+        }
+      ],
+      "text": "¥28",
+      "lang": "no",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2320,204,45",
+      "words": [
+        {
+          "boundingBox": "51,2318,37,53",
+          "text": "蒜",
+          "word": "蒜"
+        },
+        {
+          "boundingBox": "90,2318,37,53",
+          "text": "蓉",
+          "word": "蓉"
+        },
+        {
+          "boundingBox": "129,2318,37,53",
+          "text": "西",
+          "word": "西"
+        },
+        {
+          "boundingBox": "168,2318,40,53",
+          "text": "兰",
+          "word": "兰"
+        },
+        {
+          "boundingBox": "210,2318,46,53",
+          "text": "花",
+          "word": "花"
+        }
+      ],
+      "text": "蒜蓉西兰花",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2320,62,35",
+      "words": [
+        {
+          "boundingBox": "716,2318,61,43",
+          "text": "¥26",
+          "word": "¥26"
+        }
+      ],
+      "text": "¥26",
+      "lang": "km",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2460,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,2458,37,53",
+          "text": "宫",
+          "word": "宫"
+        },
+        {
+          "boundingBox": "89,2458,40,53",
+          "text": "保",
+          "word": "保"
+        },
+        {
+          "boundingBox": "131,2458,37,53",
+          "text": "鸡",
+          "word": "鸡"
+        },
+        {
+          "boundingBox": "169,2458,46,53",
+          "text": "丁",
+          "word": "丁"
+        }
+      ],
+      "text": "宫保鸡丁",
+      "lang": "eo",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2600,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,2598,37,53",
+          "text": "麻",
+          "word": "麻"
+        },
+        {
+          "boundingBox": "89,2598,37,53",
+          "text": "婆",
+          "word": "婆"
+        },
+        {
+          "boundingBox": "128,2598,36,53",
+          "text": "豆",
+          "word": "豆"
+        },
+        {
+          "boundingBox": "166,2598,49,53",
+          "text": "腐",
+          "word": "腐"
+        }
+      ],
+      "text": "麻婆豆腐",
+      "lang": "eo",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2460,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,2458,61,43",
+          "text": "¥38",
+          "word": "¥38"
+        }
+      ],
+      "text": "¥38",
+      "lang": "en",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2600,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,2598,61,43",
+          "text": "¥22",
+          "word": "¥22"
+        }
+      ],
+      "text": "¥22",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2740,163,45",
+      "words": [
+        {
+          "boundingBox": "51,2738,40,53",
+          "text": "番",
+          "word": "番"
+        },
+        {
+          "boundingBox": "93,2738,36,53",
+          "text": "茄",
+          "word": "茄"
+        },
+        {
+          "boundingBox": "131,2738,37,53",
+          "text": "炒",
+          "word": "炒"
+        },
+        {
+          "boundingBox": "169,2738,46,53",
+          "text": "蛋",
+          "word": "蛋"
+        }
+      ],
+      "text": "番茄炒蛋",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2740,62,35",
+      "words": [
+        {
+          "boundingBox": "716,2738,61,43",
+          "text": "¥18",
+          "word": "¥18"
+        }
+      ],
+      "text": "¥18",
+      "lang": "ko",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,2880,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,2878,40,53",
+          "text": "清",
+          "word": "清"
+        },
+        {
+          "boundingBox": "93,2878,36,53",
+          "text": "蒸",
+          "word": "蒸"
+        },
+        {
+          "boundingBox": "131,2878,37,53",
+          "text": "鲈",
+          "word": "鲈"
+        },
+        {
+          "boundingBox": "169,2878,46,53",
+          "text": "鱼",
+          "word": "鱼"
+        }
+      ],
+      "text": "清蒸鲈鱼",
+      "lang": "ja",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3020,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,3018,37,53",
+          "text": "鱼",
+          "word": "鱼"
+        },
+        {
+          "boundingBox": "89,3018,40,53",
+          "text": "香",
+          "word": "香"
+        },
+        {
+          "boundingBox": "131,3018,37,53",
+          "text": "肉",
+          "word": "肉"
+        },
+        {
+          "boundingBox": "169,3018,46,53",
+          "text": "丝",
+          "word": "丝"
+        }
+      ],
+      "text": "鱼香肉丝",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3160,158,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,3158,42,53",
+          "text": "夫",
+          "word": "夫"
+        },
+        {
+          "boundingBox": "94,3158,36,53",
+          "text": "妻",
+          "word": "妻"
+        },
+        {
+          "boundingBox": "132,3158,35,53",
+          "text": "肺",
+          "word": "肺"
+        },
+        {
+          "boundingBox": "169,3158,41,53",
+          "text": "片",
+          "word": "片"
+        }
+      ],
+      "text": "夫妻肺片",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3300,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,3298,34,53",
+          "text": "蚂",
+          "word": "蚂"
+        },
+        {
+          "boundingBox": "86,3298,40,53",
+          "text": "蚁",
+          "word": "蚁"
+        },
+        {
+          "boundingBox": "128,3298,40,53",
+          "text": "上",
+          "word": "上"
+        },
+        {
+          "boundingBox": "169,3298,46,53",
+          "text": "树",
+          "word": "树"
+        }
+      ],
+      "text": "蚂蚁上树",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,2880,62,35",
+      "words": [
+        {
+          "boundingBox": "716,2878,61,43",
+          "text": "¥68",
+          "word": "¥68"
+        }
+      ],
+      "text": "¥68",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3020,62,35",
+      "words": [
+        {
+          "boundingBox": "716,3018,61,43",
+          "text": "¥32",
+          "word": "¥32"
+        }
+      ],
+      "text": "¥32",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3160,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,3158,61,43",
+          "text": "¥42",
+          "word": "¥42"
+        }
+      ],
+      "text": "¥42",
+      "lang": "no",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3300,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,3298,61,43",
+          "text": "¥28",
+          "word": "¥28"
+        }
+      ],
+      "text": "¥28",
+      "lang": "no",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3440,204,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,3438,37,53",
+          "text": "蒜",
+          "word": "蒜"
+        },
+        {
+          "boundingBox": "90,3438,37,53",
+          "text": "蓉",
+          "word": "蓉"
+        },
+        {
+          "boundingBox": "129,3438,37,53",
+          "text": "西",
+          "word": "西"
+        },
+        {
+          "boundingBox": "168,3438,40,53",
+          "text": "兰",
+          "word": "兰"
+        },
+        {
+          "boundingBox": "210,3438,46,53",
+          "text": "花",
+          "word": "花"
+        }
+      ],
+      "text": "蒜蓉西兰花",
+      "lang": "ja",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3580,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,3578,37,53",
+          "text": "宫",
+          "word": "宫"
+        },
+        {
+          "boundingBox": "89,3578,40,53",
+          "text": "保",
+          "word": "保"
+        },
+        {
+          "boundingBox": "131,3578,37,53",
+          "text": "鸡",
+          "word": "鸡"
+        },
+        {
+          "boundingBox": "169,3578,46,53",
+          "text": "丁",
+          "word": "丁"
+        }
+      ],
+      "text": "宫保鸡丁",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3440,62,35",
+      "words": [
+        {
+          "boundingBox": "716,3438,61,43",
+          "text": "¥26",
+          "word": "¥26"
+        }
+      ],
+      "text": "¥26",
+      "lang": "km",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3720,163,45",
+      "lineSpace": 231.0,
+      "words": [
+        {
+          "boundingBox": "51,3718,37,53",
+          "text": "麻",
+          "word": "麻"
+        },
+        {
+          "boundingBox": "89,3718,37,53",
+          "text": "婆",
+          "word": "婆"
+        },
+        {
+          "boundingBox": "128,3718,36,53",
+          "text": "豆",
+          "word": "豆"
+        },
+        {
+          "boundingBox": "166,3718,49,53",
+          "text": "腐",
+          "word": "腐"
+        }
+      ],
+      "text": "麻婆豆腐",
+      "lang": "ja",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,4000,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,3998,40,53",
+          "text": "清",
+          "word": "清"
+        },
+        {
+          "boundingBox": "93,3998,36,53",
+          "text": "蒸",
+          "word": "蒸"
+        },
+        {
+          "boundingBox": "131,3998,37,53",
+          "text": "鲈",
+          "word": "鲈"
+        },
+        {
+          "boundingBox": "169,3998,46,53",
+          "text": "鱼",
+          "word": "鱼"
+        }
+      ],
+      "text": "清蒸鲈鱼",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,4140,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,4138,37,53",
+          "text": "鱼",
+          "word": "鱼"
+        },
+        {
+          "boundingBox": "89,4138,40,53",
+          "text": "香",
+          "word": "香"
+        },
+        {
+          "boundingBox": "131,4138,37,53",
+          "text": "肉",
+          "word": "肉"
+        },
+        {
+          "boundingBox": "169,4138,46,53",
+          "text": "丝",
+          "word": "丝"
+        }
+      ],
+      "text": "鱼香肉丝",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,4280,158,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,4278,42,53",
+          "text": "夫",
+          "word": "夫"
+        },
+        {
+          "boundingBox": "94,4278,36,53",
+          "text": "妻",
+          "word": "妻"
+        },
+        {
+          "boundingBox": "132,4278,35,53",
+          "text": "肺",
+          "word": "肺"
+        },
+        {
+          "boundingBox": "169,4278,41,53",
+          "text": "片",
+          "word": "片"
+        }
+      ],
+      "text": "夫妻肺片",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,4420,163,45",
+      "lineSpace": 91.0,
+      "words": [
+        {
+          "boundingBox": "51,4418,34,53",
+          "text": "蚂",
+          "word": "蚂"
+        },
+        {
+          "boundingBox": "86,4418,40,53",
+          "text": "蚁",
+          "word": "蚁"
+        },
+        {
+          "boundingBox": "128,4418,40,53",
+          "text": "上",
+          "word": "上"
+        },
+        {
+          "boundingBox": "169,4418,46,53",
+          "text": "树",
+          "word": "树"
+        }
+      ],
+      "text": "蚂蚁上树",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3580,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,3578,61,43",
+          "text": "¥38",
+          "word": "¥38"
+        }
+      ],
+      "text": "¥38",
+      "lang": "en",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3720,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,3718,61,43",
+          "text": "¥22",
+          "word": "¥22"
+        }
+      ],
+      "text": "¥22",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,3860,163,45",
+      "words": [
+        {
+          "boundingBox": "51,3858,40,53",
+          "text": "番",
+          "word": "番"
+        },
+        {
+          "boundingBox": "93,3858,36,53",
+          "text": "茄",
+          "word": "茄"
+        },
+        {
+          "boundingBox": "131,3858,37,53",
+          "text": "炒",
+          "word": "炒"
+        },
+        {
+          "boundingBox": "169,3858,46,53",
+          "text": "蛋",
+          "word": "蛋"
+        }
+      ],
+      "text": "番茄炒蛋",
+      "lang": "ja",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,3860,62,35",
+      "words": [
+        {
+          "boundingBox": "716,3858,61,43",
+          "text": "¥18",
+          "word": "¥18"
+        }
+      ],
+      "text": "¥18",
+      "lang": "ko",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,4000,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,3998,61,43",
+          "text": "¥68",
+          "word": "¥68"
+        }
+      ],
+      "text": "¥68",
+      "lang": "en",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,4140,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,4138,61,43",
+          "text": "¥32",
+          "word": "¥32"
+        }
+      ],
+      "text": "¥32",
+      "lang": "en",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,4280,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,4278,61,43",
+          "text": "¥42",
+          "word": "¥42"
+        }
+      ],
+      "text": "¥42",
+      "lang": "no",
+      "dir": "h",
+      "firstLine": true,
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,4420,62,35",
+      "lineSpace": 101.0,
+      "words": [
+        {
+          "boundingBox": "716,4418,61,43",
+          "text": "¥28",
+          "word": "¥28"
+        }
+      ],
+      "text": "¥28",
+      "lang": "no",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 53,
+      "boundingBox": "51,4560,204,45",
+      "words": [
+        {
+          "boundingBox": "51,4558,37,53",
+          "text": "蒜",
+          "word": "蒜"
+        },
+        {
+          "boundingBox": "90,4558,37,53",
+          "text": "蓉",
+          "word": "蓉"
+        },
+        {
+          "boundingBox": "129,4558,37,53",
+          "text": "西",
+          "word": "西"
+        },
+        {
+          "boundingBox": "168,4558,40,53",
+          "text": "兰",
+          "word": "兰"
+        },
+        {
+          "boundingBox": "210,4558,46,53",
+          "text": "花",
+          "word": "花"
+        }
+      ],
+      "text": "蒜蓉西兰花",
+      "lang": "zh",
+      "dir": "h",
+      "text_align": null
+    },
+    {
+      "textHeight": 43,
+      "boundingBox": "715,4560,62,35",
+      "words": [
+        {
+          "boundingBox": "716,4558,61,43",
+          "text": "¥26",
+          "word": "¥26"
+        }
+      ],
+      "text": "¥26",
+      "lang": "km",
+      "dir": "h",
+      "text_align": null
+    }
+  ],
+  "exif": "Up",
+  "resRegions": [
+    {
+      "boundingBox": "51,45,414,50",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 63,
+      "context": "中文菜单· 原型测试",
+      "tranContent": "中国語メニュー・原型テストです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 63,
+          "boundingBox": "51,45,414,50",
+          "words": [
+            {
+              "boundingBox": "51,40,41,63",
+              "text": "中",
+              "word": "中"
+            },
+            {
+              "boundingBox": "94,40,40,63",
+              "text": "文",
+              "word": "文"
+            },
+            {
+              "boundingBox": "136,40,41,63",
+              "text": "菜",
+              "word": "菜"
+            },
+            {
+              "boundingBox": "179,40,56,63",
+              "text": "单",
+              "word": "单"
+            },
+            {
+              "boundingBox": "237,40,21,63",
+              "text": "·",
+              "word": "·"
+            },
+            {
+              "boundingBox": "279,40,45,63",
+              "text": "原",
+              "word": "原"
+            },
+            {
+              "boundingBox": "326,40,44,63",
+              "text": "型",
+              "word": "型"
+            },
+            {
+              "boundingBox": "372,40,40,63",
+              "text": "测",
+              "word": "测"
+            },
+            {
+              "boundingBox": "414,40,51,63",
+              "text": "试",
+              "word": "试"
+            }
+          ],
+          "text": "中文菜单· 原型测试",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,115,317,30",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 33,
+      "context": "合成样本，价格仅用于测试",
+      "tranContent": "合成サンプル、価格はテスト用のみです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 33,
+          "boundingBox": "51,115,317,30",
+          "words": [
+            {
+              "boundingBox": "51,115,25,33",
+              "text": "合",
+              "word": "合"
+            },
+            {
+              "boundingBox": "77,115,24,33",
+              "text": "成",
+              "word": "成"
+            },
+            {
+              "boundingBox": "102,115,25,33",
+              "text": "样",
+              "word": "样"
+            },
+            {
+              "boundingBox": "128,115,28,33",
+              "text": "本",
+              "word": "本"
+            },
+            {
+              "boundingBox": "157,115,26,33",
+              "text": "，",
+              "word": "，"
+            },
+            {
+              "boundingBox": "184,115,23,33",
+              "text": "价",
+              "word": "价"
+            },
+            {
+              "boundingBox": "208,115,24,33",
+              "text": "格",
+              "word": "格"
+            },
+            {
+              "boundingBox": "233,115,26,33",
+              "text": "仅",
+              "word": "仅"
+            },
+            {
+              "boundingBox": "260,115,25,33",
+              "text": "用",
+              "word": "用"
+            },
+            {
+              "boundingBox": "286,115,24,33",
+              "text": "于",
+              "word": "于"
+            },
+            {
+              "boundingBox": "311,115,26,33",
+              "text": "测",
+              "word": "测"
+            },
+            {
+              "boundingBox": "338,115,30,33",
+              "text": "试",
+              "word": "试"
+            }
+          ],
+          "text": "合成样本，价格仅用于测试",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,225,164,40",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "宫保鸡丁",
+      "tranContent": "宮保鶏丁です",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "51,225,163,40",
+          "words": [
+            {
+              "boundingBox": "51,225,37,43",
+              "text": "宫",
+              "word": "宫"
+            },
+            {
+              "boundingBox": "90,225,37,43",
+              "text": "保",
+              "word": "保"
+            },
+            {
+              "boundingBox": "129,225,37,43",
+              "text": "鸡",
+              "word": "鸡"
+            },
+            {
+              "boundingBox": "168,225,47,43",
+              "text": "丁",
+              "word": "丁"
+            }
+          ],
+          "text": "宫保鸡丁",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,220,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥38",
+      "tranContent": "38円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,220,62,35",
+          "words": [
+            {
+              "boundingBox": "716,218,61,43",
+              "text": "¥38",
+              "word": "¥38"
+            }
+          ],
+          "text": "¥38",
+          "lang": "ca"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,365,164,40",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "麻婆豆腐",
+      "tranContent": "マーボー豆腐です",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "51,365,163,40",
+          "words": [
+            {
+              "boundingBox": "51,365,37,43",
+              "text": "麻",
+              "word": "麻"
+            },
+            {
+              "boundingBox": "90,365,37,43",
+              "text": "婆",
+              "word": "婆"
+            },
+            {
+              "boundingBox": "129,365,37,43",
+              "text": "豆",
+              "word": "豆"
+            },
+            {
+              "boundingBox": "168,365,47,43",
+              "text": "腐",
+              "word": "腐"
+            }
+          ],
+          "text": "麻婆豆腐",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,360,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥22",
+      "tranContent": "22円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,360,62,35",
+          "words": [
+            {
+              "boundingBox": "716,358,61,43",
+              "text": "¥22",
+              "word": "¥22"
+            }
+          ],
+          "text": "¥22",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,505,164,40",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "番茄炒蛋",
+      "tranContent": "トマトと卵炒めです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "51,505,163,40",
+          "words": [
+            {
+              "boundingBox": "51,505,40,43",
+              "text": "番",
+              "word": "番"
+            },
+            {
+              "boundingBox": "92,505,35,43",
+              "text": "茄",
+              "word": "茄"
+            },
+            {
+              "boundingBox": "129,505,37,43",
+              "text": "炒",
+              "word": "炒"
+            },
+            {
+              "boundingBox": "168,505,47,43",
+              "text": "蛋",
+              "word": "蛋"
+            }
+          ],
+          "text": "番茄炒蛋",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,500,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥18",
+      "tranContent": "18円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,500,62,35",
+          "words": [
+            {
+              "boundingBox": "716,498,61,43",
+              "text": "¥18",
+              "word": "¥18"
+            }
+          ],
+          "text": "¥18",
+          "lang": "ko"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,640,164,185",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 53,
+      "context": "清蒸鲈鱼鱼香肉丝",
+      "tranContent": "スズキのカルパッチョの蒸し煮です",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,640,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,638,40,53",
+              "text": "清",
+              "word": "清"
+            },
+            {
+              "boundingBox": "93,638,36,53",
+              "text": "蒸",
+              "word": "蒸"
+            },
+            {
+              "boundingBox": "131,638,37,53",
+              "text": "鲈",
+              "word": "鲈"
+            },
+            {
+              "boundingBox": "169,638,46,53",
+              "text": "鱼",
+              "word": "鱼"
+            }
+          ],
+          "text": "清蒸鲈鱼",
+          "lang": "zh",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,780,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,778,37,53",
+              "text": "鱼",
+              "word": "鱼"
+            },
+            {
+              "boundingBox": "89,778,40,53",
+              "text": "香",
+              "word": "香"
+            },
+            {
+              "boundingBox": "131,778,37,53",
+              "text": "肉",
+              "word": "肉"
+            },
+            {
+              "boundingBox": "169,778,46,53",
+              "text": "丝",
+              "word": "丝"
+            }
+          ],
+          "text": "鱼香肉丝",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,640,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥68",
+      "tranContent": "68円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,640,62,35",
+          "words": [
+            {
+              "boundingBox": "716,638,61,43",
+              "text": "¥68",
+              "word": "¥68"
+            }
+          ],
+          "text": "¥68",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,920,159,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "夫妻肺片",
+      "tranContent": "夫婦用肺パッチです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,920,158,45",
+          "words": [
+            {
+              "boundingBox": "51,918,42,53",
+              "text": "夫",
+              "word": "夫"
+            },
+            {
+              "boundingBox": "94,918,36,53",
+              "text": "妻",
+              "word": "妻"
+            },
+            {
+              "boundingBox": "132,918,35,53",
+              "text": "肺",
+              "word": "肺"
+            },
+            {
+              "boundingBox": "169,918,41,53",
+              "text": "片",
+              "word": "片"
+            }
+          ],
+          "text": "夫妻肺片",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,780,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥32 ¥42",
+      "tranContent": "¥32¥42です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,780,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,778,61,43",
+              "text": "¥32",
+              "word": "¥32"
+            }
+          ],
+          "text": "¥32",
+          "lang": "en",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,920,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,918,61,43",
+              "text": "¥42",
+              "word": "¥42"
+            }
+          ],
+          "text": "¥42",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,1060,164,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "蚂蚁上树",
+      "tranContent": "アリが木に登ります",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1060,163,45",
+          "words": [
+            {
+              "boundingBox": "51,1058,34,53",
+              "text": "蚂",
+              "word": "蚂"
+            },
+            {
+              "boundingBox": "86,1058,40,53",
+              "text": "蚁",
+              "word": "蚁"
+            },
+            {
+              "boundingBox": "128,1058,40,53",
+              "text": "上",
+              "word": "上"
+            },
+            {
+              "boundingBox": "169,1058,46,53",
+              "text": "树",
+              "word": "树"
+            }
+          ],
+          "text": "蚂蚁上树",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,1200,205,185",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 53,
+      "context": "蒜蓉西兰花宫保鸡丁",
+      "tranContent": "にんにくとブロッコリー宮保鶏のみじん切りです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1200,204,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,1198,37,53",
+              "text": "蒜",
+              "word": "蒜"
+            },
+            {
+              "boundingBox": "90,1198,37,53",
+              "text": "蓉",
+              "word": "蓉"
+            },
+            {
+              "boundingBox": "129,1198,37,53",
+              "text": "西",
+              "word": "西"
+            },
+            {
+              "boundingBox": "168,1198,40,53",
+              "text": "兰",
+              "word": "兰"
+            },
+            {
+              "boundingBox": "210,1198,46,53",
+              "text": "花",
+              "word": "花"
+            }
+          ],
+          "text": "蒜蓉西兰花",
+          "lang": "ja",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1340,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,1338,37,53",
+              "text": "宫",
+              "word": "宫"
+            },
+            {
+              "boundingBox": "89,1338,40,53",
+              "text": "保",
+              "word": "保"
+            },
+            {
+              "boundingBox": "131,1338,37,53",
+              "text": "鸡",
+              "word": "鸡"
+            },
+            {
+              "boundingBox": "169,1338,46,53",
+              "text": "丁",
+              "word": "丁"
+            }
+          ],
+          "text": "宫保鸡丁",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,1060,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥28 ¥26",
+      "tranContent": "¥28¥26です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1060,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,1058,61,43",
+              "text": "¥28",
+              "word": "¥28"
+            }
+          ],
+          "text": "¥28",
+          "lang": "no",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1200,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,1198,61,43",
+              "text": "¥26",
+              "word": "¥26"
+            }
+          ],
+          "text": "¥26",
+          "lang": "no"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,1340,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥38",
+      "tranContent": "38円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1340,62,35",
+          "words": [
+            {
+              "boundingBox": "716,1338,61,43",
+              "text": "¥38",
+              "word": "¥38"
+            }
+          ],
+          "text": "¥38",
+          "lang": "ca"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,1480,164,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "麻婆豆腐",
+      "tranContent": "マーボー豆腐です",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1480,163,45",
+          "words": [
+            {
+              "boundingBox": "51,1478,37,53",
+              "text": "麻",
+              "word": "麻"
+            },
+            {
+              "boundingBox": "89,1478,37,53",
+              "text": "婆",
+              "word": "婆"
+            },
+            {
+              "boundingBox": "128,1478,36,53",
+              "text": "豆",
+              "word": "豆"
+            },
+            {
+              "boundingBox": "166,1478,49,53",
+              "text": "腐",
+              "word": "腐"
+            }
+          ],
+          "text": "麻婆豆腐",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,1480,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥22",
+      "tranContent": "22円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1480,62,35",
+          "words": [
+            {
+              "boundingBox": "716,1478,61,43",
+              "text": "¥22",
+              "word": "¥22"
+            }
+          ],
+          "text": "¥22",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,1620,164,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "番茄炒蛋",
+      "tranContent": "トマトと卵炒めです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1620,163,45",
+          "words": [
+            {
+              "boundingBox": "51,1618,40,53",
+              "text": "番",
+              "word": "番"
+            },
+            {
+              "boundingBox": "93,1618,36,53",
+              "text": "茄",
+              "word": "茄"
+            },
+            {
+              "boundingBox": "131,1618,37,53",
+              "text": "炒",
+              "word": "炒"
+            },
+            {
+              "boundingBox": "169,1618,46,53",
+              "text": "蛋",
+              "word": "蛋"
+            }
+          ],
+          "text": "番茄炒蛋",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,1620,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥18",
+      "tranContent": "18円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1620,62,35",
+          "words": [
+            {
+              "boundingBox": "716,1618,61,43",
+              "text": "¥18",
+              "word": "¥18"
+            }
+          ],
+          "text": "¥18",
+          "lang": "ko"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,1760,164,465",
+      "color": "default",
+      "linesCount": 4,
+      "lineheight": 53,
+      "context": "清蒸鲈鱼鱼香肉丝夫妻肺片蚂蚁上树",
+      "tranContent": "すずきの蒸し魚の香ばしい肉の糸夫婦肺片アリは木に登ります",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1760,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,1758,40,53",
+              "text": "清",
+              "word": "清"
+            },
+            {
+              "boundingBox": "93,1758,36,53",
+              "text": "蒸",
+              "word": "蒸"
+            },
+            {
+              "boundingBox": "131,1758,37,53",
+              "text": "鲈",
+              "word": "鲈"
+            },
+            {
+              "boundingBox": "169,1758,46,53",
+              "text": "鱼",
+              "word": "鱼"
+            }
+          ],
+          "text": "清蒸鲈鱼",
+          "lang": "ja",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,1900,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,1898,37,53",
+              "text": "鱼",
+              "word": "鱼"
+            },
+            {
+              "boundingBox": "89,1898,40,53",
+              "text": "香",
+              "word": "香"
+            },
+            {
+              "boundingBox": "131,1898,37,53",
+              "text": "肉",
+              "word": "肉"
+            },
+            {
+              "boundingBox": "169,1898,46,53",
+              "text": "丝",
+              "word": "丝"
+            }
+          ],
+          "text": "鱼香肉丝",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2040,158,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,2038,42,53",
+              "text": "夫",
+              "word": "夫"
+            },
+            {
+              "boundingBox": "94,2038,36,53",
+              "text": "妻",
+              "word": "妻"
+            },
+            {
+              "boundingBox": "132,2038,35,53",
+              "text": "肺",
+              "word": "肺"
+            },
+            {
+              "boundingBox": "169,2038,41,53",
+              "text": "片",
+              "word": "片"
+            }
+          ],
+          "text": "夫妻肺片",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2180,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,2178,34,53",
+              "text": "蚂",
+              "word": "蚂"
+            },
+            {
+              "boundingBox": "86,2178,40,53",
+              "text": "蚁",
+              "word": "蚁"
+            },
+            {
+              "boundingBox": "128,2178,40,53",
+              "text": "上",
+              "word": "上"
+            },
+            {
+              "boundingBox": "169,2178,46,53",
+              "text": "树",
+              "word": "树"
+            }
+          ],
+          "text": "蚂蚁上树",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,1760,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥68",
+      "tranContent": "68円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1760,62,35",
+          "words": [
+            {
+              "boundingBox": "716,1758,61,43",
+              "text": "¥68",
+              "word": "¥68"
+            }
+          ],
+          "text": "¥68",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,1900,61,315",
+      "color": "default",
+      "linesCount": 3,
+      "lineheight": 43,
+      "context": "¥32 ¥42 ¥28",
+      "tranContent": "¥32¥42¥28です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,1900,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,1898,61,43",
+              "text": "¥32",
+              "word": "¥32"
+            }
+          ],
+          "text": "¥32",
+          "lang": "no",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2040,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,2038,61,43",
+              "text": "¥42",
+              "word": "¥42"
+            }
+          ],
+          "text": "¥42",
+          "lang": "no"
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2180,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,2178,61,43",
+              "text": "¥28",
+              "word": "¥28"
+            }
+          ],
+          "text": "¥28",
+          "lang": "no"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,2320,205,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "蒜蓉西兰花",
+      "tranContent": "ガーリックブロッコリーです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2320,204,45",
+          "words": [
+            {
+              "boundingBox": "51,2318,37,53",
+              "text": "蒜",
+              "word": "蒜"
+            },
+            {
+              "boundingBox": "90,2318,37,53",
+              "text": "蓉",
+              "word": "蓉"
+            },
+            {
+              "boundingBox": "129,2318,37,53",
+              "text": "西",
+              "word": "西"
+            },
+            {
+              "boundingBox": "168,2318,40,53",
+              "text": "兰",
+              "word": "兰"
+            },
+            {
+              "boundingBox": "210,2318,46,53",
+              "text": "花",
+              "word": "花"
+            }
+          ],
+          "text": "蒜蓉西兰花",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,2320,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥26",
+      "tranContent": "26円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2320,62,35",
+          "words": [
+            {
+              "boundingBox": "716,2318,61,43",
+              "text": "¥26",
+              "word": "¥26"
+            }
+          ],
+          "text": "¥26",
+          "lang": "km"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,2460,164,185",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 53,
+      "context": "宫保鸡丁麻婆豆腐",
+      "tranContent": "宮保鶏丁麻婆豆腐です",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2460,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,2458,37,53",
+              "text": "宫",
+              "word": "宫"
+            },
+            {
+              "boundingBox": "89,2458,40,53",
+              "text": "保",
+              "word": "保"
+            },
+            {
+              "boundingBox": "131,2458,37,53",
+              "text": "鸡",
+              "word": "鸡"
+            },
+            {
+              "boundingBox": "169,2458,46,53",
+              "text": "丁",
+              "word": "丁"
+            }
+          ],
+          "text": "宫保鸡丁",
+          "lang": "eo",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2600,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,2598,37,53",
+              "text": "麻",
+              "word": "麻"
+            },
+            {
+              "boundingBox": "89,2598,37,53",
+              "text": "婆",
+              "word": "婆"
+            },
+            {
+              "boundingBox": "128,2598,36,53",
+              "text": "豆",
+              "word": "豆"
+            },
+            {
+              "boundingBox": "166,2598,49,53",
+              "text": "腐",
+              "word": "腐"
+            }
+          ],
+          "text": "麻婆豆腐",
+          "lang": "eo"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,2460,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥38 ¥22",
+      "tranContent": "38¥22です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2460,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,2458,61,43",
+              "text": "¥38",
+              "word": "¥38"
+            }
+          ],
+          "text": "¥38",
+          "lang": "en",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2600,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,2598,61,43",
+              "text": "¥22",
+              "word": "¥22"
+            }
+          ],
+          "text": "¥22",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,2740,164,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "番茄炒蛋",
+      "tranContent": "トマトと卵炒めです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2740,163,45",
+          "words": [
+            {
+              "boundingBox": "51,2738,40,53",
+              "text": "番",
+              "word": "番"
+            },
+            {
+              "boundingBox": "93,2738,36,53",
+              "text": "茄",
+              "word": "茄"
+            },
+            {
+              "boundingBox": "131,2738,37,53",
+              "text": "炒",
+              "word": "炒"
+            },
+            {
+              "boundingBox": "169,2738,46,53",
+              "text": "蛋",
+              "word": "蛋"
+            }
+          ],
+          "text": "番茄炒蛋",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,2740,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥18",
+      "tranContent": "18円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2740,62,35",
+          "words": [
+            {
+              "boundingBox": "716,2738,61,43",
+              "text": "¥18",
+              "word": "¥18"
+            }
+          ],
+          "text": "¥18",
+          "lang": "ko"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,2880,164,465",
+      "color": "default",
+      "linesCount": 4,
+      "lineheight": 53,
+      "context": "清蒸鲈鱼鱼香肉丝夫妻肺片蚂蚁上树",
+      "tranContent": "すずきの蒸し魚の香ばしい肉の糸夫婦肺片アリは木に登ります",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,2880,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,2878,40,53",
+              "text": "清",
+              "word": "清"
+            },
+            {
+              "boundingBox": "93,2878,36,53",
+              "text": "蒸",
+              "word": "蒸"
+            },
+            {
+              "boundingBox": "131,2878,37,53",
+              "text": "鲈",
+              "word": "鲈"
+            },
+            {
+              "boundingBox": "169,2878,46,53",
+              "text": "鱼",
+              "word": "鱼"
+            }
+          ],
+          "text": "清蒸鲈鱼",
+          "lang": "ja",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3020,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,3018,37,53",
+              "text": "鱼",
+              "word": "鱼"
+            },
+            {
+              "boundingBox": "89,3018,40,53",
+              "text": "香",
+              "word": "香"
+            },
+            {
+              "boundingBox": "131,3018,37,53",
+              "text": "肉",
+              "word": "肉"
+            },
+            {
+              "boundingBox": "169,3018,46,53",
+              "text": "丝",
+              "word": "丝"
+            }
+          ],
+          "text": "鱼香肉丝",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3160,158,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,3158,42,53",
+              "text": "夫",
+              "word": "夫"
+            },
+            {
+              "boundingBox": "94,3158,36,53",
+              "text": "妻",
+              "word": "妻"
+            },
+            {
+              "boundingBox": "132,3158,35,53",
+              "text": "肺",
+              "word": "肺"
+            },
+            {
+              "boundingBox": "169,3158,41,53",
+              "text": "片",
+              "word": "片"
+            }
+          ],
+          "text": "夫妻肺片",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3300,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,3298,34,53",
+              "text": "蚂",
+              "word": "蚂"
+            },
+            {
+              "boundingBox": "86,3298,40,53",
+              "text": "蚁",
+              "word": "蚁"
+            },
+            {
+              "boundingBox": "128,3298,40,53",
+              "text": "上",
+              "word": "上"
+            },
+            {
+              "boundingBox": "169,3298,46,53",
+              "text": "树",
+              "word": "树"
+            }
+          ],
+          "text": "蚂蚁上树",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,2880,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥68",
+      "tranContent": "68円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,2880,62,35",
+          "words": [
+            {
+              "boundingBox": "716,2878,61,43",
+              "text": "¥68",
+              "word": "¥68"
+            }
+          ],
+          "text": "¥68",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,3020,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥32",
+      "tranContent": "32円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3020,62,35",
+          "words": [
+            {
+              "boundingBox": "716,3018,61,43",
+              "text": "¥32",
+              "word": "¥32"
+            }
+          ],
+          "text": "¥32",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,3160,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥42 ¥28",
+      "tranContent": "¥42¥28です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3160,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,3158,61,43",
+              "text": "¥42",
+              "word": "¥42"
+            }
+          ],
+          "text": "¥42",
+          "lang": "no",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3300,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,3298,61,43",
+              "text": "¥28",
+              "word": "¥28"
+            }
+          ],
+          "text": "¥28",
+          "lang": "no"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,3440,205,185",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 53,
+      "context": "蒜蓉西兰花宫保鸡丁",
+      "tranContent": "にんにくとブロッコリー宮保鶏のみじん切りです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3440,204,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,3438,37,53",
+              "text": "蒜",
+              "word": "蒜"
+            },
+            {
+              "boundingBox": "90,3438,37,53",
+              "text": "蓉",
+              "word": "蓉"
+            },
+            {
+              "boundingBox": "129,3438,37,53",
+              "text": "西",
+              "word": "西"
+            },
+            {
+              "boundingBox": "168,3438,40,53",
+              "text": "兰",
+              "word": "兰"
+            },
+            {
+              "boundingBox": "210,3438,46,53",
+              "text": "花",
+              "word": "花"
+            }
+          ],
+          "text": "蒜蓉西兰花",
+          "lang": "ja",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3580,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,3578,37,53",
+              "text": "宫",
+              "word": "宫"
+            },
+            {
+              "boundingBox": "89,3578,40,53",
+              "text": "保",
+              "word": "保"
+            },
+            {
+              "boundingBox": "131,3578,37,53",
+              "text": "鸡",
+              "word": "鸡"
+            },
+            {
+              "boundingBox": "169,3578,46,53",
+              "text": "丁",
+              "word": "丁"
+            }
+          ],
+          "text": "宫保鸡丁",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,3440,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥26",
+      "tranContent": "26円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3440,62,35",
+          "words": [
+            {
+              "boundingBox": "716,3438,61,43",
+              "text": "¥26",
+              "word": "¥26"
+            }
+          ],
+          "text": "¥26",
+          "lang": "km"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,3720,164,745",
+      "color": "default",
+      "linesCount": 5,
+      "lineheight": 53,
+      "context": "麻婆豆腐清蒸鲈鱼鱼香肉丝夫妻肺片蚂蚁上树",
+      "tranContent": "麻婆豆腐蒸しすずき魚の香ばしい肉の糸夫婦肺片アリの木に登ります",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3720,163,45",
+          "lineSpace": 231.0,
+          "words": [
+            {
+              "boundingBox": "51,3718,37,53",
+              "text": "麻",
+              "word": "麻"
+            },
+            {
+              "boundingBox": "89,3718,37,53",
+              "text": "婆",
+              "word": "婆"
+            },
+            {
+              "boundingBox": "128,3718,36,53",
+              "text": "豆",
+              "word": "豆"
+            },
+            {
+              "boundingBox": "166,3718,49,53",
+              "text": "腐",
+              "word": "腐"
+            }
+          ],
+          "text": "麻婆豆腐",
+          "lang": "ja",
+          "firstLine": true
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,4000,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,3998,40,53",
+              "text": "清",
+              "word": "清"
+            },
+            {
+              "boundingBox": "93,3998,36,53",
+              "text": "蒸",
+              "word": "蒸"
+            },
+            {
+              "boundingBox": "131,3998,37,53",
+              "text": "鲈",
+              "word": "鲈"
+            },
+            {
+              "boundingBox": "169,3998,46,53",
+              "text": "鱼",
+              "word": "鱼"
+            }
+          ],
+          "text": "清蒸鲈鱼",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,4140,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,4138,37,53",
+              "text": "鱼",
+              "word": "鱼"
+            },
+            {
+              "boundingBox": "89,4138,40,53",
+              "text": "香",
+              "word": "香"
+            },
+            {
+              "boundingBox": "131,4138,37,53",
+              "text": "肉",
+              "word": "肉"
+            },
+            {
+              "boundingBox": "169,4138,46,53",
+              "text": "丝",
+              "word": "丝"
+            }
+          ],
+          "text": "鱼香肉丝",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,4280,158,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,4278,42,53",
+              "text": "夫",
+              "word": "夫"
+            },
+            {
+              "boundingBox": "94,4278,36,53",
+              "text": "妻",
+              "word": "妻"
+            },
+            {
+              "boundingBox": "132,4278,35,53",
+              "text": "肺",
+              "word": "肺"
+            },
+            {
+              "boundingBox": "169,4278,41,53",
+              "text": "片",
+              "word": "片"
+            }
+          ],
+          "text": "夫妻肺片",
+          "lang": "ja"
+        },
+        {
+          "textHeight": 53,
+          "boundingBox": "51,4420,163,45",
+          "lineSpace": 91.0,
+          "words": [
+            {
+              "boundingBox": "51,4418,34,53",
+              "text": "蚂",
+              "word": "蚂"
+            },
+            {
+              "boundingBox": "86,4418,40,53",
+              "text": "蚁",
+              "word": "蚁"
+            },
+            {
+              "boundingBox": "128,4418,40,53",
+              "text": "上",
+              "word": "上"
+            },
+            {
+              "boundingBox": "169,4418,46,53",
+              "text": "树",
+              "word": "树"
+            }
+          ],
+          "text": "蚂蚁上树",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,3580,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥38 ¥22",
+      "tranContent": "38¥22です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3580,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,3578,61,43",
+              "text": "¥38",
+              "word": "¥38"
+            }
+          ],
+          "text": "¥38",
+          "lang": "en",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3720,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,3718,61,43",
+              "text": "¥22",
+              "word": "¥22"
+            }
+          ],
+          "text": "¥22",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,3860,164,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "番茄炒蛋",
+      "tranContent": "トマトと卵炒めです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,3860,163,45",
+          "words": [
+            {
+              "boundingBox": "51,3858,40,53",
+              "text": "番",
+              "word": "番"
+            },
+            {
+              "boundingBox": "93,3858,36,53",
+              "text": "茄",
+              "word": "茄"
+            },
+            {
+              "boundingBox": "131,3858,37,53",
+              "text": "炒",
+              "word": "炒"
+            },
+            {
+              "boundingBox": "169,3858,46,53",
+              "text": "蛋",
+              "word": "蛋"
+            }
+          ],
+          "text": "番茄炒蛋",
+          "lang": "ja"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,3860,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥18",
+      "tranContent": "18円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,3860,62,35",
+          "words": [
+            {
+              "boundingBox": "716,3858,61,43",
+              "text": "¥18",
+              "word": "¥18"
+            }
+          ],
+          "text": "¥18",
+          "lang": "ko"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,4000,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥68 ¥32",
+      "tranContent": "¥68¥32です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,4000,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,3998,61,43",
+              "text": "¥68",
+              "word": "¥68"
+            }
+          ],
+          "text": "¥68",
+          "lang": "en",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,4140,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,4138,61,43",
+              "text": "¥32",
+              "word": "¥32"
+            }
+          ],
+          "text": "¥32",
+          "lang": "en"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,4280,61,175",
+      "color": "default",
+      "linesCount": 2,
+      "lineheight": 43,
+      "context": "¥42 ¥28",
+      "tranContent": "¥42¥28です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,4280,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,4278,61,43",
+              "text": "¥42",
+              "word": "¥42"
+            }
+          ],
+          "text": "¥42",
+          "lang": "no",
+          "firstLine": true
+        },
+        {
+          "textHeight": 43,
+          "boundingBox": "715,4420,62,35",
+          "lineSpace": 101.0,
+          "words": [
+            {
+              "boundingBox": "716,4418,61,43",
+              "text": "¥28",
+              "word": "¥28"
+            }
+          ],
+          "text": "¥28",
+          "lang": "no"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "51,4560,205,45",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 53,
+      "context": "蒜蓉西兰花",
+      "tranContent": "ガーリックブロッコリーです",
+      "dir": "h",
+      "lang": "zh-CHS",
+      "lines": [
+        {
+          "textHeight": 53,
+          "boundingBox": "51,4560,204,45",
+          "words": [
+            {
+              "boundingBox": "51,4558,37,53",
+              "text": "蒜",
+              "word": "蒜"
+            },
+            {
+              "boundingBox": "90,4558,37,53",
+              "text": "蓉",
+              "word": "蓉"
+            },
+            {
+              "boundingBox": "129,4558,37,53",
+              "text": "西",
+              "word": "西"
+            },
+            {
+              "boundingBox": "168,4558,40,53",
+              "text": "兰",
+              "word": "兰"
+            },
+            {
+              "boundingBox": "210,4558,46,53",
+              "text": "花",
+              "word": "花"
+            }
+          ],
+          "text": "蒜蓉西兰花",
+          "lang": "zh"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    },
+    {
+      "boundingBox": "716,4560,61,35",
+      "color": "default",
+      "linesCount": 1,
+      "lineheight": 43,
+      "context": "¥26",
+      "tranContent": "26円です",
+      "dir": "h",
+      "lang": "unknown",
+      "lines": [
+        {
+          "textHeight": 43,
+          "boundingBox": "715,4560,62,35",
+          "words": [
+            {
+              "boundingBox": "716,4558,61,43",
+              "text": "¥26",
+              "word": "¥26"
+            }
+          ],
+          "text": "¥26",
+          "lang": "km"
+        }
+      ],
+      "colors": [
+        "default"
+      ],
+      "text_align": null
+    }
+  ]
+}

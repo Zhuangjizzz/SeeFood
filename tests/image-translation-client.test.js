@@ -198,3 +198,39 @@ test('unsaved translated metadata stays distinct from successful cards and saves
   disk.storage.set = write; await page.retryTranslationSave();
   assert.equal(page.data.imageView.variant, 'original'); assert.equal(page.data.translationSaveLabel, page.data.imageCopy.saved); page.onUnload();
 });
+
+test('two real saved images keep separate original or translated choices when switching and reopening', async (t) => {
+  const { services, disk, backend } = await setup(t);
+  const capture = createCapture({ media: { chooseImages: async () => [disk.material('menu-photo.png'), disk.material('menu-screenshot.png')] }, getLanguage: () => 'en' });
+  await capture.chooseImages({ source: 'album' });
+  const { recordId: id } = await services.records.confirmCapture(capture.confirm().batch); const record = services.records.getRecord(id).record;
+  // Drive the existing public upload protocol for both materials; batch orchestration belongs to T15.
+  const snapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: 1, snapshot: {
+    images: record.images.map((image) => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: null })), cards: [], messages: [],
+    preferences: { version: 1, allergies: [], restrictions: [], tastes: [], notes: '' } } };
+  await services.backend.putContext(record.contextId, snapshot);
+  for (const image of record.images) {
+    const ticket = await services.backend.createUpload({ contextId: record.contextId, imageId: image.id, kind: image.kind, mimeType: image.mimeType, sizeBytes: image.sizeBytes }, image.requests.upload);
+    await services.backend.sendUpload(ticket, image.localOriginalPath);
+    const asset = await services.backend.completeUpload(ticket.uploadId, { contextId: record.contextId, imageId: image.id }, image.requests.complete);
+    snapshot.snapshot.images.find((item) => item.imageId === image.id).assetId = asset.assetId;
+  }
+  snapshot.snapshotVersion = 2; await services.backend.putContext(record.contextId, snapshot);
+  services.records.updateRecord(id, (draft) => {
+    draft.contextSnapshotVersion = 2;
+    draft.images.forEach((image) => { image.assetId = snapshot.snapshot.images.find((item) => item.imageId === image.id).assetId; image.uploadState = 'uploaded'; });
+  });
+  const [first, second] = record.images.map((image) => image.id);
+  assert.equal(services.imageView.open(id, first).variant, 'original');
+  await Promise.all([services.jobs.startImageTranslation(id, first), services.jobs.startImageTranslation(id, second)]);
+  assert.equal(services.imageView.open(id, first).variant, 'original');
+  assert.equal(services.imageView.open(id, second).variant, 'translation');
+  assert.equal(services.imageView.selectVariant(id, second, 'original').ok, true);
+  assert.equal(services.imageView.selectVariant(id, first, 'translation').ok, true);
+  const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal(reopened.imageView.open(id).imageId, first); assert.equal(reopened.imageView.open(id).variant, 'translation');
+  assert.equal(reopened.imageView.open(id, second).variant, 'original');
+  const images = reopened.records.getRecord(id).record.images;
+  assert.notEqual(images[0].translation.localPath, images[1].translation.localPath);
+  assert.equal(images[0].translation.imageId, first); assert.equal(images[1].translation.imageId, second);
+});

@@ -40,10 +40,12 @@ export function createImageTranslation(options: Options) {
       if (options.scenario === 'translation-failure') throw new ApiError(503, 'TEMPORARY_FAILURE', true);
       const metadata = await sharp(images[0]).metadata();
       const width = metadata.width!; const height = metadata.height!;
-      const label = content[request.input.targetLanguage].name;
+      const label = options.scenario === 'no-cards' ? '' : options.scenario === 'unknown-price' ?
+        content[request.input.targetLanguage].marketName : content[request.input.targetLanguage].name;
+      const price = options.scenario === 'unknown-price' || options.scenario === 'no-cards' ? '' : ' · ¥28';
       const panelHeight = Math.min(height, Math.max(80, Math.round(width * 0.16)));
       const escaped = label.replace(/[&<>]/g, (letter: string) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[letter]!));
-      const overlay = Buffer.from(`<svg width="${width}" height="${panelHeight}"><rect width="100%" height="100%" fill="#fffbea"/><text x="18" y="28" fill="#315d43" font-size="18">MOCK TRANSLATION · ${request.input.targetLanguage}</text><text x="18" y="60" fill="#243d2c" font-size="22">${escaped} · ¥28</text></svg>`);
+      const overlay = Buffer.from(`<svg width="${width}" height="${panelHeight}"><rect width="100%" height="100%" fill="#fffbea"/><text x="18" y="28" fill="#315d43" font-size="18">MOCK TRANSLATION · ${request.input.targetLanguage}</text><text x="18" y="60" fill="#243d2c" font-size="22">${escaped}${price}</text></svg>`);
       const bytes = await sharp(images[0]).composite([{ input: overlay, top: 0, left: 0 }]).png().toBuffer();
       const owner = database.prepare('SELECT owner FROM contexts WHERE id=?').get(job.contextId)!.owner as string;
       getContext(job.contextId, owner);

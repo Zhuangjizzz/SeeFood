@@ -1,0 +1,21 @@
+<view class="page dish-detail-page">
+  <view wx:if="{{error}}" class="notice" role="alert">{{error}}</view>
+  <block wx:if="{{card}}">
+    <view class="dish-name">{{card.displayName}}</view>
+    <view wx:if="{{card.secondaryName}}" class="dish-localized-name">{{card.secondaryName}}</view>
+    <view class="dish-price">{{card.priceLabel}}</view>
+    <view wx:if="{{card.priceRaw}}" class="dish-price-raw">{{card.priceRaw}}</view>
+    <view class="mock-notice">{{dishCopy.mock}}</view>
+    <view wx:if="{{card.summary}}" class="dish-summary paper">{{card.summary}}</view>
+    <view class="dish-detail-section paper">
+      <view class="section-title">{{dishCopy.details}}</view>
+      <view wx:for="{{card.details}}" wx:key="*this" class="detail-line">{{item}}</view>
+    </view>
+    <view wx:if="{{card.uncertainty.length}}" class="dish-detail-section paper uncertainty-section">
+      <view class="section-title">{{dishCopy.uncertainty}}</view>
+      <view wx:for="{{card.uncertainty}}" wx:key="*this" class="detail-line">{{item}}</view>
+    </view>
+    <button class="primary original-source" disabled="{{!sourceImages.length}}" bindtap="viewOriginal">{{dishCopy.original}}</button>
+  </block>
+  <button class="text-button detail-back" bindtap="back">{{dishCopy.back}}</button>
+</view>

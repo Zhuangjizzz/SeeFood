@@ -167,7 +167,7 @@ test('an expired unfinished upload renews for the same image and a lost renewal 
   assert.equal(environment.exchanges.some(({ request }) => request.url.endsWith('/v1/jobs')), false);
 });
 
-test('native recent and result pages identify interrupted uploads in five languages and only the retry action resumes the same image', async (t) => {
+test('native interruption recovery preserves five-language state and the explicit retry resumes one image into one accepted dish job', async (t) => {
   const environment = await recoveryEnvironment(t);
   const first = environment.client();
   const initial = await pendingRecord(first, environment.disk);
@@ -200,6 +200,7 @@ test('native recent and result pages identify interrupted uploads in five langua
   result.onShow();
   const resumed = suspendResponse(environment, ({ request, response }) => request.url.endsWith('/complete') && response.statusCode === 200);
   const action = result.retryUpload();
+  assert.equal(result.retryUpload(), action, 'repeated clicks join the same recovery action');
   const held = await resumed;
   assert.equal(result.data.uploadResuming, true);
   assert.equal(result.data.processingLabel, '恢复上传中');
@@ -210,6 +211,20 @@ test('native recent and result pages identify interrupted uploads in five langua
   assert.equal(result.data.currentImage.id, initial.images[0].id);
   assert.equal(result.data.uploadState, 'uploaded');
   assert.equal(result.data.canRetryUpload, false);
+  assert.equal(result.data.cardsJob.state, 'succeeded');
+  assert.equal(result.data.cardsJob.target.imageId, initial.images[0].id);
+  assert.equal(result.data.dishCards.length, 1);
+  assert.equal(result.data.dishCards[0].price.amount, '28');
+  const jobId = result.data.cardsJob.jobId;
+  const creations = environment.exchanges.filter(({ request }) => request.url.endsWith('/v1/jobs') && request.method === 'POST');
+  assert.equal(creations.length, 1);
+  assert.equal(creations[0].response.data.jobId, jobId);
+  const after = environment.exchanges.length;
+  result.onHide(); result.onShow();
+  environment.reconnect();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(environment.exchanges.length, after);
+  assert.equal(result.data.cardsJob.jobId, jobId);
   result.onUnload();
 });
 

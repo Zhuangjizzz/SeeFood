@@ -1,6 +1,7 @@
 const page = require('./page');
 const { getRecordsCopy, recordError } = require('../core/records-copy');
 const { getUploadCopy } = require('../core/upload-copy');
+const { getDishesCopy, presentDish } = require('../core/dishes-copy');
 
 function dateTime(value) {
   const date = new Date(value);
@@ -52,11 +53,21 @@ function showResult(target, recordId) {
   }
   const record = result.record;
   const uploadStatus = page.services().uploads.getState(recordId);
+  const dishCopy = getDishesCopy(application.language);
+  const jobState = page.services().jobs.getState(recordId);
   const currentImage = record.images.find((image) => image.id === target.data.currentImageId) || record.images[0];
+  const cardsJob = jobState.unsavedJob && jobState.unsavedJob.target.imageId === currentImage.id ? jobState.unsavedJob : currentImage.stageJobs.image_cards;
+  const cards = jobState.unsavedJob && cardsJob === jobState.unsavedJob && cardsJob.state === 'succeeded' ?
+    (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { record, copy: application.copy, recordCopy,
-    uploadCopy: getUploadCopy(application.language),
+    uploadCopy: getUploadCopy(application.language), dishCopy, cardsJob,
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: uploadStatus.originalMissing,
+    dishCards: cards.filter((card) => card.sourceImageIds.includes(currentImage.id)).map((card) => presentDish(card, dishCopy)),
+    cardsStateLabel: cardsJob ? dishCopy[cardsJob.state] : dishCopy.unstarted,
+    saveLabel: jobState.unsavedJob ? recordCopy.saveFailed : describe(record, application, uploadStatus).saveLabel,
+    cardsSaveFailed: !!jobState.unsavedJob, cardsReadFailed: !!jobState.error && !jobState.unsavedJob,
+    canLeave: record.images.every((image) => image.uploadState === 'uploaded' && image.stageJobs.image_cards),
     uploadLocalFailure: uploadStatus.error === 'storage-write' || uploadStatus.error === 'storage-read',
     recordError: '', canRetryRead: false, currentImageId: currentImage ? currentImage.id : null, currentImage,
     imageStates: record.images.map((image) => Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, uploadStatus), image)) }));

@@ -7,9 +7,12 @@ Page({
   onShow() {
     if (this.unsubscribeUpload) this.unsubscribeUpload();
     this.unsubscribeUpload = page.services().uploads.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
+    if (this.unsubscribeJobs) this.unsubscribeJobs();
+    this.unsubscribeJobs = page.services().jobs.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     recordsPage.showResult(this, this.recordId);
+    void page.services().jobs.refreshRecord(this.recordId);
   },
-  onHide() { if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onHide() { if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   retryRead() { recordsPage.showResult(this, this.recordId); },
   retryUpload() {
@@ -26,6 +29,12 @@ Page({
     this.setData({ currentImageId: event.currentTarget.dataset.id });
     recordsPage.showResult(this, this.recordId);
   },
+  openDish(event) {
+    const cardId = event.currentTarget.dataset.id;
+    if (!this.data.dishCards.some((card) => card.id === cardId)) return;
+    wx.navigateTo({ url: `/pages/dish-detail/dish-detail?recordId=${encodeURIComponent(this.recordId)}&cardId=${encodeURIComponent(cardId)}` });
+  },
+  retryResultSave() { page.services().jobs.retrySave(this.recordId); recordsPage.showResult(this, this.recordId); },
   viewOriginal() {
     if (!this.data.currentImage || this.data.currentImage.original.saveState !== 'saved' || !this.data.currentImage.localOriginalPath) return;
     wx.previewImage({ current: this.data.currentImage.localOriginalPath,

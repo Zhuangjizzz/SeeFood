@@ -1,0 +1,26 @@
+<view class="exchange-page">
+  <view class="exchange-intro">{{exchangeCopy.intro}}</view>
+  <view class="speaker-tabs" role="tablist">
+    <button wx:for="{{rows}}" wx:key="speaker" class="speaker-tab {{selectedSpeaker === item.speaker ? 'selected' : ''}}" data-speaker="{{item.speaker}}" bindtap="selectSpeaker" aria-role="tab" aria-selected="{{selectedSpeaker === item.speaker}}">{{item.label}}</button>
+  </view>
+  <view class="input-paper paper">
+    <view class="translation-direction">{{direction}}</view>
+    <textarea class="exchange-input" value="{{inputValue}}" placeholder="{{exchangeCopy.placeholder}}" bindinput="onInput" maxlength="-1" auto-height="{{true}}" adjust-position="{{true}}" cursor-spacing="120" aria-label="{{exchangeCopy.placeholder}}" />
+    <view class="draft-status" wx:if="{{draftStatus}}">{{draftStatus}}</view>
+    <button class="translate-button" bindtap="submit" disabled="{{!canSubmit}}" hover-class="press">{{exchangeCopy.translate}}</button>
+  </view>
+  <view class="save-warning" wx:if="{{saveError}}" role="alert"><text>{{saveError}}</text><button bindtap="retrySave">{{exchangeCopy.retrySave}}</button></view>
+  <view wx:if="{{empty}}" class="exchange-empty">{{exchangeCopy.empty}}</view>
+  <view class="result-pair paper {{item.latest ? 'latest-pair' : ''}}" wx:for="{{rows}}" wx:key="speaker">
+    <view class="result-heading"><text>{{item.label}}</text><text class="latest-label" wx:if="{{item.latest}}">{{exchangeCopy.latest}}</text></view>
+    <block wx:if="{{item.result}}">
+      <view class="text-label">{{exchangeCopy.original}}</view><text class="original-text" selectable="{{true}}">{{item.result.original}}</text>
+      <view class="text-label">{{exchangeCopy.translation}}</view><text class="translated-text" selectable="{{true}}">{{item.result.translation}}</text>
+    </block>
+    <view wx:if="{{item.pendingText}}" class="pending-text"><view class="text-label">{{exchangeCopy.pending}}</view><text selectable="{{true}}">{{item.pendingText}}</text></view>
+    <view wx:if="{{item.status}}" class="exchange-status" role="status">{{item.status}}</view>
+    <view class="result-actions"><button wx:if="{{item.canCheck}}" data-speaker="{{item.speaker}}" bindtap="checkProgress">{{exchangeCopy.check}}</button><button wx:if="{{item.canEdit}}" data-speaker="{{item.speaker}}" bindtap="editSubmitted">{{exchangeCopy.edit}}</button></view>
+  </view>
+  <button class="clear-button" bindtap="clearExchange">{{exchangeCopy.clear}}</button>
+  <button class="back-button" bindtap="returnCards">{{exchangeCopy.back}}</button>
+</view>

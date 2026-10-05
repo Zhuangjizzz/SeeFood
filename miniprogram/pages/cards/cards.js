@@ -1,6 +1,7 @@
 const page = require('../../ui/page');
 const { GESTURE, CATEGORIES } = require('../../core/card-library');
 const { getCardsCopy } = require('../../core/cards-copy');
+const { getTextExchangeCopy } = require('../../core/text-exchange-copy');
 
 // Dimensions also define the anchor spacing used by scroll restoration.
 const CARD_HEIGHT = 370;
@@ -23,6 +24,10 @@ Page({
   onHide() { this.stopGestures(); this.flushPosition(); if (this.library) this.library.closeMenu(); },
   onUnload() { this.stopGestures(); this.flushPosition(); if (this.library) this.library.closeMenu(); },
   openLanguage: page.openLanguage,
+  openTextExchange() {
+    this.stopGestures(); this.flushPosition();
+    wx.navigateTo({ url: '/pages/text-exchange/text-exchange' });
+  },
   renderLibrary(animate, restorePosition) {
     const state = this.library.getState();
     const language = page.services().application.getState().language;
@@ -43,7 +48,7 @@ Page({
       });
     });
     const patch = {
-      cardCopy: copy, cards, category: state.category, expanded: state.expanded, animate,
+      cardCopy: copy, exchangeTitle: getTextExchangeCopy(language).title, cards, category: state.category, expanded: state.expanded, animate,
       scrollEnabled: state.expanded || collapseOffset > 0,
       categories: CATEGORIES.map((id) => ({ id, label: copy[id], count: state.counts[id] })),
       cardCount: state.cards.length, totalCount: state.counts.all,

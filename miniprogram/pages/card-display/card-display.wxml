@@ -1,0 +1,10 @@
+<view class="display-page">
+  <button class="return-cards" bindtap="returnCards"><text class="return-arrow">‹</text><text>{{cardCopy.returnCards}}</text></button>
+  <view class="staff-card staff-{{card.color}}" wx:if="{{card}}">
+    <view class="staff-language">中文</view>
+    <text class="staff-chinese" user-select>{{card.primaryText}}</text>
+    <view class="staff-comparison" wx:if="{{card.secondaryText}}"><text class="staff-source" user-select>{{card.secondaryText}}</text></view>
+    <view class="staff-mark">SeeFood</view>
+  </view>
+  <view class="empty paper" wx:else><text>{{cardCopy.cardMissing}}</text></view>
+</view>

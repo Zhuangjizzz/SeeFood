@@ -1,5 +1,6 @@
 const { createLocalStore } = require('../core/local-store');
 const { createApplication } = require('../core/application');
+const { createCardLibrary } = require('../core/card-library');
 
 function createWechatServices(platform) {
   const store = createLocalStore({
@@ -14,7 +15,9 @@ function createWechatServices(platform) {
   } catch (_) {
     // An unavailable platform locale falls through to the explicit language picker.
   }
-  return { store, application: createApplication({ store, systemLanguage }) };
+  const application = createApplication({ store, systemLanguage });
+  const cardLibrary = createCardLibrary({ store, getLanguage: () => application.getState().language });
+  return { store, application, cardLibrary };
 }
 
 module.exports = { createWechatServices };

@@ -1,0 +1,11 @@
+.display-page { padding: 8rpx 30rpx calc(36rpx + env(safe-area-inset-bottom)); }
+.return-cards { min-height: 96rpx; display: flex; align-items: center; gap: 12rpx; text-align: left; font-size: 27rpx; padding: 8rpx 6rpx; border-radius: 0; }
+.return-arrow { font-size: 54rpx; line-height: 1; font-weight: 300; }
+.staff-card { position: relative; margin-top: 18rpx; min-height: 920rpx; padding: 46rpx 36rpx 74rpx; background: #e5ebd9; border: 1rpx solid #c3ceba; border-radius: 26rpx; box-shadow: inset 0 2rpx #ffffffb8, 0 4rpx #cbd5c1, 0 8rpx #c0cbb7, 0 20rpx 28rpx #2f493012; }
+.staff-blue { background: #e2e9e9; border-color: #c3cfcf; }
+.staff-orange { background: #eee4d4; border-color: #d6c9b8; }
+.staff-language { color: #71816c; font-size: 25rpx; letter-spacing: 2rpx; margin-bottom: 28rpx; }
+.staff-chinese { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 58rpx; font-weight: 550; line-height: 1.6; color: #294b36; }
+.staff-comparison { margin-top: 48rpx; padding-top: 32rpx; border-top: 1rpx solid #bfcbb5; }
+.staff-source { display: block; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 30rpx; line-height: 1.65; color: #65755e; }
+.staff-mark { color: #86917d; margin-top: 50rpx; font-size: 22rpx; }

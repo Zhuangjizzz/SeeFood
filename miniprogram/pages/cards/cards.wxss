@@ -42,7 +42,8 @@
 .card-menu-heading { color: #64735d; font-size: 24rpx; }
 .card-menu-title { color: #294f35; font-size: 32rpx; line-height: 1.4; font-weight: 600; margin-top: 12rpx; overflow-wrap: anywhere; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .card-menu-explanation { color: #64735d; font-size: 25rpx; line-height: 1.5; margin: 16rpx 0 22rpx; }
-.card-menu-delete, .card-menu-cancel { min-height: 88rpx; display: flex; justify-content: center; align-items: center; border-radius: 18rpx; padding: 16rpx 22rpx; font-size: 28rpx; line-height: 1.4; }
+.card-menu-edit, .card-menu-delete, .card-menu-cancel { min-height: 88rpx; display: flex; justify-content: center; align-items: center; border-radius: 18rpx; padding: 16rpx 22rpx; font-size: 28rpx; line-height: 1.4; }
+.card-menu-edit { color: #315d43; background: #e0e8d5; margin-top: 20rpx; }
 .card-menu-delete { color: #873d31; background: #f2e3db; }
 .card-menu-cancel { margin-top: 12rpx; color: #436044; }
 .card-menu-error { margin-bottom: 18rpx; font-size: 25rpx; line-height: 1.5; color: #873d31; }

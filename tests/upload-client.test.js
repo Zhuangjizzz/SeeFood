@@ -100,12 +100,15 @@ test('native confirmation starts upload and result pages show live and saved out
   assert.equal(result.data.uploadState, 'uploading');
   release();
   assert.equal((await services.uploads.uploadRecord(initial.id)).ok, true);
+  assert.equal((await services.jobs.startImageCards(initial.id)).ok, true);
+  assert.equal(result.data.canLeave, true);
   for (const [language, label] of [['en', 'Uploaded'], ['ja', 'アップロード済み'], ['ko', '업로드됨'], ['es', 'Subida completada'], ['zh-CN', '已上传']]) {
     services.application.chooseLanguage(language);
     result.onHide(); result.onShow();
     assert.equal(result.data.processingLabel, label);
     assert.equal(result.data.uploadCopy.uploadedBody.length > 0, true);
-    assert.equal(result.data.currentImage.stageJobs.image_cards, null);
+    assert.equal(result.data.currentImage.stageJobs.image_cards.state, 'succeeded');
+    assert.equal(result.data.dishCards.length, 1);
   }
   const sent = setup.traffic.length;
   result.onHide(); result.onShow(); result.onUnload();

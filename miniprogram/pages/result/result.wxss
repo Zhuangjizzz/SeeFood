@@ -25,3 +25,12 @@
 .image-local-state { color: #6b7d62; }
 .pending-explanation { font-size: 24rpx; color: #6b7d62; line-height: 1.5; margin: 20rpx 6rpx; }
 .result-empty { margin: 24rpx 0 0; padding: 28rpx 22rpx; }
+.cards-progress { color: #315d43; margin: 24rpx 6rpx 12rpx; font-size: 26rpx; }
+.dish-section-title { font-size: 30rpx; font-weight: 600; margin-top: 28rpx; }
+.mock-notice { color: #7c705b; font-size: 22rpx; line-height: 1.5; margin: 12rpx 0 20rpx; }
+.dish-card { width: 100%; padding: 28rpx; margin: 18rpx 0; text-align: left; white-space: normal; line-height: 1.55; border-radius: 18rpx; }
+.dish-name { font-size: 33rpx; color: #243d2c; font-weight: 600; overflow-wrap: anywhere; }
+.dish-localized-name { color: #586d51; font-size: 27rpx; margin-top: 4rpx; overflow-wrap: anywhere; }
+.dish-price { color: #755c37; font-size: 27rpx; margin-top: 12rpx; }
+.dish-price-raw { color: #7b8772; font-size: 22rpx; margin-top: 4rpx; }
+.dish-summary { color: #435c40; font-size: 26rpx; line-height: 1.6; margin-top: 14rpx; overflow-wrap: anywhere; }

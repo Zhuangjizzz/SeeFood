@@ -1,0 +1,15 @@
+# Local service
+
+Run `npm ci`, then `npm run server:dev`. Node 26 or later is required. The service listens at `127.0.0.1:8787` and stores SQLite metadata and actual images outside the repository at `~/.seefood/development`. `SEEFOOD_DATA_DIR` selects another external directory; `HOST` and `PORT` select the listener. `PORT=0` chooses a free port and the first stdout line contains its URL.
+
+The development identity route is enabled explicitly by `server:dev`; allowed identities default to `demo-owner-a,demo-owner-b`. The normal `server` script does not enable this route, and the launcher disables it in production. Real WeChat session verification remains outside this local implementation.
+
+Upload a real image, confirm its asset, publish a new snapshot binding that asset, then submit `image_cards` to `POST /v1/jobs`. `GET /v1/jobs/{jobId}` returns persisted state and output. Exact request fields are in [OpenAPI](../docs/technical/openapi.json). Upload and completion do not create jobs. Job acceptance atomically stores its request, immutable snapshot, asset references and request-idempotency response before returning 202. A sequential executor runs independently of requests and resumes queued/interrupted work from SQLite after a process restart. This is a single-process local service, not a distributed queue.
+
+Only generation is simulated. `SEEFOOD_MOCK_SCENARIO` accepts `menu` (default), `unknown-price`, `no-cards`, or `failure`. Dish-mode image requests produce uncertain dish identity. The fixed texts exist in all five supported languages; identifiers and snapshot versions always come from the actual accepted job. `SEEFOOD_WORKER_DELAY_MS` controls the executor interval for bounded local restart tests. These options are runtime configuration, never HTTP request fields.
+
+`server/jobs.ts` owns common persistence and execution. Add a `JobHandler` through `createService({jobHandlers})` to extend a stage: validate cross-object input in `prepare`, invoke the generation boundary in `generate`, and validate output relationships in `validateOutput`. Input preparation executes in the same database transaction as acceptance. The executor verifies real asset bytes and current task attempt/revision before publishing. `server/contract.ts` owns structural validation and common errors.
+
+This stage implements image cards and their query. Pagination/recovery coordination, retries, translation, chat, dietary review, acknowledgement, cleanup and terminal expiry transitions belong to subsequent implementation tickets. No cloud deployment, real AI response quality, physical-device file limits or production identity guarantee is implied by local tests.
+
+Run `npm test` for public client operations, actual HTTP/process/SQLite/file behavior and native page adapters. Run `npm run typecheck` separately. Shared WeChat simulator compilation and layout checks are coordinated in the integrated checkout.

@@ -83,7 +83,8 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
     if (!card) { pendingRevealId = null; return { ok: false, error: 'card-not-found' }; }
     // Returning from a successful save must show that card even if persisting
     // the optional browsing position fails. A later reload retries this view.
-    view = Object.assign({}, view, { category: card.category, position: { cardId: id, offset: 0 } });
+    const first = cards.filter((item) => item.category === card.category).sort((a, b) => a.order - b.order)[0];
+    view = Object.assign({}, view, { category: card.category, expanded: view.expanded || first.id !== id, position: { cardId: id, offset: 0 } });
     const result = saveView({}); pendingRevealId = result.ok ? null : id; return result;
   }
 
@@ -185,11 +186,16 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
       library.cancelTouch();
       if (!readable) return { ok: false, error: error || 'storage-read' };
       if (!cards.some((card) => card.id === id)) return { ok: false, error: 'card-not-found' };
-      const remaining = cards.filter((card) => card.id !== id);
       let saved;
-      try { saved = store.get('personal-cards'); }
+      try {
+        saved = store.get('personal-cards');
+        if (!saved || saved.initialized !== true || !Array.isArray(saved.cards)) throw new Error('Unreadable cards');
+      }
       catch (_) { pendingDeletionId = id; deleteError = 'storage-read'; return { ok: false, error: deleteError }; }
-      try { store.set('personal-cards', Object.assign({}, saved, { cards: remaining })); }
+      const remaining = saved.cards.filter((card) => card.id !== id);
+      const drafts = Object.assign({}, saved.drafts);
+      Object.keys(drafts).forEach((slot) => { if (drafts[slot]?.mode === 'edit' && drafts[slot].cardId === id) delete drafts[slot]; });
+      try { store.set('personal-cards', Object.assign({}, saved, { cards: remaining, drafts })); }
       catch (_) { pendingDeletionId = id; deleteError = 'storage-write'; return { ok: false, error: deleteError }; }
       cards = remaining;
       if (displayId === id) displayId = null;

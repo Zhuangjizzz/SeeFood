@@ -1,0 +1,32 @@
+/* THROWAWAY tabletop study. Solid surfaces + layered shadows follow Starbucks §1/§4/§6.
+   Paper edge and ceramic contour are an original SeeFood interpretation, not copied art. */
+.variant-a .a-table-scene{position:relative;isolation:isolate;width:100%;height:176px;margin:12px auto 7px;pointer-events:none;text-align:left;overflow:visible;max-width:366px}
+.variant-a .a-table-scene *{box-sizing:border-box}
+.variant-a .a-table-scene .a-scene-table-shadow{position:absolute;left:17%;right:5%;bottom:10px;height:23px;background:#233c3220;border-radius:50%;filter:blur(11px);transform:rotate(3deg)}
+.variant-a .a-table-scene .a-scene-menu{position:absolute;z-index:2;left:12%;top:7px;width:34%;height:145px;transform:rotate(-12deg);filter:drop-shadow(0 9px 6px #27392e16)}
+.variant-a .a-table-scene .a-scene-menu-sheet{position:absolute;inset:0;border:1px solid #c8c8b9;border-radius:2px;background:#e5e2d6}
+.variant-a .a-table-scene .a-scene-menu-sheet-back{transform:translate(-3px,7px) rotate(-2deg);box-shadow:0 1px 0 #bcbeb0,0 2px 0 #eeebdf}
+.variant-a .a-table-scene .a-scene-menu-sheet-middle{transform:translate(1px,4px);box-shadow:0 1px 0 #bfc2b1,0 2px 0 #e7e6d8}
+.variant-a .a-table-scene .a-scene-menu img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:fill;border:1px solid #dedaca;border-radius:2px;box-shadow:inset 0 1px 0 #fff,0 1px 0 #d0cbbd}
+.variant-a .a-table-scene .a-scene-chopsticks{position:absolute;z-index:1;right:8%;top:10px;width:14px;height:130px;transform:rotate(23deg)}
+.variant-a .a-table-scene .a-scene-chopsticks i{position:absolute;left:0;top:0;width:4px;height:130px;border-radius:1px 1px 2px 2px;background:#9b7253;border-left:1px solid #c09b77;border-right:1px solid #795c44;box-shadow:3px 3px 3px #25382b1c}
+.variant-a .a-table-scene .a-scene-chopsticks i+i{left:9px;top:-1px}
+.variant-a .a-table-scene .a-scene-bowl{position:absolute;z-index:1;right:16%;top:20px;width:97px;height:91px;transform:rotate(6deg)}
+.variant-a .a-table-scene .a-scene-bowl-foot{position:absolute;left:19px;top:62px;width:62px;height:26px;border-radius:50%;background:#d6d9cf;box-shadow:0 4px 2px #a6afa22b,2px 10px 9px #233e321a}
+.variant-a .a-table-scene .a-scene-bowl-body{position:absolute;left:1px;top:12px;width:95px;height:73px;border-radius:45% 45% 49% 49%;background:#d6e2d9;box-shadow:inset -8px -5px 0 #c1d0c5,inset 3px 0 0 #e7eee7,0 1px 1px #9ea99c}
+.variant-a .a-table-scene .a-scene-bowl-rim{position:absolute;left:0;top:0;width:97px;height:74px;border-radius:50%;background:#eaf0e9;border:1px solid #b7c9bc;box-shadow:inset 0 2px 0 #fffdf7,0 2px 1px #a8b7a7}
+.variant-a .a-table-scene .a-scene-bowl-well{position:absolute;left:8px;top:7px;width:81px;height:59px;border-radius:50%;background:#c1d5c8;border:1px solid #93ab9a;box-shadow:inset 2px 3px 3px #24453426,0 1px 0 #fffffbbd}
+.variant-a .a-table-scene .a-scene-tea{position:absolute;left:12px;top:16px;width:73px;height:47px;border-radius:50%;background:#718367;box-shadow:inset -3px -2px 0 #87967a,inset 1px 4px 3px #2a422b30}
+.variant-a .a-table-scene .a-scene-tea-light{position:absolute;left:22px;top:25px;width:19px;height:10px;border-radius:50%;background:#d6dfbc40;transform:rotate(-20deg)}
+.variant-a .a-table-scene .a-scene-card-pack{position:absolute;z-index:3;left:44%;top:88px;width:43%;height:73px;transform:rotate(7deg);filter:drop-shadow(2px 8px 5px #1e39321f)}
+.variant-a .a-table-scene .a-scene-pack-sheet{position:absolute;inset:0;border-radius:7px;background:#fffdf4;border:1px solid #c9cfbf;box-shadow:0 1px 0 #fdfcef,0 2px 0 #bfc8b8}
+.variant-a .a-table-scene .a-scene-pack-sheet-3{transform:translate(0,10px) rotate(-3deg)}
+.variant-a .a-table-scene .a-scene-pack-sheet-2{transform:translate(0,7px) rotate(1deg)}
+.variant-a .a-table-scene .a-scene-pack-sheet-1{transform:translate(0,4px) rotate(-1deg)}
+.variant-a .a-table-scene .a-scene-card-face{position:absolute;inset:0;overflow:hidden;border-radius:7px;background:#1e3932;border:1px solid #3a5449;border-top-color:#526a5b;box-shadow:0 1px 0 #172e26,0 2px 0 #bfd0bf;color:#fffdf4;padding:9px 12px;font-family:Arial,'PingFang SC',sans-serif;letter-spacing:0}
+.variant-a .a-table-scene .a-scene-card-brand{display:block;font-size:7px;font-weight:700;letter-spacing:-.1px;color:#d6e5d8}
+.variant-a .a-table-scene .a-scene-card-brand>span{color:#a2baa8}
+.variant-a .a-table-scene .a-scene-card-name{display:block;margin-top:6px;font-size:15px;font-weight:600;letter-spacing:1px;line-height:1.1}
+.variant-a .a-table-scene .a-scene-card-translation{display:block;font-size:6px;color:#d3dfd4;margin-top:5px}
+.variant-a .a-table-scene .a-scene-card-index{position:absolute;right:10px;bottom:10px;font-size:5px;letter-spacing:.6px;color:#a7bcae}
+.variant-a .a-table-scene .a-scene-card-tab{position:absolute;right:12px;top:0;width:11px;height:17px;background:#d4e9e2;clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)}

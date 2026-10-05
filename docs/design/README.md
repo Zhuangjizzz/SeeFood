@@ -1,10 +1,32 @@
-# 界面设计参考
+# 页面设计
 
-SeeFood 采用 D（Starbucks）作为界面设计方向，后续界面设计与实现以此为准。E（Uber）暂存为备选。
+本文维护共用视觉方向和页面设计的完成条件。设计或实现页面时，先读对应的[功能规格](../product/functional-spec.md)，再按下表进入具体页面；数据、保存和请求机制见[技术设计](../technical/design.md)。
 
-| 原型方案 | 状态 | 设计参考 |
-| --- | --- | --- |
-| D · The Host | 已选用 | [Starbucks DESIGN.md](starbucks/DESIGN.md) |
-| E · The Essential | 备选，暂存 | [Uber DESIGN.md](uber/DESIGN.md) |
+| 设计任务 | 阅读位置 |
+| --- | --- |
+| 拍照、提交、结果与全屏图片 | [核心页面设计](pages.md#entry) |
+| 我的、历史、偏好与语言设置 | [个人设置与历史](pages.md#mine) |
+| 独立聊天、页面入口与返回 | [聊天](pages.md#chat)、[导航](pages.md#navigation) |
+| 卡库、收展排序、店员展示、创建编辑与文字交流 | [沟通卡与文字交流设计](communication-cards.md) |
 
-两份文件原文复制自本地 `awesome-design-md/design-md/`，上游为 [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)。原始许可见 [LICENSE](LICENSE)。
+页面结构和主要操作已确认，尺寸、图文比例、组件细节与状态画面仍需逐页核对。菜品卡片的具体内容与样式留待后续细化；既有功能和当前固定模拟联调范围仍按[功能规格第 1 节](../product/functional-spec.md#1-本轮交付与范围)执行。
+
+## 视觉方向与多语言
+
+采用温暖的绿色与米白底色。以文字层级、留白和清晰分区组织内容；卡片、图形与主要控件通过纸边、柔和分层阴影和轻微厚度表现材质。沟通卡的连续收展与手势见[卡库设计](communication-cards.md#library)。
+
+细化色彩角色、排版、圆角、阴影和按压反馈时，查阅 [Starbucks 设计参考](references/starbucks/DESIGN.md)。它提供外观参考，SeeFood 的功能范围仍由 [PRD](../product/prd.md)与功能规格定义；参考中的品牌专用字体、数值和业务组件需按本项目的语言、屏幕与功能重新核对。
+
+静态界面覆盖英语、日语、韩语、西班牙语和简体中文。每页核对导航、按钮、标题、表单与状态提示的换行、对齐、遮挡和截断，同时覆盖界面语言与既有内容语言不同的组合。静态文案、预置卡与动态内容各自的切换规则见[功能规格 2.2](../product/functional-spec.md#22-语言切换与内容保留)。
+
+外部设计参考来自 [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md)，参考原文与[许可](references/LICENSE)保存在 `references/`。
+
+## 页面设计的完成条件
+
+单页进入实现前，应具备：
+
+- 可核对的入口、布局、主要操作、返回去向，以及该页适用的空白、加载、部分成功、失败、离线与恢复画面。
+- 尺寸、间距、文字层级、图文比例和五语言文案；固定栏、键盘与安全区不会遮住正文或操作。
+- 明确的待定项与对应功能验收编号。共用规则维护在本文，页面特有规则放在对应章节。
+
+实现后执行受影响的[功能验收用例 D01–D20](../product/functional-spec.md#9-本轮开发验收用例)，按仓库约定使用 wechatide 编译并检查模拟器中的页面与五语言布局。记录实际通过项和待处理项；页面设计确认与小程序实现验收分别判断。

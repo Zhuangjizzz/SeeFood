@@ -1,0 +1,3259 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "SeeFood development API",
+    "version": "0.1.0",
+    "description": "本地开发基线；AI 使用固定模拟结果，尚未实现或部署。生命周期语义见 design.md，场景与样例见 mocks/。不含长期历史同步、菜名纠正、选菜或订单 API。"
+  },
+  "security": [
+    {
+      "businessToken": []
+    }
+  ],
+  "paths": {
+    "/v1/session": {
+      "post": {
+        "operationId": "createSession",
+        "summary": "微信凭证换取业务令牌",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dev/session": {
+      "post": {
+        "operationId": "createDevSession",
+        "summary": "本地模拟身份",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          }
+        },
+        "description": "仅开发模式显式启用；正式环境不注册此入口。",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevSessionRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/contexts/{contextId}": {
+      "put": {
+        "operationId": "putContext",
+        "summary": "建立或更新不可变版本快照",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Context"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "客户端先保存 contextId。相同版本同正文可幂等重放。被引用旧快照仍可读取，不允许把它覆盖到最新版本；已删除ID不得重建。",
+        "parameters": [
+          {
+            "name": "contextId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteContext",
+        "summary": "标记删除并排队清理临时内容",
+        "responses": {
+          "202": {
+            "description": "成功（202 表示已持久接收，处理尚未完成）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cleanup"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "先持久化删除标记并禁止任务写回再返回。本人删除标记仍在时重复请求返回同一cleanupId；不存在且无本人标记返回404。不影响本机独立收藏卡。",
+        "parameters": [
+          {
+            "name": "contextId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/v1/uploads": {
+      "post": {
+        "operationId": "createUpload",
+        "summary": "领取图片上传凭证",
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTicket"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/uploads/{uploadId}/complete": {
+      "post": {
+        "operationId": "completeUpload",
+        "summary": "校验图片并确认上传完成",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadedAsset"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "校验实际字节数、格式、文件可读性与归属后关联 assetId；不会隐式启动 AI 任务。",
+        "parameters": [
+          {
+            "name": "uploadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCompleteRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs": {
+      "post": {
+        "operationId": "createJob",
+        "summary": "接受并持久化一个处理任务",
+        "responses": {
+          "202": {
+            "description": "成功（202 表示已持久接收，处理尚未完成）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "同一上下文+kind+稳定业务目标只对应一个未过期任务；正文一致返回该任务，不同正文返回409。网络重发可返回任务当时状态，jobId和冻结输入不变。",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJobRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{jobId}": {
+      "get": {
+        "operationId": "getJob",
+        "summary": "读取当前处理状态与结果",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "客户端校验当前关联 jobId、attempt、revision。保留期内可刷新短期图片下载凭证而不增加业务 revision；凭证更新不得重置本机保存状态。",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/v1/contexts/{contextId}/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "summary": "分页恢复临时上下文中的任务",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "contextId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{jobId}/retry": {
+      "post": {
+        "operationId": "retryJob",
+        "summary": "重试原任务的失败尝试",
+        "responses": {
+          "202": {
+            "description": "成功（202 表示已持久接收，处理尚未完成）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "仅 state=failed 且 error.retryable=true，expectedAttempt 必须匹配。增加attempt和revision，沿用冻结输入；非失败任务不创建新工作。新偏好／新文本应为显式新操作，不修改原任务输入。",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{jobId}/ack": {
+      "post": {
+        "operationId": "ackJob",
+        "summary": "确认已应用与实际持久保存的结果",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Error410"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "description": "重复相同回执幂等。服务端校验版本范围与资源归属；较旧回执不能回退水位或清理较新结果。仅显示过不得触发已交付结果的提前清理。",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AckRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cleanups/{cleanupId}": {
+      "get": {
+        "operationId": "getCleanup",
+        "summary": "读取临时内容清理状态",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cleanup"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "cleanupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "businessToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "后端签发的短期业务令牌，格式不预先绑定 JWT。"
+      }
+    },
+    "schemas": {
+      "Locale": {
+        "type": "string",
+        "enum": [
+          "en",
+          "ja",
+          "ko",
+          "es",
+          "zh-CN"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "AUTH_REQUIRED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "INPUT_UNSUPPORTED",
+              "INPUT_LIMIT_EXCEEDED",
+              "UPLOAD_INCOMPLETE",
+              "UPLOAD_EXPIRED",
+              "JOB_STATE_CONFLICT",
+              "CONTEXT_EXPIRED",
+              "CONTEXT_DELETED",
+              "SNAPSHOT_CONFLICT",
+              "IDEMPOTENCY_CONFLICT",
+              "DEPENDENCY_MISSING",
+              "RATE_LIMITED",
+              "TEMPORARY_FAILURE"
+            ]
+          },
+          "messageKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "code",
+          "messageKey",
+          "retryable",
+          "details"
+        ],
+        "additionalProperties": false
+      },
+      "SessionRequest": {
+        "type": "object",
+        "properties": {
+          "loginCode": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "loginCode"
+        ],
+        "additionalProperties": false
+      },
+      "DevSessionRequest": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "identity"
+        ],
+        "additionalProperties": false,
+        "description": "仅显式开启的本地开发环境可用；正式环境不注册此路由。identity 必须来自开发配置中的测试身份。"
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "Preferences": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "allergies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "restrictions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "tastes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "allergies",
+          "restrictions",
+          "tastes",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "Price": {
+        "type": "object",
+        "properties": {
+          "rawText": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Z]{3}$"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rawText",
+          "amount",
+          "currency",
+          "unit",
+          "variant"
+        ],
+        "additionalProperties": false,
+        "description": "未知字段为 null；amount 是可确认的非负十进制金额字符串，不以 0 代替未知。rawText 保留价目原文；金额、规格和单位的解释策略后续验证。"
+      },
+      "DishCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recordId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceImageIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "nameZh": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "localizedName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Price"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "uncertainty": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "recordId",
+          "sourceImageIds",
+          "nameZh",
+          "localizedName",
+          "contentLanguage",
+          "price",
+          "summary",
+          "details",
+          "uncertainty"
+        ],
+        "additionalProperties": false,
+        "description": "仅承载识别／解释结果，不包含用户纠正菜名或点餐状态字段。details 与 uncertainty 为当前联调展示结构；模拟文本不构成真实成分判断。"
+      },
+      "CardContent": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "textZh": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pairedText": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pairedLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          }
+        },
+        "required": [
+          "title",
+          "category",
+          "textZh",
+          "pairedText",
+          "pairedLanguage"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "pairedLanguage": {
+                  "const": "zh-CN"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "pairedText": {
+                  "type": "null"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "pairedText": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ],
+        "description": "中文卡片 pairedText=null；其他语言必须有配对译文。收藏时本机复制完整字段，不依赖来源消息。"
+      },
+      "Attachment": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "dish_reference"
+              },
+              "cardId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "type",
+              "cardId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "communication_card"
+              },
+              "card": {
+                "$ref": "#/components/schemas/CardContent"
+              }
+            },
+            "required": [
+              "type",
+              "card"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "MessageSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "inReplyTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preferencesVersion": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "text",
+          "contentLanguage",
+          "inReplyTo",
+          "preferencesVersion",
+          "attachments"
+        ],
+        "additionalProperties": false,
+        "description": "提供已完成对话所需内容。聊天任务所引用快照不包含本次用户消息或待生成回复；服务端按稳定 ID 防止重复组装。"
+      },
+      "ImageSnapshot": {
+        "type": "object",
+        "properties": {
+          "imageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "menu",
+              "dish"
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "assetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "imageId",
+          "kind",
+          "order",
+          "assetId"
+        ],
+        "additionalProperties": false,
+        "description": "assetId=null 表示仅保留文字关联，不能执行依赖原图的任务。使用旧记录时必须按新操作所需材料恢复资源。"
+      },
+      "RecordSnapshot": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageSnapshot"
+            }
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishCard"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageSnapshot"
+            }
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/Preferences"
+          }
+        },
+        "required": [
+          "images",
+          "cards",
+          "messages",
+          "preferences"
+        ],
+        "additionalProperties": false
+      },
+      "CommunicationSnapshot": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "targetLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "inputVersion": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "text",
+          "sourceLanguage",
+          "targetLanguage",
+          "inputVersion"
+        ],
+        "additionalProperties": false
+      },
+      "ContextRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "purpose": {
+                "const": "record"
+              },
+              "localScopeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recordId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "snapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "snapshot": {
+                "$ref": "#/components/schemas/RecordSnapshot"
+              }
+            },
+            "required": [
+              "purpose",
+              "localScopeId",
+              "recordId",
+              "snapshotVersion",
+              "snapshot"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "purpose": {
+                "const": "communication"
+              },
+              "localScopeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "snapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "snapshot": {
+                "$ref": "#/components/schemas/CommunicationSnapshot"
+              }
+            },
+            "required": [
+              "purpose",
+              "localScopeId",
+              "snapshotVersion",
+              "snapshot"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "record: localScopeId=recordId；communication: localScopeId 对应独立草稿／请求，禁止 recordId。相同版本相同内容幂等；不同内容或旧版本覆盖返回 SNAPSHOT_CONFLICT。purpose/归属/本机作用域创建后不可变。"
+      },
+      "Context": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "contextId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "purpose": {
+                "const": "record"
+              },
+              "localScopeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recordId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "snapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "contextId",
+              "purpose",
+              "localScopeId",
+              "recordId",
+              "snapshotVersion",
+              "expiresAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "contextId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "purpose": {
+                "const": "communication"
+              },
+              "localScopeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "snapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "contextId",
+              "purpose",
+              "localScopeId",
+              "snapshotVersion",
+              "expiresAt"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "UploadRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "imageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "menu",
+              "dish"
+            ]
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "contextId",
+          "imageId",
+          "kind",
+          "mimeType",
+          "sizeBytes"
+        ],
+        "additionalProperties": false,
+        "description": "仅 record 上下文。本轮 MIME 集合为联调格式约定，真机导入需做格式探测／转换与兼容性验证；大小与数量上限配置后验证。"
+      },
+      "UploadTicket": {
+        "type": "object",
+        "properties": {
+          "uploadId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uploadUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "uploadMethod": {
+            "const": "PUT"
+          },
+          "uploadHeaders": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "uploadId",
+          "uploadUrl",
+          "uploadMethod",
+          "uploadHeaders",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "description": "向动态 uploadUrl 发送原始字节和 uploadHeaders；不附加本 API 的业务 Bearer 令牌。短期地址到期后通过新上传操作获取票据，不自动启动 AI。"
+      },
+      "UploadCompleteRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "imageId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "contextId",
+          "imageId"
+        ],
+        "additionalProperties": false
+      },
+      "UploadedAsset": {
+        "type": "object",
+        "properties": {
+          "uploadId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "imageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "assetId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "uploadId",
+          "contextId",
+          "imageId",
+          "assetId"
+        ],
+        "additionalProperties": false
+      },
+      "ImageArtifact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "imageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "translation"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "assetId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "remoteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "remoteUrlExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "imageId",
+          "kind",
+          "contentLanguage",
+          "assetId",
+          "remoteUrl",
+          "remoteUrlExpiresAt",
+          "mimeType",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "description": "这是服务端资源描述，本机 localPath/saveState 由客户端保存，不回传。本轮模拟 URL 不提供真实图片。结果仍在保留期内时 GET Job 可刷新下载凭证，URL 刷新不改变业务 revision。"
+      },
+      "ImageCardsOutput": {
+        "type": "object",
+        "properties": {
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishCard"
+            }
+          }
+        },
+        "required": [
+          "cards"
+        ],
+        "additionalProperties": false,
+        "description": "cards=[] 是合法成功结果，当前图片显示无卡片。"
+      },
+      "ImageTranslationOutput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "ready"
+              },
+              "artifact": {
+                "$ref": "#/components/schemas/ImageArtifact"
+              }
+            },
+            "required": [
+              "state",
+              "artifact"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "not_required"
+              },
+              "reasonKey": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "state",
+              "reasonKey"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ChatOutput": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            }
+          }
+        },
+        "required": [
+          "text",
+          "contentLanguage",
+          "complete",
+          "attachments"
+        ],
+        "additionalProperties": false
+      },
+      "DietaryAssessment": {
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preferencesVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "state": {
+            "const": "current"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "cardId",
+          "preferencesVersion",
+          "state",
+          "warnings",
+          "checkedAt"
+        ],
+        "additionalProperties": false,
+        "description": "任务成功仅表示完成本次模拟检查，不表示食物安全保证；执行失败用 Job.error，客户端 pending/checking/failed 状态不伪装为 current。"
+      },
+      "DietaryReviewOutput": {
+        "type": "object",
+        "properties": {
+          "assessments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DietaryAssessment"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "assessments"
+        ],
+        "additionalProperties": false
+      },
+      "TextTranslationOutput": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "inputVersion": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "text",
+          "contentLanguage",
+          "inputVersion"
+        ],
+        "additionalProperties": false,
+        "description": "应用结果前同时核对草稿当前 inputVersion、requestId 和 jobId；旧翻译不能覆盖已编辑草稿。"
+      },
+      "ImageCardsRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "image_cards"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "imageId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "imageId"
+            ],
+            "additionalProperties": false
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "contextSnapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "assetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "inputKind": {
+                "type": "string",
+                "enum": [
+                  "menu",
+                  "dish"
+                ]
+              },
+              "targetLanguage": {
+                "$ref": "#/components/schemas/Locale"
+              }
+            },
+            "required": [
+              "contextSnapshotVersion",
+              "assetId",
+              "inputKind",
+              "targetLanguage"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "contextId",
+          "kind",
+          "target",
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "ImageCardsJob": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextSnapshotVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "const": "image_cards"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "imageId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "imageId"
+            ],
+            "additionalProperties": false
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageCardsOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "jobId",
+          "contextId",
+          "contextSnapshotVersion",
+          "kind",
+          "target",
+          "state",
+          "attempt",
+          "revision",
+          "output",
+          "error",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "$ref": "#/components/schemas/ImageCardsOutput"
+                },
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "queued"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "not": {
+                    "const": "succeeded"
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ImageTranslationRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "image_translation"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "imageId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "imageId"
+            ],
+            "additionalProperties": false
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "contextSnapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "assetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "targetLanguage": {
+                "$ref": "#/components/schemas/Locale"
+              }
+            },
+            "required": [
+              "contextSnapshotVersion",
+              "assetId",
+              "targetLanguage"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "contextId",
+          "kind",
+          "target",
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "ImageTranslationJob": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextSnapshotVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "const": "image_translation"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "imageId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "imageId"
+            ],
+            "additionalProperties": false
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageTranslationOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "jobId",
+          "contextId",
+          "contextSnapshotVersion",
+          "kind",
+          "target",
+          "state",
+          "attempt",
+          "revision",
+          "output",
+          "error",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "$ref": "#/components/schemas/ImageTranslationOutput"
+                },
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "queued"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "not": {
+                    "const": "succeeded"
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "chat"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "userMessageId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "assistantMessageId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "userMessageId",
+              "assistantMessageId"
+            ],
+            "additionalProperties": false
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "contextSnapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "targetLanguage": {
+                "$ref": "#/components/schemas/Locale"
+              }
+            },
+            "required": [
+              "contextSnapshotVersion",
+              "text",
+              "targetLanguage"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "contextId",
+          "kind",
+          "target",
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "ChatJob": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextSnapshotVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "const": "chat"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "userMessageId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "assistantMessageId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "userMessageId",
+              "assistantMessageId"
+            ],
+            "additionalProperties": false
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "jobId",
+          "contextId",
+          "contextSnapshotVersion",
+          "kind",
+          "target",
+          "state",
+          "attempt",
+          "revision",
+          "output",
+          "error",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "$ref": "#/components/schemas/ChatOutput"
+                },
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "queued"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "properties": {
+                    "complete": {
+                      "const": true
+                    }
+                  }
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "output": {
+                  "if": {
+                    "type": "object"
+                  },
+                  "then": {
+                    "properties": {
+                      "complete": {
+                        "const": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DietaryReviewRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "dietary_review"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "cardIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "preferencesVersion": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "cardIds",
+              "preferencesVersion"
+            ],
+            "additionalProperties": false
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "contextSnapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "preferences": {
+                "$ref": "#/components/schemas/Preferences"
+              },
+              "cards": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DishCard"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "contextSnapshotVersion",
+              "preferences",
+              "cards"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "contextId",
+          "kind",
+          "target",
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "DietaryReviewJob": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextSnapshotVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "const": "dietary_review"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "cardIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "preferencesVersion": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "cardIds",
+              "preferencesVersion"
+            ],
+            "additionalProperties": false
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DietaryReviewOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "jobId",
+          "contextId",
+          "contextSnapshotVersion",
+          "kind",
+          "target",
+          "state",
+          "attempt",
+          "revision",
+          "output",
+          "error",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "$ref": "#/components/schemas/DietaryReviewOutput"
+                },
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "queued"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "not": {
+                    "const": "succeeded"
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TextTranslationRequest": {
+        "type": "object",
+        "properties": {
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "const": "text_translation"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "requestId"
+            ],
+            "additionalProperties": false
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "contextSnapshotVersion": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceLanguage": {
+                "$ref": "#/components/schemas/Locale"
+              },
+              "targetLanguage": {
+                "$ref": "#/components/schemas/Locale"
+              },
+              "inputVersion": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "contextSnapshotVersion",
+              "text",
+              "sourceLanguage",
+              "targetLanguage",
+              "inputVersion"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "contextId",
+          "kind",
+          "target",
+          "input"
+        ],
+        "additionalProperties": false
+      },
+      "TextTranslationJob": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextSnapshotVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "const": "text_translation"
+          },
+          "target": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "requestId"
+            ],
+            "additionalProperties": false
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextTranslationOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "jobId",
+          "contextId",
+          "contextSnapshotVersion",
+          "kind",
+          "target",
+          "state",
+          "attempt",
+          "revision",
+          "output",
+          "error",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "$ref": "#/components/schemas/TextTranslationOutput"
+                },
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "running"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "queued"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "not": {
+                    "const": "succeeded"
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "output": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CreateJobRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ImageCardsRequest"
+          },
+          {
+            "$ref": "#/components/schemas/ImageTranslationRequest"
+          },
+          {
+            "$ref": "#/components/schemas/ChatRequest"
+          },
+          {
+            "$ref": "#/components/schemas/DietaryReviewRequest"
+          },
+          {
+            "$ref": "#/components/schemas/TextTranslationRequest"
+          }
+        ],
+        "description": "每种任务的 input.contextSnapshotVersion 必填并在接受时冻结。前四类必须引用 record 上下文；text_translation 必须引用 communication 上下文。依赖和输入一致性由服务端事务校验，见 design.md 的上下文与提交、任务执行与结果应用。"
+      },
+      "Job": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ImageCardsJob"
+          },
+          {
+            "$ref": "#/components/schemas/ImageTranslationJob"
+          },
+          {
+            "$ref": "#/components/schemas/ChatJob"
+          },
+          {
+            "$ref": "#/components/schemas/DietaryReviewJob"
+          },
+          {
+            "$ref": "#/components/schemas/TextTranslationJob"
+          }
+        ],
+        "description": "response 不暴露内部 owner/供应商原始数据。attempt 从 1 开始，revision 在所有尝试间单调递增；结构校验不能替代时序校验。"
+      },
+      "JobList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "游标由服务端生成；按稳定 jobId 排序且有界分页，同一 jobId 最多一项。恢复时持续到 nextCursor=null。"
+      },
+      "RetryRequest": {
+        "type": "object",
+        "properties": {
+          "expectedAttempt": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "expectedAttempt"
+        ],
+        "additionalProperties": false
+      },
+      "AckRequest": {
+        "type": "object",
+        "properties": {
+          "appliedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "locallySavedRevision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locallySavedArtifactIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "appliedRevision",
+          "locallySavedRevision",
+          "locallySavedArtifactIds"
+        ],
+        "additionalProperties": false,
+        "description": "appliedRevision 是已应用到界面的版本；locallySavedRevision 仅在该版本文字／结构持久保存成功后填写，不能超过 appliedRevision；图片另按 artifact.id 确认本机文件写入成功。回执按版本合并，旧回执不能使较新版本被清理。"
+      },
+      "AckReceipt": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "appliedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "locallySavedRevision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locallySavedArtifactIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "jobId",
+          "appliedRevision",
+          "locallySavedRevision",
+          "locallySavedArtifactIds"
+        ],
+        "additionalProperties": false
+      },
+      "Cleanup": {
+        "type": "object",
+        "properties": {
+          "cleanupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "cleanupId",
+          "contextId",
+          "state",
+          "error"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "error": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "客户端在首次发送前持久生成。同一所有者+HTTP操作+路径+键绑定原正文和结果；同键不同正文为409。丢失响应的网络重发复用原键，用户发起新尝试使用新键。",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "输入不符合约定",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "业务令牌缺失或过期",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "资源属于另一所有者",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "资源不存在或开发入口未启用",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "状态、快照、依赖或幂等冲突",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error410": {
+        "description": "临时上下文或上传凭证已过期／已删除",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "超过已配置的输入上限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "达到已配置的使用限额",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "临时服务失败",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1660 @@
+{
+  "version": "0.1.0",
+  "notice": "虚构接口样例；不是执行日志。example.invalid URL 不可下载图片；时间仅演示格式，不承诺保留期限。除登录外，请求还须由模拟运行器注入对应测试身份的业务令牌。",
+  "cases": [
+    {
+      "id": "dev-session",
+      "request": {
+        "method": "POST",
+        "path": "/v1/dev/session",
+        "body": {
+          "identity": "demo-owner-a"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "accessToken": "mock-token-not-valid-for-production",
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Session",
+      "requestSchema": "DevSessionRequest"
+    },
+    {
+      "id": "record-context",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/contexts/context-demo-1",
+        "body": {
+          "purpose": "record",
+          "localScopeId": "record-demo-1",
+          "recordId": "record-demo-1",
+          "snapshotVersion": 1,
+          "snapshot": {
+            "images": [
+              {
+                "imageId": "image-menu-1",
+                "kind": "menu",
+                "order": 0,
+                "assetId": "asset-original-1"
+              },
+              {
+                "imageId": "image-menu-2",
+                "kind": "menu",
+                "order": 1,
+                "assetId": "asset-original-2"
+              }
+            ],
+            "cards": [
+              {
+                "id": "card-menu-1",
+                "recordId": "record-demo-1",
+                "sourceImageIds": [
+                  "image-menu-1"
+                ],
+                "nameZh": "示例炒饭",
+                "localizedName": "Example fried rice",
+                "contentLanguage": "en",
+                "price": {
+                  "rawText": "¥28 / 份",
+                  "amount": "28",
+                  "currency": "CNY",
+                  "unit": "份",
+                  "variant": null
+                },
+                "summary": "A fixed mock dish description.",
+                "details": [
+                  "This fixture does not assert actual ingredients."
+                ],
+                "uncertainty": [
+                  "Ingredients and preparation require confirmation."
+                ]
+              },
+              {
+                "id": "card-menu-unknown",
+                "recordId": "record-demo-1",
+                "sourceImageIds": [
+                  "image-menu-2"
+                ],
+                "nameZh": "示例时价菜",
+                "localizedName": "Example market-price dish",
+                "contentLanguage": "en",
+                "price": {
+                  "rawText": "时价",
+                  "amount": null,
+                  "currency": null,
+                  "unit": null,
+                  "variant": null
+                },
+                "summary": "A fixed mock dish description.",
+                "details": [
+                  "This fixture does not assert actual ingredients."
+                ],
+                "uncertainty": [
+                  "Ingredients and preparation require confirmation."
+                ]
+              }
+            ],
+            "messages": [],
+            "preferences": {
+              "version": 1,
+              "allergies": [],
+              "restrictions": [],
+              "tastes": [],
+              "notes": ""
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "contextId": "context-demo-1",
+          "purpose": "record",
+          "localScopeId": "record-demo-1",
+          "recordId": "record-demo-1",
+          "snapshotVersion": 1,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Context",
+      "requestSchema": "ContextRequest"
+    },
+    {
+      "id": "communication-context",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/contexts/context-communication-1",
+        "body": {
+          "purpose": "communication",
+          "localScopeId": "draft-card-1",
+          "snapshotVersion": 1,
+          "snapshot": {
+            "text": "请给我一杯水。",
+            "sourceLanguage": "zh-CN",
+            "targetLanguage": "en",
+            "inputVersion": 1
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "contextId": "context-communication-1",
+          "purpose": "communication",
+          "localScopeId": "draft-card-1",
+          "snapshotVersion": 1,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Context",
+      "requestSchema": "ContextRequest"
+    },
+    {
+      "id": "upload-ticket",
+      "request": {
+        "method": "POST",
+        "path": "/v1/uploads",
+        "body": {
+          "contextId": "context-demo-1",
+          "imageId": "image-menu-1",
+          "kind": "menu",
+          "mimeType": "image/png",
+          "sizeBytes": 123456
+        },
+        "headers": {
+          "Idempotency-Key": "upload-ticket-1"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "uploadId": "upload-demo-1",
+          "uploadUrl": "https://uploads.example.invalid/upload-demo-1",
+          "uploadMethod": "PUT",
+          "uploadHeaders": {
+            "Content-Type": "image/png"
+          },
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "UploadTicket",
+      "requestSchema": "UploadRequest"
+    },
+    {
+      "id": "upload-complete",
+      "request": {
+        "method": "POST",
+        "path": "/v1/uploads/upload-demo-1/complete",
+        "body": {
+          "contextId": "context-demo-1",
+          "imageId": "image-menu-1"
+        },
+        "headers": {
+          "Idempotency-Key": "upload-complete-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "uploadId": "upload-demo-1",
+          "contextId": "context-demo-1",
+          "imageId": "image-menu-1",
+          "assetId": "asset-original-1"
+        }
+      },
+      "responseSchema": "UploadedAsset",
+      "requestSchema": "UploadCompleteRequest"
+    },
+    {
+      "id": "image-cards-accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "assetId": "asset-original-1",
+            "inputKind": "menu",
+            "targetLanguage": "en"
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "image-cards-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-image_cards",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
+      "id": "image-cards-ready",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-image_cards"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-image_cards",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "state": "succeeded",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "cards": [
+              {
+                "id": "card-menu-1",
+                "recordId": "record-demo-1",
+                "sourceImageIds": [
+                  "image-menu-1"
+                ],
+                "nameZh": "示例炒饭",
+                "localizedName": "Example fried rice",
+                "contentLanguage": "en",
+                "price": {
+                  "rawText": "¥28 / 份",
+                  "amount": "28",
+                  "currency": "CNY",
+                  "unit": "份",
+                  "variant": null
+                },
+                "summary": "A fixed mock dish description.",
+                "details": [
+                  "This fixture does not assert actual ingredients."
+                ],
+                "uncertainty": [
+                  "Ingredients and preparation require confirmation."
+                ]
+              }
+            ]
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "unknown-price",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-image-cards-2"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-image-cards-2",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-menu-2"
+          },
+          "state": "succeeded",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "cards": [
+              {
+                "id": "card-menu-unknown",
+                "recordId": "record-demo-1",
+                "sourceImageIds": [
+                  "image-menu-2"
+                ],
+                "nameZh": "示例时价菜",
+                "localizedName": "Example market-price dish",
+                "contentLanguage": "en",
+                "price": {
+                  "rawText": "时价",
+                  "amount": null,
+                  "currency": null,
+                  "unit": null,
+                  "variant": null
+                },
+                "summary": "A fixed mock dish description.",
+                "details": [
+                  "This fixture does not assert actual ingredients."
+                ],
+                "uncertainty": [
+                  "Ingredients and preparation require confirmation."
+                ]
+              }
+            ]
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "no-cards",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-image-empty"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-image-empty",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-empty"
+          },
+          "state": "succeeded",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "cards": []
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "translation-accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "image_translation",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "assetId": "asset-original-1",
+            "targetLanguage": "en"
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "translation-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-image_translation",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_translation",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
+      "id": "translation-failed",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-image_translation"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-image_translation",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_translation",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "state": "failed",
+          "attempt": 1,
+          "revision": 3,
+          "output": null,
+          "error": {
+            "code": "TEMPORARY_FAILURE",
+            "messageKey": "errors.temporary_failure",
+            "retryable": true,
+            "details": {}
+          },
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "long-translation-ready",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-image_translation"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-image_translation",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_translation",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "state": "succeeded",
+          "attempt": 2,
+          "revision": 6,
+          "output": {
+            "state": "ready",
+            "artifact": {
+              "id": "artifact-translation-1",
+              "imageId": "image-menu-1",
+              "kind": "translation",
+              "contentLanguage": "en",
+              "assetId": "asset-translation-1",
+              "remoteUrl": "https://assets.example.invalid/translation-1.png",
+              "remoteUrlExpiresAt": "2026-10-07T00:00:00Z",
+              "mimeType": "image/png",
+              "width": 1080,
+              "height": 6400
+            }
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "dish-no-translation",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-dish-translation"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-dish-translation",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "image_translation",
+          "target": {
+            "imageId": "image-dish-1"
+          },
+          "state": "succeeded",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "state": "not_required",
+            "reasonKey": "image.no_text_to_translate"
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "chat-accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "text": "Show me an example recommendation.",
+            "targetLanguage": "en"
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "chat-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
+      "id": "chat-partial",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-chat-1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "state": "running",
+          "attempt": 1,
+          "revision": 2,
+          "output": {
+            "text": "This is a simulated reply.",
+            "contentLanguage": "en",
+            "complete": false,
+            "attachments": []
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "chat-failed",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-chat-1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "state": "failed",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "text": "This is a simulated reply.",
+            "contentLanguage": "en",
+            "complete": false,
+            "attachments": []
+          },
+          "error": {
+            "code": "TEMPORARY_FAILURE",
+            "messageKey": "errors.temporary_failure",
+            "retryable": true,
+            "details": {}
+          },
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "chat-retry",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs/job-demo-chat-1/retry",
+        "body": {
+          "expectedAttempt": 1
+        },
+        "headers": {
+          "Idempotency-Key": "chat-retry-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "state": "queued",
+          "attempt": 2,
+          "revision": 4,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "RetryRequest"
+    },
+    {
+      "id": "chat-complete",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-chat-1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "state": "succeeded",
+          "attempt": 2,
+          "revision": 6,
+          "output": {
+            "text": "This complete mock reply replaces the incomplete reply.",
+            "contentLanguage": "en",
+            "complete": true,
+            "attachments": [
+              {
+                "type": "dish_reference",
+                "cardId": "card-menu-1"
+              },
+              {
+                "type": "communication_card",
+                "card": {
+                  "title": "Ask for water",
+                  "category": "service",
+                  "textZh": "请给我一杯水。",
+                  "pairedText": "Could I have a glass of water, please?",
+                  "pairedLanguage": "en"
+                }
+              }
+            ]
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "dietary-accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "dietary_review",
+          "target": {
+            "cardIds": [
+              "card-menu-1"
+            ],
+            "preferencesVersion": 1
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "preferences": {
+              "version": 1,
+              "allergies": [],
+              "restrictions": [],
+              "tastes": [],
+              "notes": ""
+            },
+            "cards": [
+              {
+                "id": "card-menu-1",
+                "recordId": "record-demo-1",
+                "sourceImageIds": [
+                  "image-menu-1"
+                ],
+                "nameZh": "示例炒饭",
+                "localizedName": "Example fried rice",
+                "contentLanguage": "en",
+                "price": {
+                  "rawText": "¥28 / 份",
+                  "amount": "28",
+                  "currency": "CNY",
+                  "unit": "份",
+                  "variant": null
+                },
+                "summary": "A fixed mock dish description.",
+                "details": [
+                  "This fixture does not assert actual ingredients."
+                ],
+                "uncertainty": [
+                  "Ingredients and preparation require confirmation."
+                ]
+              }
+            ]
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "dietary-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-dietary_review",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "dietary_review",
+          "target": {
+            "cardIds": [
+              "card-menu-1"
+            ],
+            "preferencesVersion": 1
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
+      "id": "dietary-ready",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-dietary_review"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-dietary_review",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "dietary_review",
+          "target": {
+            "cardIds": [
+              "card-menu-1"
+            ],
+            "preferencesVersion": 1
+          },
+          "state": "succeeded",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "assessments": [
+              {
+                "cardId": "card-menu-1",
+                "preferencesVersion": 1,
+                "state": "current",
+                "warnings": [
+                  "Mock review only; confirm ingredients with staff."
+                ],
+                "checkedAt": "2026-10-06T10:00:00Z"
+              }
+            ]
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "independent-translation-accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-communication-1",
+          "kind": "text_translation",
+          "target": {
+            "requestId": "translation-request-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "text": "请给我一杯水。",
+            "sourceLanguage": "zh-CN",
+            "targetLanguage": "en",
+            "inputVersion": 1
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "text-translation-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-text_translation",
+          "contextId": "context-communication-1",
+          "contextSnapshotVersion": 1,
+          "kind": "text_translation",
+          "target": {
+            "requestId": "translation-request-1"
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
+      "id": "independent-translation-ready",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-text_translation"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-text_translation",
+          "contextId": "context-communication-1",
+          "contextSnapshotVersion": 1,
+          "kind": "text_translation",
+          "target": {
+            "requestId": "translation-request-1"
+          },
+          "state": "succeeded",
+          "attempt": 1,
+          "revision": 3,
+          "output": {
+            "text": "Could I have a glass of water, please?",
+            "contentLanguage": "en",
+            "inputVersion": 1
+          },
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job"
+    },
+    {
+      "id": "job-list",
+      "request": {
+        "method": "GET",
+        "path": "/v1/contexts/context-demo-1/jobs"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "items": [
+            {
+              "jobId": "job-demo-image_cards",
+              "contextId": "context-demo-1",
+              "contextSnapshotVersion": 1,
+              "kind": "image_cards",
+              "target": {
+                "imageId": "image-menu-1"
+              },
+              "state": "succeeded",
+              "attempt": 1,
+              "revision": 3,
+              "output": {
+                "cards": [
+                  {
+                    "id": "card-menu-1",
+                    "recordId": "record-demo-1",
+                    "sourceImageIds": [
+                      "image-menu-1"
+                    ],
+                    "nameZh": "示例炒饭",
+                    "localizedName": "Example fried rice",
+                    "contentLanguage": "en",
+                    "price": {
+                      "rawText": "¥28 / 份",
+                      "amount": "28",
+                      "currency": "CNY",
+                      "unit": "份",
+                      "variant": null
+                    },
+                    "summary": "A fixed mock dish description.",
+                    "details": [
+                      "This fixture does not assert actual ingredients."
+                    ],
+                    "uncertainty": [
+                      "Ingredients and preparation require confirmation."
+                    ]
+                  }
+                ]
+              },
+              "error": null,
+              "expiresAt": "2026-10-07T00:00:00Z"
+            },
+            {
+              "jobId": "job-demo-image_translation",
+              "contextId": "context-demo-1",
+              "contextSnapshotVersion": 1,
+              "kind": "image_translation",
+              "target": {
+                "imageId": "image-menu-1"
+              },
+              "state": "failed",
+              "attempt": 1,
+              "revision": 3,
+              "output": null,
+              "error": {
+                "code": "TEMPORARY_FAILURE",
+                "messageKey": "errors.temporary_failure",
+                "retryable": true,
+                "details": {}
+              },
+              "expiresAt": "2026-10-07T00:00:00Z"
+            },
+            {
+              "jobId": "job-demo-chat-1",
+              "contextId": "context-demo-1",
+              "contextSnapshotVersion": 1,
+              "kind": "chat",
+              "target": {
+                "userMessageId": "message-user-1",
+                "assistantMessageId": "message-assistant-1"
+              },
+              "state": "succeeded",
+              "attempt": 2,
+              "revision": 6,
+              "output": {
+                "text": "This complete mock reply replaces the incomplete reply.",
+                "contentLanguage": "en",
+                "complete": true,
+                "attachments": [
+                  {
+                    "type": "dish_reference",
+                    "cardId": "card-menu-1"
+                  },
+                  {
+                    "type": "communication_card",
+                    "card": {
+                      "title": "Ask for water",
+                      "category": "service",
+                      "textZh": "请给我一杯水。",
+                      "pairedText": "Could I have a glass of water, please?",
+                      "pairedLanguage": "en"
+                    }
+                  }
+                ]
+              },
+              "error": null,
+              "expiresAt": "2026-10-07T00:00:00Z"
+            }
+          ],
+          "nextCursor": null
+        }
+      },
+      "responseSchema": "JobList"
+    },
+    {
+      "id": "displayed-not-saved",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs/job-demo-chat-1/ack",
+        "body": {
+          "appliedRevision": 6,
+          "locallySavedRevision": null,
+          "locallySavedArtifactIds": []
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "appliedRevision": 6,
+          "locallySavedRevision": null,
+          "locallySavedArtifactIds": []
+        }
+      },
+      "responseSchema": "AckReceipt",
+      "requestSchema": "AckRequest"
+    },
+    {
+      "id": "text-saved",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs/job-demo-chat-1/ack",
+        "body": {
+          "appliedRevision": 6,
+          "locallySavedRevision": 6,
+          "locallySavedArtifactIds": []
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "jobId": "job-demo-chat-1",
+          "appliedRevision": 6,
+          "locallySavedRevision": 6,
+          "locallySavedArtifactIds": []
+        }
+      },
+      "responseSchema": "AckReceipt",
+      "requestSchema": "AckRequest"
+    },
+    {
+      "id": "delete-context",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/contexts/context-demo-1"
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "cleanupId": "cleanup-demo-1",
+          "contextId": "context-demo-1",
+          "state": "queued",
+          "error": null
+        }
+      },
+      "responseSchema": "Cleanup"
+    },
+    {
+      "id": "cleanup-complete",
+      "request": {
+        "method": "GET",
+        "path": "/v1/cleanups/cleanup-demo-1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "cleanupId": "cleanup-demo-1",
+          "contextId": "context-demo-1",
+          "state": "succeeded",
+          "error": null
+        }
+      },
+      "responseSchema": "Cleanup"
+    },
+    {
+      "id": "context-expired",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-chat-1"
+      },
+      "response": {
+        "status": 410,
+        "body": {
+          "code": "CONTEXT_EXPIRED",
+          "messageKey": "errors.context_expired",
+          "retryable": false,
+          "details": {}
+        }
+      },
+      "responseSchema": "Error"
+    },
+    {
+      "id": "cross-owner-rejected",
+      "request": {
+        "method": "GET",
+        "path": "/v1/jobs/job-demo-chat-1"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "code": "FORBIDDEN",
+          "messageKey": "errors.forbidden",
+          "retryable": false,
+          "details": {}
+        }
+      },
+      "responseSchema": "Error"
+    },
+    {
+      "id": "idempotency-conflict",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-1",
+            "assistantMessageId": "message-assistant-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "text": "A different body using the same key.",
+            "targetLanguage": "en"
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "chat-1"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "IDEMPOTENCY_CONFLICT",
+          "messageKey": "errors.idempotency_conflict",
+          "retryable": false,
+          "details": {}
+        }
+      },
+      "responseSchema": "Error",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
+      "id": "old-attempt-conflict",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs/job-demo-chat-1/retry",
+        "body": {
+          "expectedAttempt": 1
+        },
+        "headers": {
+          "Idempotency-Key": "chat-retry-stale"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "JOB_STATE_CONFLICT",
+          "messageKey": "errors.job_state_conflict",
+          "retryable": false,
+          "details": {}
+        }
+      },
+      "responseSchema": "Error",
+      "requestSchema": "RetryRequest"
+    },
+    {
+      "id": "pending-record-context",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/contexts/context-demo-1",
+        "body": {
+          "purpose": "record",
+          "localScopeId": "record-demo-1",
+          "recordId": "record-demo-1",
+          "snapshotVersion": 1,
+          "snapshot": {
+            "images": [
+              {
+                "imageId": "image-menu-1",
+                "kind": "menu",
+                "order": 0,
+                "assetId": null
+              }
+            ],
+            "cards": [],
+            "messages": [],
+            "preferences": {
+              "version": 1,
+              "allergies": [],
+              "restrictions": [],
+              "tastes": [],
+              "notes": ""
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "contextId": "context-demo-1",
+          "purpose": "record",
+          "localScopeId": "record-demo-1",
+          "recordId": "record-demo-1",
+          "snapshotVersion": 1,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Context",
+      "requestSchema": "ContextRequest"
+    },
+    {
+      "id": "uploaded-record-context",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/contexts/context-demo-1",
+        "body": {
+          "purpose": "record",
+          "localScopeId": "record-demo-1",
+          "recordId": "record-demo-1",
+          "snapshotVersion": 2,
+          "snapshot": {
+            "images": [
+              {
+                "imageId": "image-menu-1",
+                "kind": "menu",
+                "order": 0,
+                "assetId": "asset-original-1"
+              }
+            ],
+            "cards": [],
+            "messages": [],
+            "preferences": {
+              "version": 1,
+              "allergies": [],
+              "restrictions": [],
+              "tastes": [],
+              "notes": ""
+            }
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "contextId": "context-demo-1",
+          "purpose": "record",
+          "localScopeId": "record-demo-1",
+          "recordId": "record-demo-1",
+          "snapshotVersion": 2,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Context",
+      "requestSchema": "ContextRequest"
+    },
+    {
+      "id": "image-cards-accepted-after-upload",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 2,
+            "assetId": "asset-original-1",
+            "inputKind": "menu",
+            "targetLanguage": "en"
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "image-cards-after-upload-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-image_cards",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 2,
+          "kind": "image_cards",
+          "target": {
+            "imageId": "image-menu-1"
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    }
+  ],
+  "invalidExamples": [
+    {
+      "id": "communication-with-record",
+      "schema": "ContextRequest",
+      "data": {
+        "purpose": "communication",
+        "localScopeId": "draft-card-1",
+        "snapshotVersion": 1,
+        "snapshot": {
+          "text": "请给我一杯水。",
+          "sourceLanguage": "zh-CN",
+          "targetLanguage": "en",
+          "inputVersion": 1
+        },
+        "recordId": "record-demo-1"
+      },
+      "reason": "独立沟通上下文禁止 recordId"
+    },
+    {
+      "id": "corrected-name",
+      "schema": "DishCard",
+      "data": {
+        "id": "card-menu-1",
+        "recordId": "record-demo-1",
+        "sourceImageIds": [
+          "image-menu-1"
+        ],
+        "nameZh": "示例炒饭",
+        "localizedName": "Example fried rice",
+        "contentLanguage": "en",
+        "price": {
+          "rawText": "¥28 / 份",
+          "amount": "28",
+          "currency": "CNY",
+          "unit": "份",
+          "variant": null
+        },
+        "summary": "A fixed mock dish description.",
+        "details": [
+          "This fixture does not assert actual ingredients."
+        ],
+        "uncertainty": [
+          "Ingredients and preparation require confirmation."
+        ],
+        "correctedName": "Changed name"
+      },
+      "reason": "菜名纠正字段不属于契约"
+    },
+    {
+      "id": "zero-attempt",
+      "schema": "Job",
+      "data": {
+        "jobId": "job-demo-chat-1",
+        "contextId": "context-demo-1",
+        "contextSnapshotVersion": 1,
+        "kind": "chat",
+        "target": {
+          "userMessageId": "message-user-1",
+          "assistantMessageId": "message-assistant-1"
+        },
+        "state": "succeeded",
+        "attempt": 0,
+        "revision": 6,
+        "output": {
+          "text": "This complete mock reply replaces the incomplete reply.",
+          "contentLanguage": "en",
+          "complete": true,
+          "attachments": [
+            {
+              "type": "dish_reference",
+              "cardId": "card-menu-1"
+            },
+            {
+              "type": "communication_card",
+              "card": {
+                "title": "Ask for water",
+                "category": "service",
+                "textZh": "请给我一杯水。",
+                "pairedText": "Could I have a glass of water, please?",
+                "pairedLanguage": "en"
+              }
+            }
+          ]
+        },
+        "error": null,
+        "expiresAt": "2026-10-07T00:00:00Z"
+      },
+      "reason": "尝试号必须从1开始"
+    },
+    {
+      "id": "zero-revision",
+      "schema": "Job",
+      "data": {
+        "jobId": "job-demo-chat-1",
+        "contextId": "context-demo-1",
+        "contextSnapshotVersion": 1,
+        "kind": "chat",
+        "target": {
+          "userMessageId": "message-user-1",
+          "assistantMessageId": "message-assistant-1"
+        },
+        "state": "succeeded",
+        "attempt": 2,
+        "revision": 0,
+        "output": {
+          "text": "This complete mock reply replaces the incomplete reply.",
+          "contentLanguage": "en",
+          "complete": true,
+          "attachments": [
+            {
+              "type": "dish_reference",
+              "cardId": "card-menu-1"
+            },
+            {
+              "type": "communication_card",
+              "card": {
+                "title": "Ask for water",
+                "category": "service",
+                "textZh": "请给我一杯水。",
+                "pairedText": "Could I have a glass of water, please?",
+                "pairedLanguage": "en"
+              }
+            }
+          ]
+        },
+        "error": null,
+        "expiresAt": "2026-10-07T00:00:00Z"
+      },
+      "reason": "版本必须从1开始"
+    },
+    {
+      "id": "success-incomplete",
+      "schema": "Job",
+      "data": {
+        "jobId": "job-demo-chat-1",
+        "contextId": "context-demo-1",
+        "contextSnapshotVersion": 1,
+        "kind": "chat",
+        "target": {
+          "userMessageId": "message-user-1",
+          "assistantMessageId": "message-assistant-1"
+        },
+        "state": "succeeded",
+        "attempt": 2,
+        "revision": 6,
+        "output": {
+          "text": "This complete mock reply replaces the incomplete reply.",
+          "contentLanguage": "en",
+          "complete": false,
+          "attachments": [
+            {
+              "type": "dish_reference",
+              "cardId": "card-menu-1"
+            },
+            {
+              "type": "communication_card",
+              "card": {
+                "title": "Ask for water",
+                "category": "service",
+                "textZh": "请给我一杯水。",
+                "pairedText": "Could I have a glass of water, please?",
+                "pairedLanguage": "en"
+              }
+            }
+          ]
+        },
+        "error": null,
+        "expiresAt": "2026-10-07T00:00:00Z"
+      },
+      "reason": "成功回复必须完整"
+    },
+    {
+      "id": "kind-output-mismatch",
+      "schema": "Job",
+      "data": {
+        "jobId": "job-demo-image_translation",
+        "contextId": "context-demo-1",
+        "contextSnapshotVersion": 1,
+        "kind": "image_translation",
+        "target": {
+          "imageId": "image-menu-1"
+        },
+        "state": "succeeded",
+        "attempt": 2,
+        "revision": 6,
+        "output": {
+          "text": "This complete mock reply replaces the incomplete reply.",
+          "contentLanguage": "en",
+          "complete": true,
+          "attachments": [
+            {
+              "type": "dish_reference",
+              "cardId": "card-menu-1"
+            },
+            {
+              "type": "communication_card",
+              "card": {
+                "title": "Ask for water",
+                "category": "service",
+                "textZh": "请给我一杯水。",
+                "pairedText": "Could I have a glass of water, please?",
+                "pairedLanguage": "en"
+              }
+            }
+          ]
+        },
+        "error": null,
+        "expiresAt": "2026-10-07T00:00:00Z"
+      },
+      "reason": "译图任务不能返回聊天输出"
+    },
+    {
+      "id": "kind-target-mismatch",
+      "schema": "CreateJobRequest",
+      "data": {
+        "contextId": "context-demo-1",
+        "kind": "chat",
+        "target": {
+          "imageId": "image-menu-1"
+        },
+        "input": {
+          "contextSnapshotVersion": 1,
+          "text": "Show me an example recommendation.",
+          "targetLanguage": "en"
+        }
+      },
+      "reason": "聊天目标必须是稳定消息ID"
+    },
+    {
+      "id": "unsupported-locale",
+      "schema": "CreateJobRequest",
+      "data": {
+        "contextId": "context-demo-1",
+        "kind": "chat",
+        "target": {
+          "userMessageId": "message-user-1",
+          "assistantMessageId": "message-assistant-1"
+        },
+        "input": {
+          "contextSnapshotVersion": 1,
+          "text": "Show me an example recommendation.",
+          "targetLanguage": "fr"
+        }
+      },
+      "reason": "不支持的语言"
+    },
+    {
+      "id": "floating-point-price",
+      "schema": "Price",
+      "data": {
+        "rawText": "¥28 / 份",
+        "amount": 28.5,
+        "currency": "CNY",
+        "unit": "份",
+        "variant": null
+      },
+      "reason": "金额不能使用JSON浮点数"
+    },
+    {
+      "id": "failure-without-error",
+      "schema": "Job",
+      "data": {
+        "jobId": "job-demo-chat-1",
+        "contextId": "context-demo-1",
+        "contextSnapshotVersion": 1,
+        "kind": "chat",
+        "target": {
+          "userMessageId": "message-user-1",
+          "assistantMessageId": "message-assistant-1"
+        },
+        "state": "failed",
+        "attempt": 1,
+        "revision": 3,
+        "output": {
+          "text": "This is a simulated reply.",
+          "contentLanguage": "en",
+          "complete": false,
+          "attachments": []
+        },
+        "error": null,
+        "expiresAt": "2026-10-07T00:00:00Z"
+      },
+      "reason": "失败必须包含结构化错误"
+    },
+    {
+      "id": "success-without-output",
+      "schema": "Job",
+      "data": {
+        "jobId": "job-demo-image_cards",
+        "contextId": "context-demo-1",
+        "contextSnapshotVersion": 1,
+        "kind": "image_cards",
+        "target": {
+          "imageId": "image-menu-1"
+        },
+        "state": "succeeded",
+        "attempt": 1,
+        "revision": 3,
+        "output": null,
+        "error": null,
+        "expiresAt": "2026-10-07T00:00:00Z"
+      },
+      "reason": "成功必须有对应类型输出"
+    },
+    {
+      "id": "translation-without-version",
+      "schema": "CreateJobRequest",
+      "data": {
+        "contextId": "context-communication-1",
+        "kind": "text_translation",
+        "target": {
+          "requestId": "translation-request-1"
+        },
+        "input": {
+          "contextSnapshotVersion": 1,
+          "text": "请给我一杯水。",
+          "sourceLanguage": "zh-CN",
+          "targetLanguage": "en"
+        }
+      },
+      "reason": "草稿翻译必须绑定输入版本"
+    }
+  ]
+}

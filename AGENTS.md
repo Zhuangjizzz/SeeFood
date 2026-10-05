@@ -2,6 +2,10 @@
 
 ## 智能体技能
 
+### 开发文档
+
+开发功能、调整页面或修改技术方案前，先阅读 `docs/README.md`，按任务查阅产品、功能、技术与页面设计文档。
+
 ### 问题跟踪
 
 在 `Zhuangjizzz/SeeFood` 的 GitHub Issues 中管理问题和需求说明。操作工单前，先阅读 `docs/agents/issue-tracker.md`。

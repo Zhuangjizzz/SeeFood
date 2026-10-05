@@ -1,0 +1,579 @@
+{
+  "version": "0.1.0",
+  "status": "specified_not_executed",
+  "notice": "场景描述与固定交换样例用于后续实现模拟运行器及验收；不是已执行的自动化测试。每个场景独立准备状态，必要时一致替换上下文/图片/消息ID。",
+  "scenarios": [
+    {
+      "id": "S01",
+      "title": "主入口与输入模式",
+      "fixtureIds": [
+        "dev-session"
+      ],
+      "setup": [
+        "本机没有历史；默认菜单模式"
+      ],
+      "steps": [
+        "打开拍照Tab",
+        "切换为菜品；模拟相机不可用",
+        "使用相册入口"
+      ],
+      "expected": [
+        "打开Tab不自动拉起相机",
+        "相机不可用仍可导入",
+        "无额外用户登录页"
+      ],
+      "acceptanceCases": [
+        "D01"
+      ]
+    },
+    {
+      "id": "S02",
+      "title": "多图预览、新建与追加",
+      "fixtureIds": [
+        "record-context",
+        "image-cards-ready",
+        "unknown-price"
+      ],
+      "setup": [
+        "选入三张本地图片，包含 image-menu-1、image-menu-2；第三张用于移除"
+      ],
+      "steps": [
+        "预览后移除第三张并排序",
+        "从拍照页提交",
+        "从结果页追加另一张；再从拍照页提交新批次"
+      ],
+      "expected": [
+        "预览期间无AI调用",
+        "一批图片只建一条记录，顺序与预览一致",
+        "追加保留已有图／卡／消息，新建批次独立"
+      ],
+      "acceptanceCases": [
+        "D02",
+        "D03"
+      ]
+    },
+    {
+      "id": "S03",
+      "title": "长图与当前图片筛选",
+      "fixtureIds": [
+        "record-context",
+        "long-translation-ready",
+        "unknown-price",
+        "no-cards"
+      ],
+      "setup": [
+        "菜单上下文有两张图片；长图元数据1080×6400",
+        "无卡片样例单独准备 image-empty，其目标与快照均使用该ID"
+      ],
+      "steps": [
+        "切换图片",
+        "原图与译图全屏缩放滚动，再返回",
+        "进入AI对话"
+      ],
+      "expected": [
+        "卡片只按sourceImageIds筛选，其他卡片未丢失",
+        "无卡片成功状态不挪用其他图片结果",
+        "对话仍以整个记录相关快照为输入"
+      ],
+      "acceptanceCases": [
+        "D04"
+      ]
+    },
+    {
+      "id": "S04",
+      "title": "实际菜品无需译图",
+      "fixtureIds": [
+        "dish-no-translation"
+      ],
+      "setup": [
+        "record快照包含 image-dish-1，kind=dish，已上传原图"
+      ],
+      "steps": [
+        "取得not_required结果"
+      ],
+      "expected": [
+        "展示原图与菜品信息",
+        "不显示为翻译失败，不提供重复译图"
+      ],
+      "acceptanceCases": [
+        "D05"
+      ]
+    },
+    {
+      "id": "S05",
+      "title": "卡片成功、译图失败与局部重试",
+      "fixtureIds": [
+        "image-cards-ready",
+        "translation-failed",
+        "long-translation-ready"
+      ],
+      "setup": [
+        "同一 image-menu-1 的卡片与译图分别跟踪"
+      ],
+      "steps": [
+        "先应用卡片成功",
+        "应用译图失败",
+        "用户只重试译图"
+      ],
+      "expected": [
+        "卡片继续可用，未知价格不变成0",
+        "不重跑成功卡片任务",
+        "重试译图成功后自动尝试本机保存"
+      ],
+      "acceptanceCases": [
+        "D05"
+      ]
+    },
+    {
+      "id": "S06",
+      "title": "待上传材料手动恢复",
+      "fixtureIds": [
+        "pending-record-context",
+        "upload-ticket",
+        "upload-complete",
+        "uploaded-record-context",
+        "image-cards-accepted-after-upload"
+      ],
+      "setup": [
+        "原图已保存在本机，上传未完成"
+      ],
+      "steps": [
+        "本机保存待上传记录；创建snapshotVersion=1、assetId=null的上下文",
+        "领取票据后模拟上传断网并退出",
+        "恢复网络后重进；用户点击重试，完成上传获得assetId",
+        "PUT snapshotVersion=2写入实际assetId",
+        "创建引用版本2的image_cards任务"
+      ],
+      "expected": [
+        "网络恢复不自动上传或启动AI",
+        "使用同一本机记录和图片ID",
+        "使用返回的PUT方法和上传头，不把业务令牌发给上传地址",
+        "上传完成不修改已存在的版本1快照",
+        "只向处理任务提交已绑定assetId的新版本；不能拿null资源快照直接开工"
+      ],
+      "acceptanceCases": [
+        "D06"
+      ]
+    },
+    {
+      "id": "S07",
+      "title": "退出后恢复与服务重启",
+      "fixtureIds": [
+        "image-cards-accepted",
+        "job-list",
+        "image-cards-ready"
+      ],
+      "setup": [
+        "后端已持久化接受任务；客户端已保存jobId或幂等键"
+      ],
+      "steps": [
+        "退出小程序",
+        "在任务未完成时重启本地服务",
+        "重新进入并分页查询"
+      ],
+      "expected": [
+        "已接收工作可恢复，不能仅存内存",
+        "原记录、任务和结果不重复创建",
+        "保存成功内容可回看"
+      ],
+      "acceptanceCases": [
+        "D07"
+      ]
+    },
+    {
+      "id": "S08",
+      "title": "聊天部分失败、重试及旧响应",
+      "fixtureIds": [
+        "chat-accepted",
+        "chat-partial",
+        "chat-failed",
+        "chat-retry",
+        "chat-complete"
+      ],
+      "setup": [
+        "使用 record-context；快照不含本次message-user-1及待生成回复"
+      ],
+      "steps": [
+        "发送并退出后重进",
+        "依次应用partial、failed、retry、complete",
+        "再次注入attempt=1的partial或failed"
+      ],
+      "expected": [
+        "仅一个用户问题与稳定回复ID",
+        "保留失败片段并标未完成；重试成功替换，不拼接",
+        "旧尝试丢弃，revision跨尝试递增；草稿不自动发送"
+      ],
+      "acceptanceCases": [
+        "D08",
+        "D19"
+      ]
+    },
+    {
+      "id": "S09",
+      "title": "本机离线完整性",
+      "fixtureIds": [
+        "image-cards-ready",
+        "long-translation-ready",
+        "chat-complete"
+      ],
+      "setup": [
+        "实现阶段准备实际本地图片文件；文字与文件均保存成功",
+        "另留一份仅有remoteUrl而尚未保存的译图"
+      ],
+      "steps": [
+        "断网重新打开历史与沟通卡"
+      ],
+      "expected": [
+        "已保存文字／原图／译图／消息／卡片可看",
+        "仅有remoteUrl的图片明确不可离线使用",
+        "不因历史年龄自动删除"
+      ],
+      "acceptanceCases": [
+        "D09"
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "空间不足与保存回执",
+      "fixtureIds": [
+        "chat-complete",
+        "displayed-not-saved",
+        "text-saved"
+      ],
+      "setup": [
+        "收到完整回复并显示，本机写入失败"
+      ],
+      "steps": [
+        "报告保存失败并发送仅显示回执",
+        "用户主动清理其他内容后重试保存",
+        "实际写入成功才发送text-saved"
+      ],
+      "expected": [
+        "locallySavedRevision=null时不能按已保存提前清理文本",
+        "不静默淘汰历史",
+        "保存文本不代表图片文件已保存，图片单独确认"
+      ],
+      "acceptanceCases": [
+        "D10"
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "收藏副本独立于来源",
+      "fixtureIds": [
+        "chat-complete",
+        "delete-context",
+        "cleanup-complete"
+      ],
+      "setup": [
+        "收藏 communication_card 附件，生成本机个人卡ID并复制完整文字与语言"
+      ],
+      "steps": [
+        "删除来源记录",
+        "离线打开收藏卡"
+      ],
+      "expected": [
+        "来源图片／对话删除",
+        "个人卡保留标题、双语全文、原语言和用户编辑；展示不查询来源消息"
+      ],
+      "acceptanceCases": [
+        "D11"
+      ]
+    },
+    {
+      "id": "S12",
+      "title": "删除中的迟到成功与离线清理",
+      "fixtureIds": [
+        "chat-accepted",
+        "delete-context",
+        "chat-complete",
+        "cleanup-complete"
+      ],
+      "setup": [
+        "本机已建立原记录；模拟离线删除"
+      ],
+      "steps": [
+        "持久化本机删除标记并移除内容",
+        "注入原job的成功结果",
+        "联网执行清理队列并重复删除"
+      ],
+      "expected": [
+        "任何回调不得恢复记录",
+        "后端先阻止写回再清理；重复删除不建新任务",
+        "不宣称第三方已经删除数据"
+      ],
+      "acceptanceCases": [
+        "D12"
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "偏好版本变化",
+      "fixtureIds": [
+        "dietary-accepted",
+        "dietary-ready",
+        "chat-complete"
+      ],
+      "setup": [
+        "已用preferencesVersion=1检查并聊天"
+      ],
+      "steps": [
+        "本机偏好改为version=2，提示转待检查",
+        "注入version=1检查结果",
+        "对version=2检查注入失败"
+      ],
+      "expected": [
+        "旧评估不能覆盖当前待检查状态",
+        "失败不标为已按新偏好检查",
+        "旧消息原文保留，旧推荐标需重新确认"
+      ],
+      "acceptanceCases": [
+        "D13",
+        "D18"
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "五语言静态布局",
+      "fixtureIds": [
+        "image-cards-ready",
+        "chat-complete",
+        "independent-translation-ready"
+      ],
+      "setup": [
+        "已有英语动态内容及完整静态五语言资源"
+      ],
+      "steps": [
+        "依次切换en、ja、ko、es、zh-CN",
+        "检查导航、长按钮、表单、状态提示及混合语言内容"
+      ],
+      "expected": [
+        "静态文案正确切换且布局可读",
+        "已有动态内容不变，无模型调用／上下文重建",
+        "预置卡按内置资源切换，自定义卡保留原文"
+      ],
+      "acceptanceCases": [
+        "D14"
+      ]
+    },
+    {
+      "id": "S15",
+      "title": "无菜名编辑与点餐状态",
+      "fixtureIds": [
+        "image-cards-ready"
+      ],
+      "setup": [
+        "结果、详情、沟通卡及偏好页面已实现"
+      ],
+      "steps": [
+        "检查结果与详情操作",
+        "编辑个人沟通卡和饮食偏好"
+      ],
+      "expected": [
+        "无菜名纠正字段、保存动作或对应API",
+        "无选菜、数量编辑、购物车／点餐清单",
+        "沟通卡编辑和偏好修改正常"
+      ],
+      "acceptanceCases": [
+        "D15"
+      ]
+    },
+    {
+      "id": "S16",
+      "title": "过期历史的按需恢复",
+      "fixtureIds": [
+        "context-expired",
+        "record-context",
+        "chat-accepted"
+      ],
+      "setup": [
+        "本机历史和图片已保存；旧context过期",
+        "重建样例使用新的contextId并替换后续请求对应ID，保留recordId/消息ID"
+      ],
+      "steps": [
+        "打开旧历史",
+        "用户主动发送新问题",
+        "分别测试所需源图存在与缺失"
+      ],
+      "expected": [
+        "打开历史不自动重译",
+        "新操作建立新context；旧context不能重用",
+        "缺失必要材料时请求补图，不编造缺失内容",
+        "旧job结果不能覆盖新job关联"
+      ],
+      "acceptanceCases": [
+        "D16"
+      ]
+    },
+    {
+      "id": "S17",
+      "title": "无菜单的独立沟通",
+      "fixtureIds": [
+        "communication-context",
+        "independent-translation-accepted",
+        "independent-translation-ready"
+      ],
+      "setup": [
+        "本机没有菜单记录，存在独立沟通卡草稿或文字交流请求"
+      ],
+      "steps": [
+        "创建communication上下文并发起翻译",
+        "保存自定义卡片或显示双向翻译"
+      ],
+      "expected": [
+        "无recordId，无用餐历史副作用",
+        "文字和语言正确保存，中文卡不重复中文全文"
+      ],
+      "acceptanceCases": [
+        "D17"
+      ]
+    },
+    {
+      "id": "S18",
+      "title": "独立翻译期间编辑或丢弃草稿",
+      "fixtureIds": [
+        "independent-translation-accepted",
+        "independent-translation-ready"
+      ],
+      "setup": [
+        "草稿inputVersion=1的翻译正在进行"
+      ],
+      "steps": [
+        "将草稿改为version=2，另行提交时生成新requestId/jobId",
+        "注入version=1旧结果",
+        "另测丢弃草稿后旧结果到达"
+      ],
+      "expected": [
+        "存在草稿也必须核对当前inputVersion、requestId、jobId",
+        "旧译文不覆盖新文字，不自动发起新翻译",
+        "丢弃草稿不被重新创建"
+      ],
+      "acceptanceCases": [
+        "D17"
+      ]
+    },
+    {
+      "id": "S19",
+      "title": "冻结快照与去重当前问题",
+      "fixtureIds": [
+        "record-context",
+        "chat-accepted"
+      ],
+      "setup": [
+        "version=1包含既有完整对话，不包含本次提问"
+      ],
+      "steps": [
+        "接受任务后追加图片并更新为snapshotVersion=2",
+        "模拟任务开始执行",
+        "提交后续新问题引用version=2"
+      ],
+      "expected": [
+        "首个任务只读取version=1的冻结材料",
+        "后续任务使用新版本",
+        "每条提问只在模型输入中组装一次；两消息ID不得相同"
+      ],
+      "acceptanceCases": [
+        "D18"
+      ]
+    },
+    {
+      "id": "S20",
+      "title": "所有者隔离",
+      "fixtureIds": [
+        "cross-owner-rejected",
+        "communication-context"
+      ],
+      "setup": [
+        "两个独立模拟身份A/B；准备A的上下文、上传、资产、任务、清理记录"
+      ],
+      "steps": [
+        "用B令牌访问A的各类资源",
+        "用B的任务输入引用A的asset或上下文"
+      ],
+      "expected": [
+        "所有跨所有者读取／写入／清理均被拒绝",
+        "独立文字翻译与记录任务同样受保护",
+        "生产配置的/v1/dev/session不可用"
+      ],
+      "acceptanceCases": [
+        "D20"
+      ]
+    },
+    {
+      "id": "S21",
+      "title": "幂等重放与过时重试",
+      "fixtureIds": [
+        "chat-accepted",
+        "idempotency-conflict",
+        "chat-retry",
+        "old-attempt-conflict"
+      ],
+      "setup": [
+        "首次请求已接受但客户端未收到响应"
+      ],
+      "steps": [
+        "同键同正文重发",
+        "同键不同正文重发",
+        "同重试键重复提交；再用新键提交旧expectedAttempt"
+      ],
+      "expected": [
+        "同键同正文返回同一jobId，状态可继续演进",
+        "不同正文409，不能启动另一任务",
+        "重试键重发不多增加attempt，过时尝试409"
+      ],
+      "acceptanceCases": [
+        "D07",
+        "D19"
+      ]
+    },
+    {
+      "id": "S22",
+      "title": "无效跨对象输入与回执",
+      "fixtureIds": [
+        "record-context",
+        "displayed-not-saved"
+      ],
+      "setup": [
+        "准备合法字段但语义不一致的请求"
+      ],
+      "steps": [
+        "把任务目标指向快照外imageId",
+        "让偏好target版本与input不一致",
+        "让locallySavedRevision超过appliedRevision，或回执带别的任务artifactId"
+      ],
+      "expected": [
+        "接受前拒绝冲突，不依赖JSON Schema完成语义判断",
+        "不产生任务／清理副作用"
+      ],
+      "acceptanceCases": [
+        "D10",
+        "D18",
+        "D20"
+      ]
+    },
+    {
+      "id": "S23",
+      "title": "短期地址续取",
+      "fixtureIds": [
+        "upload-ticket",
+        "long-translation-ready"
+      ],
+      "setup": [
+        "上传凭证或译图下载凭证失效，但上下文／结果仍在保留期"
+      ],
+      "steps": [
+        "上传票据到期后用户点击重试",
+        "下载URL到期后重新查询Job"
+      ],
+      "expected": [
+        "新票据仍关联原图片，不自动重跑AI",
+        "查询获取新下载地址，内容revision不变",
+        "更新下载地址不能覆盖本机已保存路径或重置保存状态"
+      ],
+      "acceptanceCases": [
+        "D06",
+        "D09"
+      ]
+    }
+  ]
+}

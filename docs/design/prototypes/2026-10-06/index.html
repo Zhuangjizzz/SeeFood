@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- Browser design preview with fixed sample content. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SeeFood · 页面设计工作台</title>
+  <link rel="stylesheet" href="shared/base.css">
+  <link rel="stylesheet" href="a-the-host/style.css">
+  <link rel="stylesheet" href="a-the-host/scene.css">
+  <link rel="stylesheet" href="a-the-host/surfaces.css">
+  <link rel="stylesheet" href="a-the-host/pages-v3.css">
+  <link rel="stylesheet" href="a-the-host/cards-v3.css">
+  <link rel="stylesheet" href="a-the-host/app-v3.css">
+</head>
+<body>
+  <header class="workbench-header"><a class="studio-brand" href="?variant=A"><span class="studio-mark">S<span>f</span></span>SeeFood <span class="studio-divider"></span><span class="studio-label">PAGE DESIGN</span></a><div class="review-badge"><span></span>页面交互预览</div></header>
+  <main class="workbench">
+    <aside class="page-rail"><div class="rail-eyebrow">页面设计</div><h1>从菜单，<br>到一顿好饭。</h1><p class="rail-description">通过实际操作核对布局与手势。</p><nav id="page-nav" aria-label="原型页面"></nav></aside>
+    <section class="preview-stage" aria-label="可操作的手机原型"><div class="stage-caption"><span id="stage-title"></span><span>390 × 844</span></div><div id="device" class="device"><div class="system-bar"><span>9:41</span><div><svg width="15" height="12" viewBox="0 0 15 12" aria-hidden="true"><path d="M1 11V8h2v3M5 11V6h2v5M9 11V3h2v8M13 11V0h2v11" fill="currentColor"/></svg><span class="wifi">◔</span><span class="battery"></span></div></div><div class="mini-bar"><span class="mini-brand">SeeFood</span><span class="mini-capsule" aria-label="微信小程序系统菜单示意">•••<i></i>◉</span></div><div id="screen" class="screen-content"></div><div id="toast" class="toast" role="status"></div></div><p class="stage-footnote">固定示例 · 浏览器保存可重置</p></section>
+    <aside class="review-panel"><span class="rail-eyebrow">PAGE PREVIEW</span><div id="variant-notes"></div><div class="review-controls"><label for="language-picker">界面语言</label><select id="language-picker"><option value="en">English</option><option value="zh">简体中文</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="es">Español</option></select><label for="scenario-picker">页面状态</label><select id="scenario-picker"></select></div><div id="screen-notes" class="screen-notes"></div><details class="state-details"><summary>当前原型状态</summary><pre id="state-display"></pre></details><a class="overview-link" href="a-the-host/overview.png">↗ 页面总览</a><br><a class="overview-link" href="a-the-host/refinements.png">↗ 沟通卡操作图</a></aside>
+  </main>
+  <script src="shared/content.js"></script>
+  <script src="a-the-host/table-scene.js"></script>
+  <script src="a-the-host/variant.js"></script>
+  <script src="a-the-host/pages-v3.js"></script>
+  <script src="a-the-host/cards-v3.js"></script>
+  <script src="a-the-host/app-v3.js"></script>
+</body>
+</html>

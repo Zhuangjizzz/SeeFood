@@ -49,6 +49,19 @@ function createWechatBackend(platform, store, config) {
     putContext: (id, body) => business('PUT', `/v1/contexts/${encodeURIComponent(id)}`, body),
     createUpload: (body, key) => business('POST', '/v1/uploads', body, key),
     completeUpload: (id, body, key) => business('POST', `/v1/uploads/${encodeURIComponent(id)}/complete`, body, key),
+    async downloadArtifact(artifact) {
+      // A business token is attached only to this service's own resource endpoint.
+      const prefix = config.baseUrl + '/v1/image-artifacts/';
+      if (!artifact.remoteUrl.startsWith(prefix) || artifact.remoteUrl.slice(prefix.length) !== encodeURIComponent(artifact.id)) throw { code: 'DEPENDENCY_MISSING' };
+      const accessToken = await session();
+      return new Promise((resolve, reject) => platform.downloadFile({ url: artifact.remoteUrl,
+        header: { Authorization: `Bearer ${accessToken}` }, timeout: 30000,
+        success(result) {
+          if (result.statusCode === 200 && result.tempFilePath) resolve(result.tempFilePath);
+          else reject({ code: 'translation-download' });
+        }, fail() { reject({ code: 'network-unavailable' }); }
+      }));
+    },
     async sendUpload(ticket, filePath) {
       const bytes = await new Promise((resolve, reject) => platform.getFileSystemManager().readFile({ filePath,
         success: (result) => resolve(result.data), fail: () => reject({ code: 'original-missing' }) }));

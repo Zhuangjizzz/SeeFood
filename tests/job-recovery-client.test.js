@@ -56,7 +56,8 @@ test('page reentry recovers a lost acceptance response across a killed HTTP proc
   assert.equal(recovered.id, pending.id); assert.deepEqual(recovered.imageIds, pending.imageIds);
   assert.deepEqual(recovered.images[0].original, pending.images[0].original);
   assert.equal(fs.existsSync(recovered.images[0].localOriginalPath), true);
-  assert.equal(page.data.canLeave, true); assert.equal(page.data.dishCards.length, 1);
+  // The independent translation stage has not been accepted in this cards-only recovery.
+  assert.equal(page.data.canLeave, false); assert.equal(page.data.dishCards.length, 1);
   assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length, 1);
   const token = await session(restarted.url);
   const listed = await request(restarted.url, 'GET', `/v1/contexts/${recovered.contextId}/jobs`, undefined, token);

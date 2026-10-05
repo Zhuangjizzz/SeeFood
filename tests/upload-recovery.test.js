@@ -167,7 +167,7 @@ test('an expired unfinished upload renews for the same image and a lost renewal 
   assert.equal(environment.exchanges.some(({ request }) => request.url.endsWith('/v1/jobs')), false);
 });
 
-test('native interruption recovery preserves five-language state and the explicit retry resumes one image into one accepted dish job', async (t) => {
+test('native interruption recovery preserves five-language state and the explicit retry resumes one image into independent accepted stages', async (t) => {
   const environment = await recoveryEnvironment(t);
   const first = environment.client();
   const initial = await pendingRecord(first, environment.disk);
@@ -217,8 +217,10 @@ test('native interruption recovery preserves five-language state and the explici
   assert.equal(result.data.dishCards[0].price.amount, '28');
   const jobId = result.data.cardsJob.jobId;
   const creations = environment.exchanges.filter(({ request }) => request.url.endsWith('/v1/jobs') && request.method === 'POST');
-  assert.equal(creations.length, 1);
-  assert.equal(creations[0].response.data.jobId, jobId);
+  assert.equal(creations.length, 2);
+  assert.equal(creations.find((entry) => entry.response.data.kind === 'image_cards').response.data.jobId, jobId);
+  assert.equal(result.data.translationJob.state, 'succeeded');
+  assert.equal(result.data.currentImage.translation.saveState, 'saved');
   const after = environment.exchanges.length;
   result.onHide(); result.onShow();
   environment.reconnect();

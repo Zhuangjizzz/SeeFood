@@ -115,7 +115,7 @@ Page({
       saveError: recordError(this.data.recordCopy, result.error || (submission && submission.error)) });
     if (result.ok) {
       // Confirmation authorizes the first upload; revisiting a saved record never restarts it.
-      if (page.services().uploads.enabled) void page.services().uploads.uploadRecord(result.recordId).then((outcome) => outcome.ok ? page.services().jobs.startImageCards(result.recordId) : outcome);
+      if (page.services().uploads.enabled) void page.services().uploads.uploadRecord(result.recordId).then((outcome) => outcome.ok ? page.services().jobs.startImageProcessing(result.recordId) : outcome);
       recordsPage.openResult(result.recordId, true);
     }
   },

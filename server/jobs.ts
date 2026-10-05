@@ -26,7 +26,7 @@ export function createJobService(options: JobServiceOptions) {
     id TEXT PRIMARY KEY, owner TEXT NOT NULL, context_id TEXT NOT NULL REFERENCES contexts(id),
     kind TEXT NOT NULL, target TEXT NOT NULL, request TEXT NOT NULL, frozen TEXT NOT NULL, response TEXT NOT NULL,
     UNIQUE(context_id, kind, target));`);
-  let stopped = false; let active: Promise<void> | undefined;
+  let stopped = false; const active = new Map<string, Promise<void>>();
   const interval = Math.max(10, options.workerDelayMs || 20);
   function row(id: string, owner: string) {
     const value = database.prepare('SELECT * FROM jobs WHERE id=?').get(id);
@@ -108,18 +108,16 @@ export function createJobService(options: JobServiceOptions) {
       return job;
     });
   }
-  async function work() {
-    const rows = database.prepare('SELECT * FROM jobs ORDER BY id').all();
-    for (const saved of rows) {
+  async function execute(saved: any) {
       if (stopped) return;
       let job = JSON.parse(String(saved.response));
-      if (!['queued', 'running'].includes(job.state)) continue;
+      if (!['queued', 'running'].includes(job.state)) return;
       // On restart an interrupted running task keeps its frozen input and attempt.
       const frozen: FrozenJob = JSON.parse(String(saved.frozen));
       try {
         getContext(String(saved.context_id), String(saved.owner));
         const handler = handlers[job.kind];
-        if (!handler) continue;
+        if (!handler) return;
         job = { ...job, state: 'running', revision: job.revision + 1 };
         database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(job), job.jobId);
         const output = await handler.generate({ ...frozen, job, images: frozen.assets.map((asset) => {
@@ -135,6 +133,13 @@ export function createJobService(options: JobServiceOptions) {
         publish({ ...job, state: 'failed', revision: job.revision + 1, output: null,
           error: { code: failure.code, messageKey: `errors.${failure.code.toLowerCase()}`, retryable: failure.retryable, details: failure.details } }, saved);
       }
+  }
+  function work() {
+    for (const saved of database.prepare('SELECT * FROM jobs ORDER BY id').all()) {
+      const id = String(saved.id);
+      if (active.has(id) || !['queued', 'running'].includes(JSON.parse(String(saved.response)).state)) continue;
+      const running = execute(saved).catch(() => { /* Next tick recovers durable running work. */ }).finally(() => active.delete(id));
+      active.set(id, running);
     }
   }
   function publish(job: Json, saved: any) {
@@ -147,8 +152,9 @@ export function createJobService(options: JobServiceOptions) {
     database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(job), job.jobId);
   }
   const timer = setInterval(() => {
-    if (!active && !stopped) active = work().catch(() => { /* A future tick can recover a durable running job. */ }).finally(() => { active = undefined; });
+    if (!stopped) work();
   }, interval);
   timer.unref();
-  return { accept, get, list, async close() { stopped = true; clearInterval(timer); await active; } };
+  return { accept, get, list, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
+
 }

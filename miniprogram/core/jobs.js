@@ -66,7 +66,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
           draft.cardIds = draft.cards.map((card) => card.id);
         }
       });
-      unsaved.delete(key); errors.delete(id); return { ok: true, jobId: job.jobId };
+      unsaved.delete(key); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   function acceptRecoveredJob(id, job) {

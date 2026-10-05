@@ -10,6 +10,8 @@ Page({
   onShow() {
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => recordsPage.showResult(this, this.recordId));
+    if (this.unsubscribeChat) this.unsubscribeChat();
+    this.unsubscribeChat = page.services().chat.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     if (this.unsubscribeUpload) this.unsubscribeUpload();
     this.unsubscribeUpload = page.services().uploads.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     if (this.unsubscribeJobs) this.unsubscribeJobs();
@@ -24,7 +26,7 @@ Page({
     void page.services().jobs.refreshRecord(this.recordId);
   },
   onPageScroll(event) { this.scrollTop = event.scrollTop; reading.capture(this, event); },
-  onHide() { if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onHide() { if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   addPhotos() {
     if (!this.data.record) return;

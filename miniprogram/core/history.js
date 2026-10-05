@@ -22,6 +22,7 @@ function createHistory({ records, application, jobs, chat, uploads, store }) {
     if (states.every((state) => state === 'succeeded') && !chatState.running) return 'complete';
     if (succeeded) return 'partial';
     if (states.some((state) => ['running', 'queued'].includes(state)) || chatState.running) return 'processing';
+    if (record.images.some((image) => ['image_cards', 'image_translation'].some((kind) => image.jobRequests && image.jobRequests[kind] && !image.stageJobs[kind]))) return 'checking';
     if (record.images.some((image) => image.uploadState === 'uploading')) return 'uploading';
     if (record.images.some((image) => image.uploadState === 'pending')) return 'pending';
     return 'uploaded';
@@ -34,7 +35,8 @@ function createHistory({ records, application, jobs, chat, uploads, store }) {
     const artifacts = record.images.flatMap((image) => [image.original].concat(image.translation || []));
     const missingImages = artifacts.filter((artifact) => artifact.saveState !== 'saved').length;
     const unsaved = (imageState.unsavedJobs || []).length || chatState.unsavedJob || ['storage-read', 'storage-write'].includes(upload.error);
-    const saving = artifacts.some((artifact) => artifact.saveState === 'saving') || record.saveState === 'saving';
+    const saving = record.images.some((image) => image.original.saveState === 'saving' ||
+      image.translation && image.translation.saveState === 'saving' && (imageState.savingTranslations || []).includes(image.id)) || record.saveState === 'saving';
     const saveState = unsaved || record.saveState === 'failed' ? 'failed' : saving ? 'saving' : originalsSaved && translationsSaved ? 'saved' : 'partial';
     const first = record.images[0];
     return { id: record.id, title: record.title || `${record.kind === 'dish' ? copy.dish : copy.menu} · ${dateTime(record.createdAt).split(' ')[0]}`,

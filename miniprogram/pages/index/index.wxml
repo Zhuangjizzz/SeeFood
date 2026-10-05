@@ -38,6 +38,7 @@
     </view>
   </view>
   <view wx:if="{{offline}}" class="notice history-offline" role="status">{{historyCopy.offline}}</view>
+  <view wx:if="{{positionSaveFailed}}" class="notice" role="status">{{historyCopy.positionFailed}}</view>
   <view class="recent-section">
     <view class="section-heading"><text class="section-title">{{copy.recent}}</text><button class="text-button" bindtap="openHistory" hover-class="press">{{copy.viewAll}} <text class="chevron">›</text></button></view>
     <view class="notice" wx:if="{{historyError}}" role="alert">

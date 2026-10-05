@@ -8,11 +8,6 @@ const { getChatCopy } = require('../core/chat-copy');
 
 const { getRecoveryCopy } = require('../core/recovery-copy');
 
-function dateTime(value) {
-  const date = new Date(value);
-  const pad = (number) => String(number).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 function uploadState(images) {
   if (images.some((image) => image.uploadState === 'failed')) return 'failed';
   if (images.some((image) => image.uploadState === 'uploading')) return 'uploading';
@@ -24,13 +19,9 @@ function describe(record, application, uploadStatus) {
   const uploadCopy = getUploadCopy(application.language);
   const status = uploadState(record.images);
   const originalsSaved = record.images.every((image) => image.original.saveState === 'saved');
-  const translationsSaved = record.images.every((image) => !image.translation || image.translation.saveState === 'saved');
   const summary = page.services().history.describe(record);
   const historyCopy = getHistoryCopy(application.language);
-  const uploadLocalFailure = uploadStatus && ['storage-read', 'storage-write'].includes(uploadStatus.error);
-  return { ...summary, id: record.id, title: record.title || `${record.kind === 'dish' ? application.copy.dish : application.copy.menu} · ${dateTime(record.createdAt).split(' ')[0]}`,
-    createdAtLabel: dateTime(record.createdAt), imageCount: record.images.length,
-    thumbnail: record.images[0] && record.images[0].original.saveState === 'saved' ? record.images[0].localOriginalPath : null,
+  return { ...summary,
     uploadState: status, originalsSaved,
     processingLabel: historyCopy[summary.processingState] || (uploadStatus && uploadStatus.originalMissing ? copy.uploadFailed : uploadStatus && uploadStatus.interrupted ? uploadCopy.interrupted :
       uploadStatus && uploadStatus.resuming ? uploadCopy.resuming :

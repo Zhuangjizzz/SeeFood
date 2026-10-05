@@ -59,7 +59,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         assistant.jobId = job.jobId;
         if (job.output) Object.assign(assistant, { text: job.output.text, contentLanguage: job.output.contentLanguage, attachments: clone(job.output.attachments) });
       });
-      unsaved.delete(id); errors.delete(id); return { ok: true, jobId: job.jobId };
+      unsaved.delete(id); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   async function poll(id, assistantId) {

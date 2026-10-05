@@ -130,3 +130,101 @@ test('known offline reopening reads saved history and new generation waits for r
   assert.equal(reopened.chat.getState(id).messages.length, messages.length + 2);
   await server.stop();
 });
+
+test('interrupted translation file saving reopens as unavailable offline instead of claiming an active save', async (t) => {
+  const { disk, services, backend, id } = await connected(t);
+  await services.jobs.startImageCards(id);
+  let downloading = false; disk.platform.downloadFile = () => { downloading = true; };
+  void services.jobs.startImageTranslation(id);
+  for (let count = 0; count < 300 && !downloading; count++) await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(downloading, true); assert.equal(services.history.list().entries[0].saveState, 'saving');
+  const reopened = createWechatServices(disk.platform, { backend });
+  const entry = reopened.history.list().entries[0];
+  assert.equal(entry.processingState, 'complete'); assert.equal(entry.saveState, 'partial');
+  assert.equal(entry.offlineAvailable, false); assert.equal(entry.missingImages, 1);
+});
+
+function mountResult(t, services, id) {
+  const previous = { Page: global.Page, wx: global.wx, getApp: global.getApp };
+  global.getApp = () => ({ services }); global.wx = { setNavigationBarTitle() {} };
+  let definition; global.Page = (value) => { definition = value; };
+  const file = require.resolve('../miniprogram/pages/result/result'); delete require.cache[file]; require(file);
+  const page = { ...definition, data: structuredClone(definition.data), setData(value) { Object.assign(this.data, value); } };
+  page.onLoad({ recordId: id }); page.onShow();
+  t.after(() => { page.onUnload(); Object.assign(global, previous); });
+  return page;
+}
+
+test('result and history refresh aggregate chat completion and unsaved reply independently of image success', async (t) => {
+  const { disk, services, id } = await connected(t);
+  await services.jobs.startImageCards(id); await services.jobs.startImageTranslation(id);
+  const result = mountResult(t, services, id);
+  const send = disk.platform.request; let release;
+  disk.platform.request = (options) => {
+    if (options.method === 'POST' && options.data.kind === 'chat') release = () => send(options);
+    else send(options);
+  };
+  const reply = services.chat.send(id, 'A new question');
+  for (let count = 0; count < 100 && !release; count++) await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(typeof release, 'function');
+  assert.equal(result.data.processingLabel, 'Some content is ready');
+  release(); await reply;
+  assert.equal(result.data.processingLabel, 'Processing complete');
+  assert.equal(result.data.saveLabel, 'Saved on this device');
+  const write = disk.storage.set;
+  disk.platform.request = (options) => {
+    if (options.method === 'GET' && options.url.includes('/v1/jobs/')) {
+      const success = options.success; options.success = (response) => {
+        if (response.data.kind === 'chat' && response.data.state === 'succeeded') disk.storage.set = () => { throw new Error('full'); };
+        success(response);
+      };
+    }
+    send(options);
+  };
+  assert.equal((await services.chat.send(id, 'Another question')).error, 'storage-write');
+  assert.equal(services.history.list().entries[0].saveState, 'failed');
+  assert.equal(result.data.saveLabel, 'Not saved'); assert.ok(services.chat.getState(id).messages.at(-1).text);
+  disk.storage.set = write; assert.equal(services.chat.retrySave(id).ok, true);
+  assert.equal(result.data.saveLabel, 'Saved on this device');
+});
+
+test('history distinguishes failed processing from successful files and updates immediately after manual structure saving', async (t) => {
+  const failed = await connected(t, { SEEFOOD_MOCK_SCENARIO: 'translation-failure' });
+  await failed.services.jobs.startImageCards(failed.id); await failed.services.jobs.startImageTranslation(failed.id);
+  const partial = failed.services.history.list().entries[0];
+  assert.equal(partial.processingState, 'partialFailed'); assert.equal(partial.saveState, 'saved');
+  assert.ok(failed.services.records.getRecord(failed.id).record.cards.length); assert.ok(fs.statSync(partial.thumbnail).size);
+  const { disk, services, id } = await connected(t);
+  let visible; const stop = services.history.subscribe(() => { visible = services.history.list().entries.find((item) => item.id === id); }); t.after(stop);
+  const write = disk.storage.set; const send = disk.platform.request;
+  disk.platform.request = (options) => {
+    if (options.method === 'GET' && options.url.includes('/v1/jobs/')) {
+      const success = options.success; options.success = (response) => {
+        if (response.data.state === 'succeeded') disk.storage.set = () => { throw new Error('full'); };
+        success(response);
+      };
+    }
+    send(options);
+  };
+  assert.equal((await services.jobs.startImageCards(id)).error, 'storage-write'); assert.equal(visible.saveState, 'failed');
+  disk.storage.set = write; assert.equal(services.jobs.retrySave(id).ok, true);
+  assert.equal(visible.saveState, 'saved'); assert.equal(visible.processingState, 'partial');
+});
+
+test('history shows unconfirmed processing acceptance until read-only recovery finds the original task', async (t) => {
+  const { disk, services, backend, id, traffic } = await connected(t);
+  const send = disk.platform.request;
+  disk.platform.request = (options) => {
+    if (options.method === 'POST' && options.url.endsWith('/v1/jobs')) {
+      options.success = () => options.fail(new Error('lost accepted response'));
+    }
+    send(options);
+  };
+  assert.equal((await services.jobs.startImageCards(id)).error, 'network-unavailable');
+  disk.platform.request = send; const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal(reopened.history.list().entries[0].processingState, 'checking');
+  const before = traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length;
+  assert.equal((await reopened.jobs.refreshRecord(id)).ok, true);
+  assert.equal(reopened.history.list().entries[0].processingState, 'partial');
+  assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length, before);
+});

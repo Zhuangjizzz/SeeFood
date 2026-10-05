@@ -1,3 +1,4 @@
+const { getRecoveryCopy } = require('./recovery-copy');
 const COPY = {
   en: {
     empty: 'No saved records yet', emptyBody: 'Take a photo or choose a menu to start a record.',
@@ -45,5 +46,5 @@ const COPY = {
     positionFailed: '未能保存阅读位置，已有内容仍可阅读。'
   }
 };
-function getHistoryCopy(language) { return { ...(COPY[language] || COPY.en) }; }
+function getHistoryCopy(language) { return { ...(COPY[language] || COPY.en), checking: getRecoveryCopy(language).checking }; }
 module.exports = { getHistoryCopy };

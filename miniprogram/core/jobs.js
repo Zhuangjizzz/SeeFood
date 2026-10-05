@@ -205,6 +205,13 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
   function retryStage(id, imageId, kind) {
     return stageRun(id, imageId, kind, 'retry', async () => {
       if (!IMAGE_STAGES.includes(kind)) return { ok: false, error: 'INPUT_UNSUPPORTED' };
+      const retained = unsaved.get(keyFor(id, kind, imageId));
+      if (retained) {
+        const restored = applyJob(id, retained);
+        if (!restored.ok) return restored;
+        if (retained.state === 'succeeded' && kind === 'image_translation') return saveTranslation(id, imageId);
+        if (['queued', 'running', 'succeeded'].includes(retained.state)) return poll(id, imageId, kind);
+      }
       const image = read(id).images.find((item) => item.id === imageId);
       if (!image || !image.stageJobs[kind]) return { ok: false, error: 'DEPENDENCY_MISSING' };
       if (network) await network.requireOnline();
@@ -223,8 +230,8 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         },
         accept: (job) => acceptRecoveredJob(id, job)
       });
-      if (!result.ok && result.error !== 'stale-job') return result;
       const job = read(id).images.find((item) => item.id === imageId).stageJobs[kind];
+      if (!result.ok && (result.error !== 'stale-job' || job.jobId !== intent.jobId || job.attempt !== intent.body.expectedAttempt + 1)) return result;
       if (job.state === 'succeeded' && kind === 'image_translation') return saveTranslation(id, imageId);
       return poll(id, imageId, kind);
     });

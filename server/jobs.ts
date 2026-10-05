@@ -116,6 +116,11 @@ export function createJobService(options: JobServiceOptions) {
       if (job.state !== 'failed' || job.error?.retryable !== true || job.attempt !== request.expectedAttempt) {
         return reject(409, 'JOB_STATE_CONFLICT', { currentAttempt: job.attempt, state: job.state });
       }
+      if (job.kind === 'chat') {
+        const context = getContext(job.contextId, owner);
+        const siblings = database.prepare("SELECT j.response FROM jobs j JOIN contexts c ON c.id=j.context_id WHERE j.owner=? AND c.scope=? AND j.kind='chat' AND j.id<>?").all(owner, context.scope, id);
+        if (siblings.some((sibling) => ['queued', 'running'].includes(JSON.parse(String(sibling.response)).state))) reject(409, 'JOB_STATE_CONFLICT');
+      }
       const next = { ...job, state: 'queued', attempt: job.attempt + 1, revision: job.revision + 1, error: null };
       validate('Job', next);
       database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(next), id);

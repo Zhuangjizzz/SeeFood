@@ -107,6 +107,8 @@ function showResult(target, recordId) {
       return Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, imageUpload), image, {
         processingLabel: uploadLabel([image], imageUpload, recordCopy, getUploadCopy(application.language)),
         canRetryUpload: imageUpload.canRetry,
+        cardsRetry: page.services().jobs.getStageState(recordId, image.id, 'image_cards'),
+        translationRetry: page.services().jobs.getStageState(recordId, image.id, 'image_translation'),
         cardsStateLabel: cards ? dishCopy[cards.state] : image.jobRequests && image.jobRequests.image_cards ? recoveryCopy.checking : dishCopy.unstarted,
         translationStateLabel: translationLabel(translation, image.jobRequests && image.jobRequests.image_translation, imageCopy, recoveryCopy),
         translationSaveLabel: pending.some((job) => job.kind === 'image_translation') ? imageCopy.saveFailed :

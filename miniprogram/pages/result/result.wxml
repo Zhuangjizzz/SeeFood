@@ -65,6 +65,14 @@
     <view class="image-progress-list paper">
       <view wx:for="{{imageStates}}" wx:key="id" class="image-progress">
         <view class="image-progress-name">{{recordCopy.photo}} {{item.order + 1}} · {{item.kind === 'dish' ? copy.dish : copy.menu}}</view>
+        <view wx:if="{{imageCount > 1}}" class="stage-actions">
+          <button wx:if="{{item.cardsRetry.canRetry}}" class="text-button retry-image-stage" data-id="{{item.id}}" data-kind="image_cards" bindtap="retryImageStage" disabled="{{offline}}">{{stageCopy.retryCards}}</button>
+          <button wx:if="{{item.translationRetry.canRetry}}" class="text-button retry-image-stage" data-id="{{item.id}}" data-kind="image_translation" bindtap="retryImageStage" disabled="{{offline}}">{{stageCopy.retryTranslation}}</button>
+          <button wx:if="{{item.cardsRetry.canContinue}}" class="text-button continue-image-stage" data-id="{{item.id}}" data-kind="image_cards" bindtap="continueImageStage" disabled="{{offline}}">{{stageCopy.continueCards}}</button>
+          <button wx:if="{{item.translationRetry.canContinue}}" class="text-button continue-image-stage" data-id="{{item.id}}" data-kind="image_translation" bindtap="continueImageStage" disabled="{{offline}}">{{stageCopy.continueTranslation}}</button>
+          <view wx:if="{{item.cardsRetry.retryPending || item.translationRetry.retryPending}}" class="notice" role="status">{{stageCopy.retryPending}}</view>
+          <view wx:if="{{item.cardsRetry.error || item.translationRetry.error}}" class="notice" role="alert">{{stageCopy.retryError}}</view>
+        </view>
         <view class="image-progress-states"><text>{{item.processingLabel}}</text><text class="image-local-state">{{item.saveLabel}}</text></view>
         <view class="image-stage-state cards-stage-state" role="status">{{item.cardsStateLabel}}</view>
         <view class="image-stage-state translation-stage-state" role="status">{{item.translationStateLabel}}</view>

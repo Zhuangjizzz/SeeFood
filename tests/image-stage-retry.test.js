@@ -5,7 +5,7 @@ const { createWechatServices } = require('../miniprogram/platform/wechat');
 const { createCapture } = require('../miniprogram/core/capture');
 const { recordPlatform } = require('./support/record-platform');
 const { temporary, start } = require('./support/http-service');
-async function setup(t, env = { SEEFOOD_MOCK_SCENARIO: 'translation-failure' }) {
+async function setup(t, env = { SEEFOOD_MOCK_SCENARIO: 'translation-failure' }, names = ['menu-photo.png']) {
   const disk = recordPlatform(t); const directory = temporary(t); const server = await start(t, directory, env); const traffic = [];
   const backend = { enabled: true, baseUrl: server.url, identity: 'demo-owner-a' };
   disk.platform.request = (options) => { traffic.push({ method: options.method, url: options.url, body: options.data, key: options.header['Idempotency-Key'] });
@@ -14,11 +14,11 @@ async function setup(t, env = { SEEFOOD_MOCK_SCENARIO: 'translation-failure' }) 
   };
   disk.fileSystem.readFile = ({ filePath, success, fail }) => fs.readFile(filePath, (error, bytes) => error ? fail(error) : success({ data: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) }));
   const services = createWechatServices(disk.platform, { backend });
-  const capture = createCapture({ media: { chooseImages: async () => [disk.material('menu-photo.png')] }, getLanguage: () => 'ja' });
+  const capture = createCapture({ media: { chooseImages: async () => names.map((name) => disk.material(name)) }, getLanguage: () => 'ja' });
   capture.chooseMode('menu'); await capture.chooseImages({ source: 'album' });
   const saved = await services.records.confirmCapture(capture.confirm().batch); assert.equal(saved.ok, true);
   const id = saved.recordId; const imageId = services.records.getRecord(id).record.images[0].id;
-  assert.equal((await services.uploads.uploadRecord(id)).ok, true);
+  for (const image of services.records.getRecord(id).record.images) assert.equal((await services.uploads.uploadRecord(id, image.id)).ok, true);
   return { disk, directory, server, backend, services, traffic, id, imageId };
 }
 
@@ -135,4 +135,54 @@ test('native result exposes only eligible target-stage actions in all five langu
   assert.equal(page.data.translationRetry.canRetry, false); assert.equal(page.data.translationSaveLabel, '已保存到本机');
   assert.equal(traffic.filter((x) => x.url.endsWith('/retry')).length, 1);
   page.onUnload();
+});
+
+test('both stage kinds retry independently in a multi-image record while a fully successful neighbour remains byte-for-byte usable', async (t) => {
+  for (const [scenario, kind] of [['translation-failure', 'image_translation'], ['failure', 'image_cards']]) {
+    const { disk, directory, server, backend, services, traffic, id, imageId } = await setup(t, { SEEFOOD_MOCK_SCENARIO: scenario }, ['menu-photo.png', 'menu-long.png']);
+    const neighbourId = services.records.getRecord(id).record.images[1].id;
+    await services.jobs.startImageProcessing(id, imageId); await server.stop();
+    const restarted = await start(t, directory); backend.baseUrl = restarted.url;
+    await services.jobs.startImageProcessing(id, neighbourId);
+    const before = services.records.getRecord(id).record; const neighbour = before.images[1];
+    const neighbourBytes = fs.readFileSync(neighbour.translation.localPath);
+    const page = resultPage(t, services); page.onLoad({ recordId: id }); page.onShow();
+    assert.equal(page.data.imageStates[0][kind === 'image_cards' ? 'cardsRetry' : 'translationRetry'].canRetry, true);
+    assert.equal(page.data.imageStates[1].cardsRetry.canRetry, false); assert.equal(page.data.imageStates[1].translationRetry.canRetry, false);
+    const mark = traffic.length;
+    await page.retryImageStage({ currentTarget: { dataset: { id: imageId, kind } } });
+    const after = services.records.getRecord(id).record;
+    assert.equal(after.images[0].stageJobs[kind].attempt, 2); assert.equal(after.images[0].stageJobs[kind].state, 'succeeded');
+    assert.deepEqual(after.images[1], neighbour); assert.deepEqual(fs.readFileSync(after.images[1].translation.localPath), neighbourBytes);
+    assert.deepEqual(after.cards.filter((card) => card.sourceImageIds.includes(neighbourId)), before.cards.filter((card) => card.sourceImageIds.includes(neighbourId)));
+    const otherKind = kind === 'image_cards' ? 'image_translation' : 'image_cards';
+    assert.deepEqual(after.images[0].stageJobs[otherKind], before.images[0].stageJobs[otherKind]);
+    assert.equal(traffic.slice(mark).filter((x) => x.method === 'POST').length, 1);
+    page.onUnload();
+  }
+});
+
+test('retry intent and accepted results remain recoverable when native storage rejects writes, without another generation', async (t) => {
+  const { disk, directory, server, backend, services, traffic, id, imageId } = await setup(t);
+  await services.jobs.startImageProcessing(id); const cards = services.records.getRecord(id).record.cards;
+  const write = disk.storage.set; const send = disk.platform.request;
+  disk.storage.set = () => { throw new Error('storage full before intent'); };
+  let mark = traffic.length;
+  assert.equal((await services.jobs.retryStage(id, imageId, 'image_translation')).error, 'storage-write');
+  assert.equal(traffic.slice(mark).some((entry) => entry.url.endsWith('/retry')), false);
+  disk.storage.set = write; await server.stop();
+  const restarted = await start(t, directory, { SEEFOOD_WORKER_DELAY_MS: '1000' }); backend.baseUrl = restarted.url;
+  disk.platform.request = (options) => {
+    if (options.url.endsWith('/retry')) {
+      const success = options.success; options.success = (response) => { disk.storage.set = () => { throw new Error('accepted state not saved'); }; success(response); };
+    }
+    send(options);
+  };
+  assert.equal((await services.jobs.retryStage(id, imageId, 'image_translation')).error, 'storage-write');
+  assert.equal(services.history.describe(services.records.getRecord(id).record).saveState, 'failed');
+  assert.deepEqual(services.records.getRecord(id).record.cards, cards);
+  disk.storage.set = write; disk.platform.request = send; mark = traffic.length;
+  assert.equal((await services.jobs.retryStage(id, imageId, 'image_translation')).ok, true);
+  assert.equal(services.records.getRecord(id).record.images[0].translation.saveState, 'saved');
+  assert.equal(traffic.slice(mark).some((entry) => entry.url.endsWith('/retry')), false);
 });

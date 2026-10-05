@@ -67,9 +67,30 @@ test('non-retryable input damage cannot be retried and stale worker completion c
   assert.deepEqual((await request(nextUrl, 'GET', `/v1/jobs/${failed.jobId}`, undefined, token)).body, ready);
   const bad = await uploaded(nextUrl, token, { id: 'bad-bytes' });
   const fs = require('node:fs'); const path = require('node:path');
+  for (const name of fs.readdirSync(path.join(directory, 'images'))) {
+    const file = path.join(directory, 'images', name); const bytes = fs.readFileSync(file); bytes[100] ^= 1; fs.writeFileSync(file, bytes);
+  }
   const badJob = (await request(nextUrl, 'POST', '/v1/jobs', bad.body, token, 'bad')).body;
-  for (const file of fs.readdirSync(path.join(directory, 'images'))) fs.writeFileSync(path.join(directory, 'images', file), 'invalid');
   const damage = await finished(nextUrl, token, badJob.jobId);
   assert.equal(damage.error.retryable, false);
   assert.equal((await request(nextUrl, 'POST', `/v1/jobs/${badJob.jobId}/retry`, { expectedAttempt: 1 }, token, 'bad-retry')).body.code, 'JOB_STATE_CONFLICT');
+});
+
+test('retry shares the one-active-chat-per-record rule and keeps frozen question/message identities', async (t) => {
+  const directory = temporary(t); let service = await start(t, directory, { SEEFOOD_MOCK_SCENARIO: 'chat-failure' });
+  const token = await session(service.url); const source = await uploaded(service.url, token);
+  const body = { contextId: source.contextId, kind: 'chat', target: { userMessageId: 'first-question', assistantMessageId: 'first-reply' },
+    input: { contextSnapshotVersion: 2, text: 'My original question', targetLanguage: 'ja' } };
+  const accepted = (await request(service.url, 'POST', '/v1/jobs', body, token, 'chat-one')).body;
+  const failed = await finished(service.url, token, accepted.jobId); assert.equal(failed.state, 'failed');
+  await service.stop(); service = await start(t, directory, { SEEFOOD_WORKER_DELAY_MS: '1000' });
+  const secondBody = { ...body, target: { userMessageId: 'second-question', assistantMessageId: 'second-reply' } };
+  const second = (await request(service.url, 'POST', '/v1/jobs', secondBody, token, 'chat-two')).body;
+  const route = `/v1/jobs/${failed.jobId}/retry`;
+  assert.equal((await request(service.url, 'POST', route, { expectedAttempt: 1 }, token, 'chat-retry')).body.code, 'JOB_STATE_CONFLICT');
+  await finished(service.url, token, second.jobId);
+  const retry = await request(service.url, 'POST', route, { expectedAttempt: 1 }, token, 'chat-retry'); assert.equal(retry.status, 202);
+  const done = await finished(service.url, token, failed.jobId);
+  assert.equal(done.attempt, 2); assert.equal(done.output.contentLanguage, 'ja'); assert.deepEqual(done.target, body.target);
+  assert.equal(done.contextSnapshotVersion, 2);
 });

@@ -1,0 +1,14 @@
+.preference-panel { padding: 34rpx 36rpx 24rpx; width: 100%; text-align: left; border-radius: 26rpx; background: #1e3932; color: #fffdf2; box-shadow: inset 0 2rpx #ffffff33, 0 4rpx #a2b09c, 0 8rpx #e3e5da, 0 12rpx #c0c7b5; margin: 14rpx 0 50rpx; }
+.preference-title { font-size: 34rpx; font-weight: 550; }
+.preference-summary { font-size: 27rpx; line-height: 1.6; color: #d0dec8; margin-top: 22rpx; }
+.preference-action { display: flex; justify-content: space-between; gap: 20rpx; align-items: center; font-size: 25rpx; color: #e7efe0; margin-top: 26rpx; padding-top: 24rpx; border-top: 1rpx solid #637d6544; min-height: 80rpx; }
+.settings-list { padding: 0 28rpx; }
+.setting { display: flex; align-items: center; gap: 22rpx; text-align: left; width: 100%; border-radius: 0; padding: 32rpx 0; border-bottom: 1rpx solid #e6e9dd; }
+.setting:last-child { border-bottom: 0; }
+.setting-icon { width: 48rpx; height: 48rpx; padding: 6rpx; box-sizing: content-box; border-radius: 14rpx; background: #edf0e5; flex-shrink: 0; }
+.setting-copy { flex: 1; min-width: 0; }
+.setting-title { display: block; font-size: 29rpx; font-weight: 550; }
+.setting-detail { display: block; font-size: 24rpx; line-height: 1.5; color: #7b8870; margin-top: 8rpx; }
+.chevron { font-size: 37rpx; color: #829075; }
+.local-note { margin: 40rpx 6rpx 8rpx; font-size: 24rpx; line-height: 1.6; color: #7b8870; }
+.local-title { display: block; color: #607957; font-size: 26rpx; font-weight: 550; margin-bottom: 10rpx; }

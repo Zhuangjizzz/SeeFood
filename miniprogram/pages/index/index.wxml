@@ -1,1 +1,46 @@
-<view></view>
+<view class="page capture-page" wx:if="!needsLanguage">
+  <view class="brand-row">
+    <view class="brand"><text class="brand-seal">sf</text><text>SeeFood</text></view>
+    <button class="language-link" bindtap="openLanguage" aria-label="{{copy.language}}" hover-class="press">
+      <image class="small-icon" src="/assets/globe.png" aria-hidden="true" />
+      <text>{{languageName}}</text>
+    </button>
+  </view>
+  <view class="notice" wx:if="errorMessage" role="alert">{{errorMessage}}</view>
+  <view class="welcome-panel">
+    <view class="welcome-copy">
+      <text class="welcome-title">{{copy.welcome}}</text>
+      <text class="welcome-body">{{copy.welcomeBody}}</text>
+    </view>
+    <image class="welcome-art" src="/assets/table-scene.png" mode="aspectFit" aria-hidden="true" />
+  </view>
+  <view class="welcome-note" wx:if="showPreferenceInvite">
+    <text class="invite-copy">{{copy.preferenceBody}}</text>
+    <view class="invite-actions">
+      <button class="text-button invite-link" bindtap="openPreferences" hover-class="press">{{copy.setPreferences}}</button>
+      <button class="text-button invite-skip" bindtap="skipPreferenceInvite" hover-class="press">{{copy.skip}}</button>
+    </view>
+  </view>
+  <view class="capture-input">
+    <view class="mode-switch">
+      <button class="mode {{inputMode === 'menu' ? 'selected' : ''}}" data-mode="menu" bindtap="chooseMode" aria-pressed="{{inputMode === 'menu'}}" hover-class="press">{{copy.menu}}</button>
+      <button class="mode {{inputMode === 'dish' ? 'selected' : ''}}" data-mode="dish" bindtap="chooseMode" aria-pressed="{{inputMode === 'dish'}}" hover-class="press">{{copy.dish}}</button>
+    </view>
+    <view class="input-hint">{{copy.inputHint}}</view>
+    <view class="capture-actions">
+      <button class="capture-button primary" bindtap="takePhoto" hover-class="press">
+        <image class="action-icon" src="/assets/camera-white.png" aria-hidden="true" /><text>{{copy.takePhoto}}</text>
+      </button>
+      <button class="capture-button secondary" bindtap="importPhoto" hover-class="press">
+        <image class="action-icon" src="/assets/album.png" aria-hidden="true" /><text>{{copy.importPhoto}}</text>
+      </button>
+    </view>
+  </view>
+  <view class="recent-section">
+    <view class="section-heading"><text class="section-title">{{copy.recent}}</text><button class="text-button" bindtap="openHistory" hover-class="press">{{copy.viewAll}} <text class="chevron">›</text></button></view>
+    <view class="empty paper">
+      <view class="empty-title">{{copy.emptyRecent}}</view>
+      <view class="empty-copy">{{copy.emptyRecentBody}}</view>
+    </view>
+  </view>
+</view>

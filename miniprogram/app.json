@@ -1,11 +1,22 @@
 {
-  "pages": ["pages/index/index"],
+  "pages": ["pages/index/index", "pages/cards/cards", "pages/mine/mine", "pages/language/language"],
   "window": {
     "navigationBarTitleText": "SeeFood",
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#f2f0eb",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "#f2f0eb",
     "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#71816c",
+    "selectedColor": "#315d43",
+    "backgroundColor": "#f9f8f2",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "Capture", "iconPath": "assets/capture.png", "selectedIconPath": "assets/capture-active.png" },
+      { "pagePath": "pages/cards/cards", "text": "Cards", "iconPath": "assets/cards.png", "selectedIconPath": "assets/cards-active.png" },
+      { "pagePath": "pages/mine/mine", "text": "Me", "iconPath": "assets/mine.png", "selectedIconPath": "assets/mine-active.png" }
+    ]
   },
   "sitemapLocation": "sitemap.json"
 }

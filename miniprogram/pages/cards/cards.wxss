@@ -1,0 +1,7 @@
+.card-preview { position: relative; width: 490rpx; height: 300rpx; margin: 76rpx auto 36rpx; }
+.sheet { position: absolute; width: 100%; height: 250rpx; left: 0; top: 0; border-radius: 24rpx; border: 1rpx solid #c4cfb8; }
+.sheet-back { background: #c7d5b9; transform: rotate(-5deg) translateY(18rpx); }
+.sheet-middle { background: #e8eddc; transform: rotate(3deg) translateY(9rpx); box-shadow: 0 4rpx #b9c7a8; }
+.sheet-front { background: #f9faef; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16rpx; box-shadow: inset 0 2rpx #fff, 0 5rpx #b8c9a8, 0 10rpx 16rpx #31573312; font-size: 27rpx; letter-spacing: 1rpx; }
+.sheet-front image { width: 64rpx; height: 64rpx; }
+.cards-note { text-align: center; padding: 0 32rpx; }

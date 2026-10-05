@@ -3,7 +3,7 @@ const page = require('../../ui/page');
 
 Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
-  onLoad(options) { this.recordId = options.recordId; },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); },
   onShow() {
     if (this.unsubscribeUpload) this.unsubscribeUpload();
     this.unsubscribeUpload = page.services().uploads.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
@@ -18,6 +18,20 @@ Page({
   selectImage(event) {
     this.setData({ currentImageId: event.currentTarget.dataset.id });
     recordsPage.showResult(this, this.recordId);
+  },
+  selectVariant(event) {
+    page.services().imageView.selectVariant(this.recordId, this.data.currentImageId, event.currentTarget.dataset.variant);
+    recordsPage.showResult(this, this.recordId);
+  },
+  async retryTranslationSave() {
+    const result = page.services().jobs.retrySave(this.recordId);
+    if (result.ok) await page.services().jobs.saveTranslation(this.recordId, this.data.currentImageId);
+    recordsPage.showResult(this, this.recordId);
+  },
+  retryImageChoice() { page.services().imageView.retrySave(this.recordId); recordsPage.showResult(this, this.recordId); },
+  viewImage() {
+    const view = page.services().imageView.open(this.recordId, this.data.currentImageId);
+    if (view.ok && view.path) wx.previewImage({ current: view.path, urls: [view.path] });
   },
   openDish(event) {
     const cardId = event.currentTarget.dataset.id;

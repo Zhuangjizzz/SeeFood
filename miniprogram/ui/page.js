@@ -4,6 +4,10 @@ const ROUTES = {
   preferences: '/pages/preferences/preferences'
 };
 
+function routeValue(value) {
+  try { return typeof value === 'string' ? decodeURIComponent(value) : null; } catch (_) { return null; }
+}
+
 function services() { return getApp().services; }
 
 function errorMessage(state) {
@@ -66,4 +70,4 @@ function unavailable() {
   wx.showToast({ title: services().application.getState().copy.notAvailable, icon: 'none' });
 }
 
-module.exports = { ROUTES, services, showPage, openLanguage, finishLanguage, openPreferences, finishPreferences, unavailable };
+module.exports = { routeValue, ROUTES, services, showPage, openLanguage, finishLanguage, openPreferences, finishPreferences, unavailable };

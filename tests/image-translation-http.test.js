@@ -50,3 +50,19 @@ test('Chinese menus and dish photos complete with not_required while translation
   assert.equal((await finished(service.url, token, accepted.jobId)).state, 'failed');
   assert.deepEqual((await request(service.url, 'GET', `/v1/jobs/${card.jobId}`, undefined, token)).body, ready);
 });
+
+test('a slow translation does not hold up independently accepted dish cards', async (t) => {
+  const service = await start(t, temporary(t), { SEEFOOD_TRANSLATION_DELAY_MS: '900' }); const token = await session(service.url);
+  const source = await uploaded(service.url, token);
+  const translated = { ...source.body, kind: 'image_translation', input: { contextSnapshotVersion: 2, assetId: source.asset.assetId, targetLanguage: 'en' } };
+  const translation = (await request(service.url, 'POST', '/v1/jobs', translated, token, 'translation')).body;
+  for (let i = 0; i < 100; i += 1) {
+    const current = (await request(service.url, 'GET', `/v1/jobs/${translation.jobId}`, undefined, token)).body;
+    if (current.state === 'running') break;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  const accepted = (await request(service.url, 'POST', '/v1/jobs', source.body, token, 'cards')).body;
+  const cards = await finished(service.url, token, accepted.jobId);
+  assert.equal(cards.state, 'succeeded');
+  assert.equal((await request(service.url, 'GET', `/v1/jobs/${translation.jobId}`, undefined, token)).body.state, 'running');
+});

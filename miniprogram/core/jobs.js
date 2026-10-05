@@ -142,7 +142,9 @@ function createJobs({ records, backend, translationFiles, pollMs = 100 }) {
     getState(id) {
       const pending = [...unsaved.entries()].filter(([key]) => key.startsWith(id + ':')).map(([, job]) => clone(job));
       return { running: [...active.keys()].some((key) => key.startsWith(id + ':')), error: errors.get(id) || null,
-        unsavedJob: pending.find((job) => job.kind === 'image_cards') || null, unsavedJobs: pending, previewPaths: Object.fromEntries(previews) };
+        unsavedJob: pending.find((job) => job.kind === 'image_cards') || null, unsavedJobs: pending, previewPaths: Object.fromEntries(previews),
+        savingTranslations: [...active.keys()].filter((key) => key.startsWith(id + ':image_translation:') && key.endsWith(':save'))
+          .map((key) => key.slice((id + ':image_translation:').length, -5)) };
     },
     applyJob, saveTranslation,
     acceptRecoveredJob(id, job) {

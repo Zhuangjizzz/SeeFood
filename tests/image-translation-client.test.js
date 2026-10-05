@@ -86,3 +86,115 @@ test('lost translation acceptance binds the original job through recovery withou
   assert.equal(reopened.records.getRecord(id).record.images[0].translation.saveState, 'saved');
   assert.equal(traffic.filter((entry) => entry.method === 'POST').length, before);
 });
+
+function resultPage(t, services) {
+  const previous = { Page: global.Page, wx: global.wx, getApp: global.getApp };
+  t.after(() => Object.assign(global, previous));
+  global.getApp = () => ({ services }); global.wx = { setNavigationBarTitle() {}, previewImage() {} };
+  let definition; global.Page = (value) => { definition = value; };
+  const file = require.resolve('../miniprogram/pages/result/result'); delete require.cache[file]; require(file);
+  return { ...definition, data: { ...definition.data }, setData(value) { Object.assign(this.data, value); } };
+}
+
+test('native result keeps cards readable while translation saves separately and five-language controls preserve generated content', async (t) => {
+  const { services, id, traffic } = await setup(t);
+  await services.jobs.startImageCards(id);
+  const page = resultPage(t, services); page.onLoad({ recordId: id }); page.onShow();
+  assert.equal(page.data.canLeave, false);
+  assert.equal(page.data.imageView.variant, 'original');
+  const copy = services.records.getRecord(id).record.cards;
+  assert.equal((await services.jobs.startImageTranslation(id)).ok, true);
+  assert.equal(page.data.canLeave, true); assert.equal(page.data.imageView.variant, 'original');
+  assert.equal(page.data.imageView.translationAvailable, true); assert.equal(page.data.translationSaveLabel, 'Saved on this device');
+  page.selectVariant({ currentTarget: { dataset: { variant: 'translation' } } });
+  assert.equal(page.data.imageView.variant, 'translation'); assert.match(page.data.imageView.path, /seefood-translations/);
+  const before = traffic.length;
+  for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN']) {
+    services.application.chooseLanguage(language); page.onShow();
+    assert.ok(page.data.imageCopy.translation); assert.ok(page.data.imageCopy.notRequired); assert.ok(page.data.imageCopy.missingTranslation);
+    assert.equal(page.data.imageView.variant, 'translation');
+    assert.deepEqual(services.records.getRecord(id).record.cards, copy);
+    assert.equal(services.records.getRecord(id).record.images[0].translation.contentLanguage, 'ja');
+  }
+  assert.equal(traffic.length, before); page.onUnload();
+});
+
+test('native encoded dish routes open saved details and malformed route parameters show the missing state', async (t) => {
+  const { services, id } = await setup(t); await services.jobs.startImageCards(id);
+  const page = resultPage(t, services); page.onLoad({ recordId: encodeURIComponent(id) }); page.onShow();
+  let url; global.wx.navigateTo = (options) => { url = options.url; };
+  const cardId = page.data.dishCards[0].id; page.openDish({ currentTarget: { dataset: { id: cardId } } });
+  const raw = Object.fromEntries(url.split('?')[1].split('&').map((pair) => pair.split('=')));
+  assert.match(raw.cardId, /%3A/);
+  let definition; global.Page = (value) => { definition = value; };
+  const file = require.resolve('../miniprogram/pages/dish-detail/dish-detail'); delete require.cache[file]; require(file);
+  const detail = { ...definition, data: {}, setData(value) { Object.assign(this.data, value); } };
+  detail.onLoad(raw); detail.onShow(); assert.equal(detail.data.card.id, cardId);
+  detail.onLoad({ recordId: id, cardId: '%malformed' }); detail.onShow();
+  assert.equal(detail.data.card, null); assert.ok(detail.data.error);
+  page.onUnload();
+});
+
+test('a reopened client exposes an interrupted translated-file save for manual retry without new generation', async (t) => {
+  const { services, disk, id, backend, traffic } = await setup(t);
+  const download = disk.platform.downloadFile; let interrupted = false;
+  disk.platform.downloadFile = () => { interrupted = true; };
+  void services.jobs.startImageTranslation(id);
+  for (let count = 0; count < 200 && !interrupted; count += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(interrupted, true);
+  assert.equal(services.records.getRecord(id).record.images[0].translation.saveState, 'saving');
+  const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal(reopened.imageView.open(id).translationSaveState, 'pending');
+  disk.platform.downloadFile = download; const before = traffic.filter((entry) => entry.method === 'POST').length;
+  const page = resultPage(t, reopened); page.onLoad({ recordId: id }); page.onShow();
+  await page.retryTranslationSave();
+  assert.equal(reopened.records.getRecord(id).record.images[0].translation.saveState, 'saved');
+  assert.equal(traffic.filter((entry) => entry.method === 'POST').length, before); page.onUnload();
+});
+
+test('failed translated-file writes retain cards, original and viewing choice; manual save retry uses no generation', async (t) => {
+  const { services, disk, id, traffic } = await setup(t); await services.jobs.startImageCards(id);
+  const original = services.records.getRecord(id).record.images[0].original;
+  const cards = services.records.getRecord(id).record.cards;
+  const write = disk.storage.set; disk.storage.set = () => { throw new Error('metadata full'); };
+  assert.equal(services.imageView.open(id).variant, 'original');
+  disk.storage.set = write;
+  const copy = disk.fileSystem.copyFile;
+  disk.fileSystem.copyFile = (options) => options.destPath.includes('/seefood-translations/') ? options.fail(new Error('image storage full')) : copy(options);
+  assert.equal((await services.jobs.startImageTranslation(id)).error, 'translation-write');
+  const saved = services.records.getRecord(id).record;
+  assert.equal(saved.images[0].translation.saveState, 'failed'); assert.deepEqual(saved.images[0].original, original); assert.deepEqual(saved.cards, cards);
+  const page = resultPage(t, services); page.onLoad({ recordId: id }); page.onShow();
+  assert.equal(page.data.imageView.variant, 'original'); assert.equal(page.data.dishCards.length, 1);
+  assert.notEqual(page.data.saveLabel, page.data.recordCopy.saved); assert.equal(page.data.originalSaveLabel, page.data.imageCopy.saved);
+  assert.equal(page.data.translationSaveLabel, page.data.imageCopy.saveFailed);
+  assert.equal(page.data.imageView.translationAvailable, true);
+  const before = traffic.filter((entry) => entry.method === 'POST').length;
+  disk.fileSystem.copyFile = copy; await page.retryTranslationSave();
+  assert.equal(page.data.imageView.variant, 'original'); assert.equal(page.data.translationSaveLabel, page.data.imageCopy.saved);
+  assert.equal(traffic.filter((entry) => entry.method === 'POST').length, before);
+  page.retryImageChoice(); assert.equal(page.data.imageView.saveError, null); page.onUnload();
+});
+
+test('unsaved translated metadata stays distinct from successful cards and saves the retained result without changing the chosen original', async (t) => {
+  const { services, disk, id } = await setup(t); await services.jobs.startImageCards(id);
+  const page = resultPage(t, services); page.onLoad({ recordId: id }); page.onShow();
+  const write = disk.storage.set; const send = disk.platform.request;
+  disk.platform.request = (options) => {
+    if (options.method === 'GET' && options.url.includes('/v1/jobs/')) {
+      const success = options.success; options.success = (response) => {
+        if (response.data.kind === 'image_translation' && response.data.state === 'succeeded') disk.storage.set = () => { throw new Error('metadata full'); };
+        success(response);
+      };
+    }
+    send(options);
+  };
+  assert.equal((await services.jobs.startImageTranslation(id)).error, 'storage-write');
+  assert.equal(page.data.dishCards.length, 1); assert.equal(page.data.imageView.variant, 'original');
+  assert.equal(page.data.translationJob.state, 'succeeded'); assert.equal(page.data.imageView.translationUnsaved, true);
+  assert.equal(page.data.saveLabel, page.data.recordCopy.saveFailed); assert.equal(page.data.originalSaveLabel, page.data.imageCopy.saved);
+  const ready = services.jobs.getState(id).unsavedJobs.find((job) => job.kind === 'image_translation');
+  assert.equal(services.jobs.applyJob(id, { ...ready, state: 'running', output: null, revision: ready.revision - 1 }).error, 'stale-job');
+  disk.storage.set = write; await page.retryTranslationSave();
+  assert.equal(page.data.imageView.variant, 'original'); assert.equal(page.data.translationSaveLabel, page.data.imageCopy.saved); page.onUnload();
+});

@@ -33,7 +33,8 @@ function createImageView({ records, jobs }) {
     const variant = state.imageVariants[image.id];
     return { ok: true, imageId: image.id, image, variant, translationAvailable, translationJob: job,
       path: variant === 'translation' ? translatedPath || null : image.original.saveState === 'saved' ? image.localOriginalPath : null,
-      saveError: state.error, translationSaveState: artifact ? artifact.saveState || 'pending' : null,
+      saveError: state.error, translationSaveState: artifact ?
+        (artifact.saveState === 'saving' && !(jobState.savingTranslations || []).includes(image.id) ? 'pending' : artifact.saveState || 'pending') : null,
       translationUnsaved: !!unsaved };
   }
   return { open,

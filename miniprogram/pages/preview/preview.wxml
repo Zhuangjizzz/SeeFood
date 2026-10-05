@@ -1,0 +1,44 @@
+<view class="preview-page">
+  <view class="preview-heading">
+    <view class="heading-row">
+      <view class="target-label">{{target.kind === 'append' ? copy.appendRecord : copy.newRecord}}</view>
+      <button class="cancel-button" bindtap="cancel">{{confirmed ? copy.back : copy.cancel}}</button>
+    </view>
+    <view class="target-title" wx:if="{{target.kind === 'append'}}">{{target.title || target.recordId}}</view>
+    <view class="preview-hint">{{copy.previewHint}}</view>
+  </view>
+  <scroll-view class="preview-list" scroll-y scroll-top="{{scrollTop}}" bindscroll="onListScroll">
+    <view class="list-content">
+      <view class="notice" wx:if="{{confirmed}}" role="status">{{copy.photosConfirmed}}</view>
+      <view class="empty paper" wx:if="{{!images.length}}">
+        <view class="empty-title">{{copy.emptyPreview}}</view>
+        <view class="empty-copy">{{copy.emptyPreviewBody}}</view>
+      </view>
+      <view wx:for="{{images}}" wx:key="id" class="preview-row paper {{draggingId === item.id ? 'moving' : ''}} {{draggingId && dropIndex === index ? 'drop-target' : ''}}">
+        <view class="drop-indicator" wx:if="{{draggingId && dropIndex === index}}">{{copy.dropHere}}</view>
+        <button class="thumbnail-button" data-id="{{item.id}}" bindtap="viewOriginal" aria-label="{{copy.photo}} {{index + 1}}">
+          <image class="thumbnail" src="{{item.localPath}}" mode="aspectFill" />
+          <text class="photo-number">{{index + 1}}</text>
+        </button>
+        <view class="photo-details">
+          <view class="photo-title">{{copy.photo}} {{index + 1}} · {{item.kind === 'dish' ? copy.dish : copy.menu}}</view>
+          <view class="photo-dimensions">{{item.width}} × {{item.height}}</view>
+          <view wx:if="{{draggingId === item.id}}" class="moving-label">{{copy.moving}}</view>
+          <button class="remove-button" data-id="{{item.id}}" bindtap="removeImage" disabled="{{confirmed || draggingId}}">{{copy.remove}}</button>
+        </view>
+        <view class="reorder-controls" wx:if="{{!confirmed}}">
+          <button class="drag-handle" data-id="{{item.id}}" catchtouchstart="startDrag" catchtouchmove="moveDrag" catchtouchend="finishDrag" catchtouchcancel="clearDrag" aria-label="{{copy.drag}}">⠿</button>
+          <view class="step-buttons">
+            <button class="step-button" data-id="{{item.id}}" data-direction="-1" bindtap="moveOne" disabled="{{index === 0 || draggingId}}" aria-label="{{copy.moveUp}}">↑</button>
+            <button class="step-button" data-id="{{item.id}}" data-direction="1" bindtap="moveOne" disabled="{{index === images.length - 1 || draggingId}}" aria-label="{{copy.moveDown}}">↓</button>
+          </view>
+        </view>
+      </view>
+      <view class="input-limits">{{copy.inputLimits}}</view>
+    </view>
+  </scroll-view>
+  <view class="preview-footer">
+    <view class="selection-count"><text class="count-number">{{images.length}}</text><text>{{copy.selectedPhotos}}</text></view>
+    <button class="confirm-button" bindtap="confirm" disabled="{{!canConfirm || draggingId}}">{{copy.confirmPhotos}}</button>
+  </view>
+</view>

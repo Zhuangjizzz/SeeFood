@@ -8,6 +8,8 @@ const { createCardLibrary } = require('../core/card-library');
 const { createWechatBackend, developmentBackend } = require('./backend');
 const { createUploads } = require('../core/uploads');
 const { createJobs } = require('../core/jobs');
+const { createTextTranslations } = require('../core/text-translations');
+const { createTextExchange } = require('../core/text-exchange');
 
 function createWechatServices(platform, options = {}) {
   const store = createLocalStore({
@@ -29,7 +31,9 @@ function createWechatServices(platform, options = {}) {
   const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform));
   const uploads = createUploads({ records, preferences: application.preferences, backend });
   const jobs = createJobs({ records, backend });
-  return { jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  const textTranslations = createTextTranslations({ backend });
+  const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language });
+  return { textTranslations, textExchange, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 }
 
 module.exports = { createWechatServices };

@@ -1,5 +1,5 @@
 {
-  "pages": ["pages/index/index", "pages/cards/cards", "pages/mine/mine", "pages/language/language", "pages/preferences/preferences", "pages/card-display/card-display", "pages/preview/preview", "pages/preview-image/preview-image", "pages/result/result", "pages/dish-detail/dish-detail"],
+  "pages": ["pages/index/index", "pages/cards/cards", "pages/mine/mine", "pages/language/language", "pages/preferences/preferences", "pages/card-display/card-display", "pages/preview/preview", "pages/preview-image/preview-image", "pages/result/result", "pages/dish-detail/dish-detail", "pages/text-exchange/text-exchange"],
   "window": {
     "navigationBarTitleText": "SeeFood",
     "navigationBarBackgroundColor": "#f2f0eb",

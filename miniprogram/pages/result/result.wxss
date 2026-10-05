@@ -25,3 +25,4 @@
 .image-local-state { color: #6b7d62; }
 .pending-explanation { font-size: 24rpx; color: #6b7d62; line-height: 1.5; margin: 20rpx 6rpx; }
 .result-empty { margin: 24rpx 0 0; padding: 28rpx 22rpx; }
+.retry-upload { width: 100%; min-height: 88rpx; margin: 20rpx 0; white-space: normal; overflow-wrap: anywhere; }

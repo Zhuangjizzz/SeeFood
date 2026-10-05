@@ -13,22 +13,26 @@ function uploadState(images) {
   if (images.some((image) => image.uploadState === 'pending')) return 'pending';
   return 'uploaded';
 }
-function describe(record, application) {
+function describe(record, application, uploadStatus) {
   const copy = getRecordsCopy(application.language);
+  const uploadCopy = getUploadCopy(application.language);
   const status = uploadState(record.images);
   const originalsSaved = record.images.every((image) => image.original.saveState === 'saved');
+  const uploadLocalFailure = uploadStatus && ['storage-read', 'storage-write'].includes(uploadStatus.error);
   return { id: record.id, title: record.title || `${record.kind === 'dish' ? application.copy.dish : application.copy.menu} · ${dateTime(record.createdAt).split(' ')[0]}`,
     createdAtLabel: dateTime(record.createdAt), imageCount: record.images.length,
     thumbnail: record.images[0] && record.images[0].original.saveState === 'saved' ? record.images[0].localOriginalPath : null,
     uploadState: status, originalsSaved,
-    processingLabel: ({ pending: copy.pendingUpload, uploading: copy.uploading, uploaded: copy.uploaded, failed: copy.uploadFailed })[status],
-    saveLabel: record.saveState === 'saved' ? (originalsSaved ? copy.saved : copy.partialSave) : record.saveState === 'saving' ? copy.saving : copy.saveFailed };
+    processingLabel: uploadStatus && uploadStatus.originalMissing ? copy.uploadFailed : uploadStatus && uploadStatus.interrupted ? uploadCopy.interrupted :
+      uploadStatus && uploadStatus.resuming ? uploadCopy.resuming :
+        ({ pending: copy.pendingUpload, uploading: copy.uploading, uploaded: copy.uploaded, failed: copy.uploadFailed })[status],
+    saveLabel: uploadLocalFailure ? copy.saveFailed : record.saveState === 'saved' ? (originalsSaved ? copy.saved : copy.partialSave) : record.saveState === 'saving' ? copy.saving : copy.saveFailed };
 }
 function showRecent(target) {
   const application = page.services().application.getState();
   const copy = getRecordsCopy(application.language);
   const result = page.services().records.listRecent();
-  target.setData({ recordCopy: copy, recentRecords: result.records.map((record) => describe(record, application)),
+  target.setData({ recordCopy: copy, recentRecords: result.records.map((record) => describe(record, application, page.services().uploads.getState(record.id))),
     historyReadable: result.ok, historyError: recordError(copy, result.error) });
 }
 function openResult(recordId, replace = false) {
@@ -49,12 +53,14 @@ function showResult(target, recordId) {
   const record = result.record;
   const uploadStatus = page.services().uploads.getState(recordId);
   const currentImage = record.images.find((image) => image.id === target.data.currentImageId) || record.images[0];
-  target.setData(Object.assign({}, describe(record, application), { record, copy: application.copy, recordCopy,
+  target.setData(Object.assign({}, describe(record, application, uploadStatus), { record, copy: application.copy, recordCopy,
     uploadCopy: getUploadCopy(application.language),
+    uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
+    uploadOriginalMissing: uploadStatus.originalMissing,
     uploadLocalFailure: uploadStatus.error === 'storage-write' || uploadStatus.error === 'storage-read',
     recordError: '', canRetryRead: false, currentImageId: currentImage ? currentImage.id : null, currentImage,
-    imageStates: record.images.map((image) => Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application), image)) }));
-  if (uploadStatus.error && uploadStatus.error !== 'backend-unavailable' && uploadStatus.error !== 'single-image-only') {
+    imageStates: record.images.map((image) => Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, uploadStatus), image)) }));
+  if (uploadStatus.originalMissing || uploadStatus.error && uploadStatus.error !== 'backend-unavailable' && uploadStatus.error !== 'single-image-only') {
     target.setData({ uploadState: 'failed', processingLabel: recordCopy.uploadFailed });
   }
 }

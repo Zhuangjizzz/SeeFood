@@ -151,6 +151,7 @@ export function createService(options: ServiceOptions) {
     // The capability identifies one immutable upload; a network replay cannot replace its bytes.
     transaction(() => {
       const current = getUpload(String(upload.id), String(upload.owner));
+      if (Date.parse(String(current.expires_at)) <= now()) reject(410, 'UPLOAD_EXPIRED');
       if (current.received_hash && current.received_hash !== contentHash) reject(409, 'IDEMPOTENCY_CONFLICT');
       if (current.received_hash) return;
       const filename = resolve(imageDir, `${upload.id}.image`);
@@ -187,6 +188,7 @@ export function createService(options: ServiceOptions) {
       const current = getUpload(id, ownerId);
       const assetId = current.asset_id ? String(current.asset_id) : randomUUID();
       if (!current.asset_id) {
+        if (Date.parse(String(current.expires_at)) <= now()) reject(410, 'UPLOAD_EXPIRED');
         database.prepare('INSERT INTO assets VALUES (?,?,?,?,?,?,?,?,?)').run(assetId, ownerId, body.contextId, body.imageId, id, filename, current.mime, current.size, current.received_hash);
         database.prepare('UPDATE uploads SET asset_id=? WHERE id=?').run(assetId, id);
       }

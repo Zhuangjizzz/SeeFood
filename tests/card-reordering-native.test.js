@@ -99,3 +99,24 @@ test('native retry finishes a failed deletion first, then retries the pending or
   assert.equal(services.cardLibrary.getState().pendingReorder, false);
   assert.deepEqual(services.cardLibrary.getState().allCards.map((card) => card.presetId), ['ingredients', 'water', 'tableware', 'no-meat', 'bill']);
 });
+
+test('expanded card management opens the edit route without also opening staff display or changing its reading anchor', (t) => {
+  const { target, services, navigations } = openNativePage(t, fileStorage(t));
+  services.cardLibrary.expand(); target.onShow();
+  const id = 'personal-preset-ingredients';
+  target.onLibraryScroll({ detail: { scrollTop: 421 } }); target.flushPosition();
+  const before = services.cardLibrary.getState();
+  target.openCardMenu({ currentTarget: { dataset: { id } } });
+  const labels = ['Edit card', 'カードを編集', '카드 편집', 'Editar tarjeta', '编辑卡片'];
+  for (const [index, language] of ['en', 'ja', 'ko', 'es', 'zh-CN'].entries()) {
+    services.application.chooseLanguage(language); target.renderLibrary(false, false);
+    assert.equal(target.data.cardCopy.editCard, labels[index]);
+  }
+  target.editMenuCard(); target.showCard({ currentTarget: { dataset: { id } } });
+  assert.deepEqual(navigations, ['/pages/card-editor/card-editor?id=' + id]);
+  assert.equal(services.cardLibrary.getState().menuCard, null);
+  assert.deepEqual(services.cardLibrary.getState().position, before.position);
+  assert.deepEqual(services.cardLibrary.getState().allCards.map((card) => [card.id, card.order]), before.allCards.map((card) => [card.id, card.order]));
+  const template = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/cards/cards.wxml'), 'utf8');
+  assert.match(template, /class="card-menu-edit" catchtap="editMenuCard"/);
+});

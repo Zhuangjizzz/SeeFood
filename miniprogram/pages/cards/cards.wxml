@@ -33,6 +33,7 @@
     <view class="card-menu" catchtap="ignoreMenuEvent" role="dialog" aria-modal="true" aria-label="{{cardCopy.manageCard}}">
       <view class="card-menu-heading">{{cardCopy.manageCard}}</view>
       <view class="card-menu-title">{{menuCard.title}}</view>
+      <button class="card-menu-edit" catchtap="editMenuCard">{{cardCopy.editCard}}</button>
       <view class="card-menu-explanation">{{cardCopy.deleteExplanation}}</view>
       <view wx:if="{{deletionError}}" class="card-menu-error" role="alert">{{deletionError}}</view>
       <button class="card-menu-delete" catchtap="deleteMenuCard">{{deletionError ? cardCopy.retryDelete : cardCopy.deleteCard}}</button>

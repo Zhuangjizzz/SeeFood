@@ -166,6 +166,13 @@ Page({
     this.library.closeMenu();
     this.renderLibrary(false, false);
   },
+  editMenuCard() {
+    const card = this.library.getState().menuCard;
+    if (!card) return;
+    this.stopGestures(); this.flushPosition(); this.library.closeMenu();
+    this.renderLibrary(false, false);
+    wx.navigateTo({ url: '/pages/card-editor/card-editor?id=' + encodeURIComponent(card.id) });
+  },
   deleteMenuCard() {
     if (!this.data.menuCard) return;
     this.stopGestures();

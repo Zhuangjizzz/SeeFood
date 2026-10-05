@@ -30,7 +30,8 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     return result;
   }
   function validBatch(batch) {
-    return batch && typeof batch.id === 'string' && batch.id.length > 0 && batch.target && batch.target.kind === 'new' &&
+    return batch && typeof batch.id === 'string' && batch.id.length > 0 && batch.target &&
+      (batch.target.kind === 'new' || batch.target.kind === 'append' && typeof batch.target.recordId === 'string' && batch.target.recordId) &&
       LANGUAGES.some((language) => language.code === batch.targetLanguage) && Array.isArray(batch.images) &&
       batch.images.length > 0 && batch.images.length <= INPUT_LIMITS.maxImages &&
       new Set(batch.images.map((image) => image && image.id)).size === batch.images.length &&
@@ -46,7 +47,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
         mimeType: image.mimeType, sizeBytes: image.sizeBytes })) });
   }
   function prepare(batch) {
-    const id = makeId('record');
+    const id = batch.target.kind === 'append' ? batch.target.recordId : makeId('record');
     const createdAt = now();
     const record = { id, createdAt, updatedAt: createdAt, title: null, kind: batch.images[0].kind,
       sourceBatchId: batch.id, captureSignature: signature(batch), requestId: makeId('request'), contextId: makeId('context'), contextSnapshotVersion: 0,
@@ -61,7 +62,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
         original: { id: makeId('original'), imageId: image.id, kind: 'original', contentLanguage: null,
           assetId: null, localPath: null, saveState: 'pending' }
       })) };
-    return { batch: clone(batch), record, saveState: 'pending', error: null };
+    return { batch: clone(batch), signature: signature(batch), record, saveState: 'pending', error: null };
   }
   function failure(submission, error) {
     submission.saveState = 'failed';
@@ -77,12 +78,18 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     let previous;
     try { previous = readRecords(); }
     catch (_) { return failure(submission, 'storage-read'); }
-    const existing = previous.find((item) => item.sourceBatchId === batch.id);
+    const existing = previous.find((item) => item.sourceBatchId === batch.id || (item.captureBatches || {})[batch.id]);
     if (existing) {
-      if (existing.captureSignature !== signature(batch)) return failure(submission, 'capture-conflict');
+      const savedSignature = existing.sourceBatchId === batch.id ? existing.captureSignature : existing.captureBatches[batch.id].signature;
+      if (savedSignature !== signature(batch)) return failure(submission, 'capture-conflict');
       submission.record = clone(existing);
       submission.saveState = 'saved';
       return { ok: true, recordId: existing.id };
+    }
+    if (batch.target.kind === 'append') {
+      const target = previous.find((item) => item.id === batch.target.recordId);
+      if (!target || target.deletedAt || target.saveState !== 'saved') return failure(submission, 'append-target-unavailable');
+      if (batch.images.some((image) => target.imageIds.includes(image.id))) return failure(submission, 'capture-conflict');
     }
     for (let index = 0; index < record.images.length; index += 1) {
       const image = record.images[index];
@@ -100,7 +107,21 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     record.saveState = 'saved';
     try { previous = readRecords(); }
     catch (_) { return failure(submission, 'storage-read'); }
-    try { store.set('records', previous.concat(record)); }
+    if (batch.target.kind === 'append') {
+      // File copies can take time. Merge into the latest record so completed jobs,
+      // messages, and other append confirmations cannot be overwritten.
+      const index = previous.findIndex((item) => item.id === batch.target.recordId);
+      const target = previous[index];
+      if (!target || target.deletedAt || target.saveState !== 'saved') return failure(submission, 'append-target-unavailable');
+      if (batch.images.some((image) => target.imageIds.includes(image.id))) return failure(submission, 'capture-conflict');
+      const images = record.images.map((image, offset) => Object.assign({}, image, { order: target.images.length + offset }));
+      const next = Object.assign({}, target, { updatedAt: now(), images: target.images.concat(images), imageIds: target.imageIds.concat(images.map((image) => image.id)),
+        captureBatches: Object.assign({}, target.captureBatches, { [batch.id]: { signature: signature(batch), imageIds: images.map((image) => image.id) } }) });
+      previous[index] = next;
+      try { store.set('records', previous); }
+      catch (_) { return failure(submission, 'storage-write'); }
+      submission.record = clone(next);
+    } else try { store.set('records', previous.concat(record)); }
     catch (_) { return failure(submission, 'storage-write'); }
     submission.saveState = 'saved';
     return { ok: true, recordId: record.id };
@@ -117,7 +138,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
       if (!validBatch(batch)) return { ok: false, error: 'capture-invalid' };
       const previous = submissions.get(batch.id);
       if (previous && previous.discarding) return { ok: false, error: 'submission-discarded' };
-      if (previous && previous.record.captureSignature !== signature(batch)) {
+      if (previous && previous.signature !== signature(batch)) {
         return { ok: false, error: 'capture-conflict', batchId: batch.id };
       }
       if (!submissions.has(batch.id)) submissions.set(batch.id, prepare(batch));
@@ -139,7 +160,12 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
         let records;
         try { records = readRecords(); }
         catch (_) { return { ok: false, error: 'storage-read' }; }
-        if (!records.some((record) => record.id === submission.record.id)) {
+        if (submission.batch.target.kind === 'append') {
+          const savedIds = new Set(records.flatMap((record) => record.imageIds));
+          const unused = submission.batch.images.filter((image) => !savedIds.has(image.id));
+          try { files.removeUncommittedOriginals(submission.record.id, unused); }
+          catch (_) { return { ok: false, error: 'original-cleanup' }; }
+        } else if (!records.some((record) => record.id === submission.record.id)) {
           try { files.removeUncommittedOriginals(submission.record.id); }
           catch (_) { return { ok: false, error: 'original-cleanup' }; }
         }

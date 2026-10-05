@@ -1,5 +1,6 @@
 const COPY = {
   en: {
+    addPhotos: 'Add photos',
     dishHint: 'Photograph one dish at a time so its details are clear.',
     preview: 'Check your photos', newRecord: 'New record', appendRecord: 'Add to record',
     previewHint: 'Tap a photo to inspect it. Drag its handle to change the order.',
@@ -20,6 +21,7 @@ const COPY = {
     imageUnreadable: 'A selected image could not be read. Choose it again or use another file.'
   },
   ja: {
+    addPhotos: '写真を追加',
     dishHint: '料理の細部がわかるように、一度に一皿を撮影してください。',
     preview: '写真を確認', newRecord: '新しい記録', appendRecord: '記録に追加',
     previewHint: '写真をタップして拡大できます。ハンドルをドラッグして順番を変更します。',
@@ -39,6 +41,7 @@ const COPY = {
     imageUnreadable: '選択した画像を読み込めませんでした。もう一度選ぶか、別の画像を使ってください。'
   },
   ko: {
+    addPhotos: '사진 추가',
     dishHint: '자세히 볼 수 있도록 한 번에 요리 한 접시를 찍어 주세요.',
     preview: '사진 확인', newRecord: '새 기록', appendRecord: '기록에 추가',
     previewHint: '사진을 눌러 크게 보고, 손잡이를 끌어 순서를 바꿔 보세요.',
@@ -58,6 +61,7 @@ const COPY = {
     imageUnreadable: '선택한 이미지를 읽지 못했어요. 다시 선택하거나 다른 파일을 사용해 주세요.'
   },
   es: {
+    addPhotos: 'Añadir fotos',
     dishHint: 'Fotografía un solo plato para ver sus detalles con claridad.',
     preview: 'Revisa tus fotos', newRecord: 'Nuevo registro', appendRecord: 'Añadir al registro',
     previewHint: 'Toca una foto para ampliarla. Arrastra su asa para cambiar el orden.',
@@ -77,6 +81,7 @@ const COPY = {
     imageUnreadable: 'No se pudo leer una imagen. Vuelve a elegirla o usa otro archivo.'
   },
   'zh-CN': {
+    addPhotos: '添加照片',
     dishHint: '一次拍摄一道菜，便于看清食材和细节。',
     preview: '确认照片', newRecord: '新建记录', appendRecord: '追加到记录',
     previewHint: '点击照片放大检查，拖动手柄调整顺序。',

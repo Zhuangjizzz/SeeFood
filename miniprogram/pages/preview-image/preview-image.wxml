@@ -1,0 +1,25 @@
+<view class="original-page">
+  <view class="original-toolbar">
+    <view class="original-title"><text>{{copy.original}}</text><text class="original-number">{{index + 1}} / {{count}}</text></view>
+    <button class="close-original" bindtap="close">{{copy.close}}</button>
+  </view>
+  <view class="notice image-error" wx:if="{{imageError}}" role="alert">{{copy.imageUnreadable}}</view>
+  <scroll-view class="original-viewport" scroll-x="{{!pinching}}" scroll-y="{{!pinching}}" scroll-top="{{scrollTop}}" scroll-left="{{scrollLeft}}" bindscroll="scrollImage">
+    <view class="original-canvas" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" bindtouchstart="startTouch" bindtouchmove="moveTouch" bindtouchend="finishTouch" bindtouchcancel="finishTouch">
+      <image wx:if="{{image}}" class="original-image" src="{{image.localPath}}" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" mode="scaleToFill" binderror="failedImage" />
+    </view>
+  </scroll-view>
+  <view class="original-footer">
+    <view class="zoom-controls">
+      <button class="zoom-button" bindtap="zoomOut" disabled="{{scale <= 1}}" aria-label="{{copy.zoomOut}}">−</button>
+      <button class="fit-button" bindtap="fitWidth">{{copy.fitWidth}} · {{zoomPercent}}%</button>
+      <button class="zoom-button" bindtap="zoomIn" disabled="{{scale >= 4}}" aria-label="{{copy.zoomIn}}">＋</button>
+    </view>
+    <view class="image-navigation">
+      <button class="previous-image" data-direction="-1" bindtap="changeImage" disabled="{{index === 0}}">‹ {{copy.previous}}</button>
+      <text class="image-navigation-count">{{index + 1}} / {{count}}</text>
+      <button class="next-image" data-direction="1" bindtap="changeImage" disabled="{{index === count - 1}}">{{copy.next}} ›</button>
+    </view>
+    <view class="zoom-hint">{{copy.zoomHint}}</view>
+  </view>
+</view>

@@ -1,0 +1,31 @@
+.preview-page { height: 100vh; display: flex; flex-direction: column; }
+.preview-heading { flex-shrink: 0; padding: 16rpx 32rpx 22rpx; }
+.heading-row { display: flex; justify-content: space-between; align-items: center; gap: 22rpx; }
+.target-label { flex: 1; min-width: 0; font-size: 36rpx; line-height: 1.3; font-weight: 600; }
+.cancel-button { color: #637b59; min-height: 88rpx; padding: 12rpx 0 12rpx 20rpx; font-size: 26rpx; max-width: 230rpx; }
+.target-title { font-size: 28rpx; margin: 0 0 12rpx; overflow-wrap: anywhere; }
+.preview-hint { font-size: 25rpx; color: #6b7d62; line-height: 1.45; }
+.preview-list { flex: 1; height: 0; min-height: 0; }
+.list-content { padding: 10rpx 32rpx 32rpx; }
+.preview-row { display: flex; position: relative; align-items: center; gap: 20rpx; padding: 20rpx; margin-bottom: 24rpx; min-height: 202rpx; border: 3rpx solid transparent; }
+.thumbnail-button { position: relative; width: 152rpx; height: 162rpx; border-radius: 14rpx; overflow: hidden; flex-shrink: 0; }
+.thumbnail { width: 100%; height: 100%; display: block; }
+.photo-number { position: absolute; top: 6rpx; left: 6rpx; min-width: 42rpx; height: 42rpx; line-height: 42rpx; color: white; background: #294b36; font-size: 24rpx; border-radius: 50%; }
+.photo-details { flex: 1; min-width: 0; }
+.photo-title { font-size: 27rpx; font-weight: 550; line-height: 1.35; }
+.photo-dimensions { font-size: 22rpx; color: #7b8870; margin: 8rpx 0; }
+.remove-button { min-height: 64rpx; color: #975a40; text-align: left; font-size: 24rpx; }
+.reorder-controls { width: 88rpx; flex-shrink: 0; }
+.drag-handle { width: 88rpx; height: 88rpx; border-radius: 16rpx; background: #e7ecdf; font-size: 46rpx; line-height: 88rpx; }
+.step-buttons { display: flex; margin-top: 8rpx; }
+.step-button { width: 44rpx; height: 52rpx; font-size: 28rpx; }
+button[disabled] { opacity: .4; }
+.moving { border-color: #315d43; background: #e8efdf; box-shadow: 0 10rpx 26rpx #294b3630; }
+.moving-label { color: #315d43; font-size: 22rpx; }
+.drop-target { border-top-color: #c38a3e; }
+.drop-indicator { position: absolute; top: -18rpx; right: 12rpx; padding: 2rpx 14rpx; background: #c38a3e; color: white; font-size: 21rpx; border-radius: 30rpx; }
+.input-limits { color: #7b8870; font-size: 23rpx; line-height: 1.5; padding: 8rpx 6rpx; }
+.preview-footer { flex-shrink: 0; display: flex; align-items: center; gap: 24rpx; padding: 22rpx 32rpx calc(22rpx + env(safe-area-inset-bottom)); background: #fffefa; border-top: 1rpx solid #d8ddce; }
+.selection-count { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14rpx; font-size: 24rpx; line-height: 1.35; }
+.count-number { font-size: 40rpx; font-weight: 600; }
+.confirm-button { width: 320rpx; min-height: 96rpx; padding: 18rpx 28rpx; background: #315d43; color: #fffdf2; font-size: 28rpx; line-height: 1.35; box-shadow: 0 4rpx #194a2f; }

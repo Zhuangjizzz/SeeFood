@@ -23,15 +23,16 @@
   </view>
   <view class="capture-input">
     <view class="mode-switch">
-      <button class="mode {{inputMode === 'menu' ? 'selected' : ''}}" data-mode="menu" bindtap="chooseMode" aria-pressed="{{inputMode === 'menu'}}" hover-class="press">{{copy.menu}}</button>
-      <button class="mode {{inputMode === 'dish' ? 'selected' : ''}}" data-mode="dish" bindtap="chooseMode" aria-pressed="{{inputMode === 'dish'}}" hover-class="press">{{copy.dish}}</button>
+      <button class="mode {{inputMode === 'menu' ? 'selected' : ''}}" data-mode="menu" bindtap="chooseMode" disabled="{{choosing}}" aria-pressed="{{inputMode === 'menu'}}" hover-class="press">{{copy.menu}}</button>
+      <button class="mode {{inputMode === 'dish' ? 'selected' : ''}}" data-mode="dish" bindtap="chooseMode" disabled="{{choosing}}" aria-pressed="{{inputMode === 'dish'}}" hover-class="press">{{copy.dish}}</button>
     </view>
-    <view class="input-hint">{{copy.inputHint}}</view>
+    <view class="input-hint">{{inputMode === 'dish' ? captureCopy.dishHint : copy.inputHint}}</view>
+    <view class="notice" wx:if="{{inputError}}" role="alert">{{inputError}}</view>
     <view class="capture-actions">
-      <button class="capture-button primary" bindtap="takePhoto" hover-class="press">
+      <button class="capture-button primary" bindtap="takePhoto" disabled="{{choosing}}" hover-class="press">
         <image class="action-icon" src="/assets/camera-white.png" aria-hidden="true" /><text>{{copy.takePhoto}}</text>
       </button>
-      <button class="capture-button secondary" bindtap="importPhoto" hover-class="press">
+      <button class="capture-button secondary" bindtap="importPhoto" disabled="{{choosing}}" hover-class="press">
         <image class="action-icon" src="/assets/album.png" aria-hidden="true" /><text>{{copy.importPhoto}}</text>
       </button>
     </view>

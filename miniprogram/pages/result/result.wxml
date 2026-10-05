@@ -74,5 +74,6 @@
     </view>
     <view wx:elif="{{cardsJob.state === 'succeeded'}}" class="empty paper result-empty no-dish-cards"><view class="empty-copy">{{dishCopy.noCards}}</view></view>
     <view wx:else class="empty paper result-empty"><view class="empty-copy">{{recordCopy.noDishes}}</view></view>
+    <view class="result-chat-entry"><button class="primary-button" bindtap="openChat">{{chatCopy.entry}}</button></view>
   </block>
 </view>

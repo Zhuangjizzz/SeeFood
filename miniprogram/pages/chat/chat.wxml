@@ -1,0 +1,30 @@
+<view class="chat-shell" style="padding-bottom: {{keyboardHeight}}px;">
+  <scroll-view class="chat-messages" scroll-y enhanced>
+    <view class="chat-content">
+      <view wx:if="{{!messages.length && recordAvailable}}" class="chat-empty paper">{{chatCopy.empty}}</view>
+      <view class="mock-note">{{chatCopy.mock}}</view>
+      <view wx:for="{{messages}}" wx:key="id" class="message message-{{item.role}}" id="message-{{item.id}}">
+        <view class="message-text" selectable>{{item.text}}</view>
+        <view wx:if="{{item.role === 'assistant'}}" class="message-status {{item.state}}">{{item.statusLabel}}</view>
+        <button wx:for="{{item.dishReferences}}" wx:for-item="dish" wx:key="id" class="chat-dish" data-message-id="{{item.id}}" data-card-id="{{dish.id}}" bindtap="openDish">
+          <view class="chat-dish-name">{{dish.displayName}}</view><view wx:if="{{dish.secondaryName}}">{{dish.secondaryName}}</view><view class="chat-dish-link">{{chatCopy.openDish}} →</view>
+        </button>
+        <view wx:for="{{item.communicationCards}}" wx:for-item="card" wx:key="index" class="chat-communication paper">
+          <view class="communication-label">{{chatCopy.card}}</view><view class="communication-title">{{card.title}}</view>
+          <view class="communication-chinese" selectable>{{card.textZh}}</view><view wx:if="{{card.pairedText}}" class="communication-paired" selectable>{{card.pairedText}}</view>
+        </view>
+      </view>
+      <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
+    </view>
+  </scroll-view>
+  <view class="chat-composer">
+    <scroll-view class="quick-questions" scroll-x>
+      <view class="quick-strip"><button wx:for="{{chatCopy.questions}}" wx:key="id" class="quick-question" disabled="{{!canSend}}" data-id="{{item.id}}" bindtap="askQuickQuestion">{{item.label}}</button></view>
+    </scroll-view>
+    <view class="compose-row">
+      <textarea class="chat-input" value="{{draft}}" placeholder="{{chatCopy.placeholder}}" maxlength="-1" auto-height adjust-position="{{false}}" cursor-spacing="16" bindinput="onInput" bindkeyboardheightchange="onKeyboardHeight" />
+      <button class="primary-button chat-send" disabled="{{!canSend || !draft}}" bindtap="send">{{chatCopy.send}}</button>
+    </view>
+    <view wx:if="{{running}}" class="composer-status" role="status">{{chatCopy.busy}}</view>
+  </view>
+</view>

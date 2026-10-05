@@ -13,6 +13,8 @@ import { createJobService } from './jobs.ts';
 import type { JobHandler } from './jobs.ts';
 import { imageCardsHandler } from './image-cards.ts';
 import { createImageTranslation } from './image-translation.ts';
+import { chatHandler } from './chat.ts';
+
 async function readJson(req: IncomingMessage): Promise<Json> {
   const chunks = []; let size = 0;
   for await (const chunk of req) {
@@ -101,7 +103,8 @@ export function createService(options: ServiceOptions) {
   const translations = createImageTranslation({ database, directory: resolve(dataDir, 'translations'), now, getContext, baseUrl,
     scenario: options.mockScenario, delayMs: options.translationDelayMs });
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
-    handlers: { image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+    handlers: { image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+
 
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);

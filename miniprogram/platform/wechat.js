@@ -10,6 +10,9 @@ const { createUploads } = require('../core/uploads');
 const { createJobs } = require('../core/jobs');
 const { createImageView } = require('../core/image-view');
 const { createWechatTranslationFiles } = require('./translation-files');
+const { createRecordContexts } = require('../core/record-context');
+const { createChat } = require('../core/chat');
+
 
 function createWechatServices(platform, options = {}) {
   const store = createLocalStore({
@@ -30,10 +33,13 @@ function createWechatServices(platform, options = {}) {
   const translationFiles = createWechatTranslationFiles(platform);
   const records = createRecords({ store, files: createWechatOriginalFiles(platform), translationFiles });
   const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform));
-  const uploads = createUploads({ records, preferences: application.preferences, backend });
+  const contexts = createRecordContexts({ records, backend });
+  const uploads = createUploads({ records, preferences: application.preferences, backend, contexts });
   const jobs = createJobs({ records, backend, translationFiles });
+  const chat = createChat({ records, backend, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
-  return { imageView, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  return { imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+
 }
 
 module.exports = { createWechatServices };

@@ -21,7 +21,7 @@
       </view>
     </scroll-view>
     <view class="original-label">{{recordCopy.original}} · {{recordCopy.photo}} {{currentImage.order + 1}}</view>
-    <button wx:if="{{currentImage.original.saveState === 'saved'}}" class="original-button paper" bindtap="viewOriginal" aria-label="{{recordCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
+    <button wx:if="{{currentImage.original.saveState === 'saved' && !uploadOriginalMissing}}" class="original-button paper" bindtap="viewOriginal" aria-label="{{recordCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
       <image class="result-original" src="{{currentImage.localOriginalPath}}" mode="aspectFit" />
     </button>
     <view wx:else class="notice missing-original" role="alert">{{recordCopy.missingOriginal}}</view>
@@ -31,10 +31,14 @@
         <view class="image-progress-states"><text>{{item.processingLabel}}</text><text class="image-local-state">{{item.saveLabel}}</text></view>
       </view>
     </view>
-    <view wx:if="{{uploadState === 'pending' && originalsSaved}}" class="pending-explanation">{{recordCopy.pendingBody}}</view>
+    <view wx:if="{{uploadLocalFailure}}" class="notice upload-save-error" role="alert">{{uploadCopy.localFailure}}</view>
+    <view wx:if="{{uploadInterrupted && originalsSaved && !uploadLocalFailure}}" class="notice upload-interrupted" role="status">{{uploadCopy.interruptedBody}}</view>
+    <view wx:elif="{{uploadResuming}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.resumingBody}}</view>
+    <view wx:elif="{{uploadState === 'pending' && originalsSaved}}" class="pending-explanation">{{recordCopy.pendingBody}}</view>
     <view wx:elif="{{uploadState === 'uploading'}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadingBody}}</view>
     <view wx:elif="{{uploadState === 'uploaded' && !cardsJob}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadedBody}}</view>
-    <view wx:elif="{{uploadState === 'failed'}}" class="notice upload-error" role="alert">{{uploadLocalFailure ? uploadCopy.localFailure : uploadCopy.failedBody}}</view>
+    <view wx:elif="{{uploadState === 'failed' && !uploadLocalFailure && !uploadOriginalMissing}}" class="notice upload-error" role="alert">{{uploadCopy.failedBody}}</view>
+    <button wx:if="{{canRetryUpload}}" class="primary-button retry-upload" bindtap="retryUpload">{{uploadCopy.retryUpload}}</button>
     <view class="cards-progress" role="status">{{cardsStateLabel}}</view>
     <view wx:if="{{canLeave}}" class="pending-explanation accepted-explanation">{{dishCopy.accepted}}</view>
     <view wx:if="{{cardsSaveFailed}}" class="notice result-save-error" role="alert">

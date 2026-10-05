@@ -1,18 +1,23 @@
+const reading = require('../../ui/history-reading');
 const recordsPage = require('../../ui/records');
 const page = require('../../ui/page');
 
 Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
-  onLoad(options) { this.recordId = page.routeValue(options.recordId); },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
+    if (this.unsubscribeNetwork) this.unsubscribeNetwork();
+    this.unsubscribeNetwork = page.services().network.subscribe(() => recordsPage.showResult(this, this.recordId));
     if (this.unsubscribeUpload) this.unsubscribeUpload();
     this.unsubscribeUpload = page.services().uploads.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     if (this.unsubscribeJobs) this.unsubscribeJobs();
     this.unsubscribeJobs = page.services().jobs.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     recordsPage.showResult(this, this.recordId);
+    reading.restore(this, 'result', this.recordId);
     void page.services().jobs.refreshRecord(this.recordId);
   },
-  onHide() { if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onPageScroll(event) { reading.capture(this, event); },
+  onHide() { if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   retryRead() { recordsPage.showResult(this, this.recordId); },
   retryProgress() { return page.services().jobs.refreshRecord(this.recordId); },
@@ -61,6 +66,7 @@ Page({
   },
   back() {
     if (getCurrentPages().length > 1) wx.navigateBack();
+    else if (this.source && this.source.view === 'history') wx.redirectTo({ url: `/pages/history/history?source=${this.source.historySource}` });
     else wx.switchTab({ url: '/pages/index/index' });
   }
 });

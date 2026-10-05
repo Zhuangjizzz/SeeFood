@@ -1,7 +1,7 @@
 const { createJobRecovery } = require('./recovery');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const IMAGE_STAGES = ['image_cards', 'image_translation'];
-function createJobs({ records, backend, translationFiles, pollMs = 100 }) {
+function createJobs({ records, backend, network, translationFiles, pollMs = 100 }) {
   const recovery = createJobRecovery({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const previews = new Map();
@@ -149,6 +149,7 @@ function createJobs({ records, backend, translationFiles, pollMs = 100 }) {
       const record = read(id); const image = record.images.find((item) => item.id === imageId) || (!imageId && record.images[0]);
       if (!image || image.uploadState !== 'uploaded' || !image.assetId || !record.contextSnapshotVersion) return { ok: false, error: 'DEPENDENCY_MISSING' };
       if (image.stageJobs[kind]) return poll(id, image.id, kind);
+      if (network) await network.requireOnline();
       let request = image.jobRequests && image.jobRequests[kind];
       if (!request) {
         request = { contextId: record.contextId, kind, target: { imageId: image.id }, input: {

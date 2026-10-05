@@ -5,10 +5,11 @@
     <button wx:else class="text-button" bindtap="back">{{recordCopy.back}}</button>
   </view>
   <block wx:if="{{record}}">
+    <view wx:if="{{offline}}" class="notice record-offline" role="status">{{historyCopy.offline}}</view>
     <view class="record-heading">{{title}}</view>
     <view class="record-meta">{{createdAtLabel}} · {{imageCount}} {{recordCopy.photos}}</view>
     <view class="record-status paper">
-      <view class="status-row"><text class="status-label">{{recordCopy.uploadLabel}}</text><text class="processing-state">{{processingLabel}}</text></view>
+      <view class="status-row"><text class="status-label">{{historyCopy.processingLabel}}</text><text class="processing-state">{{processingLabel}}</text></view>
       <view class="status-row"><text class="status-label">{{recordCopy.saveLabel}}</text><text class="local-save-state">{{saveLabel}}</text></view>
     </view>
     <scroll-view class="image-selector" scroll-x>
@@ -25,7 +26,7 @@
       <button wx:if="{{translationJob.output.state !== 'not_required'}}" class="variant-button {{imageView.variant === 'translation' ? 'variant-selected' : ''}}" data-variant="translation" bindtap="selectVariant" disabled="{{!imageView.translationAvailable}}" aria-pressed="{{imageView.variant === 'translation'}}">{{imageCopy.translation}}</button>
     </view>
     <view class="original-label">{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} · {{recordCopy.photo}} {{currentImage.order + 1}}</view>
-    <button wx:if="{{imageView.path && (imageView.variant === 'translation' || !uploadOriginalMissing)}}" class="original-button paper" bindtap="viewImage" aria-label="{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
+    <button wx:if="{{imageView.path && (imageView.variant === 'translation' || !uploadOriginalMissing)}}" class="original-button paper reading-anchor" id="result-image" data-anchor-id="image:{{currentImageId}}" bindtap="viewImage" aria-label="{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
       <image class="result-original" src="{{imageView.path}}" mode="aspectFit" />
 
     </button>
@@ -36,7 +37,7 @@
       <view wx:if="{{translationJob.output.state === 'ready'}}">{{imageCopy.translationSave}} · {{translationSaveLabel}}</view>
     </view>
     <view wx:if="{{imageView.translationUnsaved || translationJob.output.state === 'ready' && imageView.translationSaveState !== 'saved' && imageView.translationSaveState !== 'saving'}}" class="notice translation-save-error" role="alert">
-      <view>{{imageCopy.saveFailed}}</view><button class="text-button" bindtap="retryTranslationSave">{{imageCopy.retrySave}}</button>
+      <view>{{imageCopy.saveFailed}}</view><button class="text-button" bindtap="retryTranslationSave" disabled="{{offline}}">{{imageCopy.retrySave}}</button>
     </view>
     <view wx:if="{{imageView.saveError}}" class="notice image-choice-error" role="alert"><view>{{imageCopy.choiceFailed}}</view><button class="text-button" bindtap="retryImageChoice">{{imageCopy.retryChoice}}</button></view>
     <view class="image-progress-list paper">
@@ -52,7 +53,7 @@
     <view wx:elif="{{uploadState === 'uploading'}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadingBody}}</view>
     <view wx:elif="{{uploadState === 'uploaded' && !cardsJob && !cardsAcceptancePending}}" class="pending-explanation upload-explanation" role="status">{{uploadCopy.uploadedBody}}</view>
     <view wx:elif="{{uploadState === 'failed' && !uploadLocalFailure && !uploadOriginalMissing}}" class="notice upload-error" role="alert">{{uploadCopy.failedBody}}</view>
-    <button wx:if="{{canRetryUpload}}" class="primary-button retry-upload" bindtap="retryUpload">{{uploadCopy.retryUpload}}</button>
+    <button wx:if="{{canRetryUpload}}" class="primary-button retry-upload" bindtap="retryUpload" disabled="{{offline}}">{{uploadCopy.retryUpload}}</button>
     <view class="cards-progress" role="status">{{cardsStateLabel}}</view>
     <view wx:if="{{canLeave}}" class="pending-explanation accepted-explanation">{{dishCopy.accepted}}</view>
     <view wx:if="{{cardsSaveFailed}}" class="notice result-save-error" role="alert">
@@ -64,7 +65,7 @@
     <view wx:if="{{dishCards.length}}" class="dish-section">
       <view class="dish-section-title">{{dishCopy.dishes}}</view>
       <view class="mock-notice">{{dishCopy.mock}}</view>
-      <button wx:for="{{dishCards}}" wx:key="id" class="dish-card paper" data-id="{{item.id}}" bindtap="openDish">
+      <button wx:for="{{dishCards}}" wx:key="id" class="dish-card paper reading-anchor" id="result-card-{{index}}" data-anchor-id="card:{{item.id}}" data-id="{{item.id}}" bindtap="openDish">
         <view class="dish-name">{{item.displayName}}</view>
         <view wx:if="{{item.secondaryName}}" class="dish-localized-name">{{item.secondaryName}}</view>
         <view class="dish-price">{{item.priceLabel}}</view>

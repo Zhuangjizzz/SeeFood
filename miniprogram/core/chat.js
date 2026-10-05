@@ -7,7 +7,7 @@ function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
   return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
 }
-function createChat({ records, backend, preferences, contexts, getLanguage, pollMs = 100 }) {
+function createChat({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const recovery = createJobRecovery({ backend });
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* Page lifetime does not control persistence. */ } }); }
@@ -85,6 +85,7 @@ function createChat({ records, backend, preferences, contexts, getLanguage, poll
     const language = getLanguage();
     if (typeof text !== 'string' || !text.trim() || !LANGUAGES.some((item) => item.code === language)) return Promise.resolve({ ok: false, error: 'INPUT_UNSUPPORTED' });
     return run(id, async () => {
+      if (network) await network.requireOnline();
       if (!backend.enabled) throw { code: 'backend-unavailable' };
       if (pendingMessage(read(id))) throw { code: 'JOB_STATE_CONFLICT' };
       const assistantId = makeId('assistant'); const userId = makeId('user');

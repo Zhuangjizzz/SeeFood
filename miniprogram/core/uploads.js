@@ -1,6 +1,6 @@
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
-function createUploads({ records, preferences, backend, contexts = require('./record-context').createRecordContexts({ records, backend }) }) {
+function createUploads({ records, preferences, backend, network, contexts = require('./record-context').createRecordContexts({ records, backend }) }) {
   const active = new Map();
   const resuming = new Set();
   const errors = new Map();
@@ -28,6 +28,7 @@ function createUploads({ records, preferences, backend, contexts = require('./re
   async function upload(id) {
     let record;
     try {
+      if (network) await network.requireOnline();
       record = read(id);
       if (record.images.length !== 1) return { ok: false, error: 'single-image-only' };
       if (record.images[0].uploadState === 'uploaded') return { ok: true, recordId: id };

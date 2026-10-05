@@ -1,0 +1,24 @@
+<view class="page history-page" wx:if="{{!needsLanguage}}">
+  <view class="history-heading"><text class="section-title">{{copy.history}}</text><text class="brand-seal">sf</text></view>
+  <view class="history-description">{{historyCopy.description}}</view>
+  <view wx:if="{{offline}}" class="notice history-offline" role="status">{{historyCopy.offline}}</view>
+  <view wx:if="{{historyError}}" class="notice history-error" role="alert"><view>{{historyError}}</view><button class="text-button" bindtap="retryHistory">{{recordCopy.retryRead}}</button></view>
+  <view wx:if="{{positionSaveFailed}}" class="notice" role="status">{{historyCopy.positionFailed}}</view>
+  <view wx:if="{{historyReadable && !entries.length}}" class="empty paper history-empty">
+    <view class="empty-title">{{historyCopy.empty}}</view><view class="empty-copy">{{historyCopy.emptyBody}}</view>
+    <button class="primary-button" bindtap="takePhoto">{{copy.takePhoto}} / {{copy.importPhoto}}</button>
+  </view>
+  <view wx:for="{{entries}}" wx:key="id" class="history-item reading-anchor" id="history-row-{{index}}" data-anchor-id="{{item.id}}">
+    <button class="history-record paper" data-id="{{item.id}}" bindtap="openRecord" hover-class="press">
+      <image wx:if="{{item.thumbnail}}" class="history-image" src="{{item.thumbnail}}" mode="aspectFill" />
+      <view wx:else class="history-image missing-thumbnail">▤</view>
+      <view class="history-body">
+        <view class="history-title">{{item.title}}</view>
+        <view class="history-meta">{{item.createdAtLabel}} · {{item.imageCount}} {{recordCopy.photos}}</view>
+        <view class="history-processing">{{historyCopy.processingLabel}} · {{item.processingLabel}}</view>
+        <view class="history-saving">{{recordCopy.saveLabel}} · {{item.saveLabel}}</view>
+      </view><text class="history-chevron">›</text>
+    </button>
+  </view>
+  <view class="history-local-note">{{historyCopy.localBody}}</view>
+</view>

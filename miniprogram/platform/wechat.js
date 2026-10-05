@@ -11,6 +11,8 @@ const { createJobs } = require('../core/jobs');
 const { createImageView } = require('../core/image-view');
 const { createWechatTranslationFiles } = require('./translation-files');
 const { createRecordContexts } = require('../core/record-context');
+const { createWechatNetwork } = require('./network');
+const { createHistory } = require('../core/history');
 const { createChat } = require('../core/chat');
 
 
@@ -31,14 +33,16 @@ function createWechatServices(platform, options = {}) {
   const capture = createCapture({ media: createWechatMedia(platform), getLanguage: () => application.getState().language });
   const cardLibrary = createCardLibrary({ store, getLanguage: () => application.getState().language });
   const translationFiles = createWechatTranslationFiles(platform);
-  const records = createRecords({ store, files: createWechatOriginalFiles(platform), translationFiles });
-  const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform));
+  const records = createRecords({ store, now: options.now, files: createWechatOriginalFiles(platform), translationFiles });
+  const network = createWechatNetwork(platform);
+  const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform), network);
   const contexts = createRecordContexts({ records, backend });
-  const uploads = createUploads({ records, preferences: application.preferences, backend, contexts });
-  const jobs = createJobs({ records, backend, translationFiles });
-  const chat = createChat({ records, backend, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const uploads = createUploads({ records, network, preferences: application.preferences, backend, contexts });
+  const jobs = createJobs({ records, backend, translationFiles, network });
+  const chat = createChat({ records, backend, network, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
-  return { imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  const history = createHistory({ records, application, jobs, chat, uploads, store });
+  return { network, history, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 
 }
 

@@ -3,14 +3,16 @@ const { presentDish, getDishesCopy } = require('../../core/dishes-copy');
 
 Page({
   data: { messages: [], draft: '', chatCopy: {}, running: false, errorText: '', keyboardHeight: 0 },
-  onLoad(options) { this.recordId = options.recordId; this.inputVersion = 0; },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.inputVersion = 0; },
   onShow() {
+    if (this.unsubscribeNetwork) this.unsubscribeNetwork();
+    this.unsubscribeNetwork = page.services().network.subscribe(() => this.show());
     if (this.unsubscribe) this.unsubscribe();
     this.unsubscribe = page.services().chat.subscribe((id) => { if (id === this.recordId) this.show(); });
     this.show();
     void page.services().chat.refreshRecord(this.recordId);
   },
-  onHide() { if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
+  onHide() { if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
   onUnload() { this.onHide(); },
   show() {
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
@@ -24,9 +26,10 @@ Page({
       }).filter(Boolean),
       communicationCards: (message.attachments || []).filter((attachment) => attachment.type === 'communication_card').map((attachment, index) => ({ ...attachment.card, index }))
     }));
-    const errorText = state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
+    const offline = !services.network.getState().online;
+    const errorText = offline ? copy.offline : state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
-    this.setData({ messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running,
+    this.setData({ messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
       errorText, saveFailed: !!state.unsavedJob, recordAvailable: !!state.record });
   },
   onInput(event) { this.inputVersion += 1; this.setData({ draft: event.detail.value }); },

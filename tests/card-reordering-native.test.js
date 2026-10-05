@@ -73,3 +73,29 @@ test('a fresh native card activation opens staff display without requiring a pre
   target.showCard({ currentTarget: { dataset: { id } } });
   assert.deepEqual(navigations, ['/pages/card-display/card-display?id=' + id]);
 });
+
+test('native retry finishes a failed deletion first, then retries the pending order without resurrecting that card', (t) => {
+  const driver = fileStorage(t);
+  const { target, services, tick } = openNativePage(t, driver);
+  services.cardLibrary.expand();
+  target.onShow();
+  const write = driver.set;
+  driver.set = (key, value) => { if (key.endsWith('personal-cards')) throw new Error('full'); write(key, value); };
+  target.onCardTouchStart({ currentTarget: { dataset: { id: 'personal-preset-ingredients' } }, touches: [{ clientX: 50, clientY: 650 }] });
+  tick(420);
+  target.onCardTouchMove({ touches: [{ clientX: 50, clientY: 250 }] });
+  target.onCardTouchEnd();
+  assert.match(target.data.cardError, /Order was not saved/);
+  target.openCardMenu({ currentTarget: { dataset: { id: 'personal-preset-less-spicy' } } });
+  target.deleteMenuCard();
+  assert.match(target.data.cardError, /not deleted/);
+  driver.set = write;
+  target.retryCards();
+  assert.equal(services.cardLibrary.getState().pendingDeletionId, null);
+  assert.equal(services.cardLibrary.getState().pendingReorder, true);
+  assert.match(target.data.cardError, /Order was not saved/);
+  target.retryCards();
+  assert.equal(target.data.cardError, '');
+  assert.equal(services.cardLibrary.getState().pendingReorder, false);
+  assert.deepEqual(services.cardLibrary.getState().allCards.map((card) => card.presetId), ['ingredients', 'water', 'tableware', 'no-meat', 'bill']);
+});

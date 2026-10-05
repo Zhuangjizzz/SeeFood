@@ -31,6 +31,47 @@ test('a new hold after spreading lifts a card and dropping saves the complete gl
   assert.equal(restarted.getState().showSortHint, false);
 });
 
+test('retrying a failed reorder after a deletion reorders only survivors and keeps the learned hint durable', (t) => {
+  const driver = fileStorage(t);
+  const library = createCardLibrary({ store: createLocalStore(driver) });
+  library.expand();
+  const original = library.getState().allCards;
+  const write = driver.set;
+  driver.set = () => { throw new Error('no free space'); };
+  library.beginTouch({ cardId: original[2].id, x: 20, y: 460, layout: { stride: 200 } });
+  library.longPress();
+  library.moveTouch({ x: 20, y: 60 });
+  assert.equal(library.endTouch().ok, false);
+  driver.set = write;
+  assert.equal(library.deleteCard(original[0].id).ok, true);
+  assert.equal(library.getState().pendingReorder, true);
+  library.reload();
+  assert.equal(library.retryReorder().ok, true);
+  const restarted = createCardLibrary({ store: createLocalStore(driver) });
+  assert.deepEqual(restarted.getState().allCards.map((card) => card.presetId), ['ingredients', 'water', 'tableware', 'no-meat', 'bill']);
+  assert.equal(restarted.getState().showSortHint, false);
+  restarted.deleteCard(original[2].id);
+  assert.equal(createCardLibrary({ store: createLocalStore(driver) }).getState().showSortHint, false);
+});
+
+test('opening management during a drag cancels its preview before deletion and releasing cannot overwrite the survivors', (t) => {
+  const store = createLocalStore(fileStorage(t));
+  const library = createCardLibrary({ store });
+  library.expand();
+  const original = library.getState().allCards;
+  library.beginTouch({ cardId: original[0].id, x: 20, y: 60, layout: { stride: 200 } });
+  library.longPress();
+  library.moveTouch({ x: 20, y: 460 });
+  library.openMenu(original[2].id);
+  assert.equal(library.getState().drag, null);
+  assert.equal(library.getState().reorderFeedback, 'cancelled');
+  library.deleteCard(original[2].id);
+  library.endTouch();
+  library.tapCard(original[0].id);
+  assert.equal(library.getState().displayCard, null);
+  assert.deepEqual(createCardLibrary({ store }).getState().allCards, original.filter((card) => card.id !== original[2].id));
+});
+
 test('ordinary movement, unchanged drops, and empty or single-card categories do not count as a completed reorder', (t) => {
   const store = createLocalStore(fileStorage(t));
   const library = createCardLibrary({ store });

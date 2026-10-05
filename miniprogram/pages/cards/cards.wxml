@@ -15,6 +15,7 @@
     <view class="card-stage {{animate ? 'animate' : ''}} {{dragging ? 'is-dragging' : ''}}" style="height:{{stageHeight}}px;" wx:if="{{cardCount}}">
       <view wx:if="{{dragging}}" class="card-drop-slot" style="{{dropPlacement}}" aria-hidden="true"><text>{{cardCopy.dropPosition}} {{dropPosition}}</text></view>
       <view wx:for="{{cards}}" wx:key="id" class="communication-card tone-{{item.color}} {{item.lifted ? 'lifted-card' : ''}}" style="{{item.placement}}" data-id="{{item.id}}" bindtouchstart="onCardTouchStart" bindtouchmove="onCardTouchMove" bindtouchend="onCardTouchEnd" bindtouchcancel="cancelCardTouch" bindtap="showCard" aria-role="button" aria-label="{{item.title}}">
+        <button wx:if="{{expanded && !dragging}}" class="card-menu-button" data-id="{{item.id}}" catchtouchstart="onMenuTouchStart" catchtouchmove="ignoreMenuEvent" catchtouchend="ignoreMenuEvent" catchtouchcancel="ignoreMenuEvent" catchtap="openCardMenu" aria-label="{{cardCopy.manageCard}}"><text aria-hidden="true">···</text></button>
         <view class="card-category"><view class="category-dot"></view><text>{{item.categoryLabel}}</text></view>
         <view class="communication-title">{{item.title}}</view>
         <view class="communication-source">{{item.sourceText}}</view>
@@ -26,4 +27,14 @@
     <view wx:elif="{{cardCount && !expanded}}" class="gesture-hint">{{cardCopy.tapHint}}</view>
     <view class="scroll-bottom"></view>
   </scroll-view>
+  <view wx:if="{{menuCard}}" class="card-menu-overlay" catchtouchmove="ignoreMenuEvent" catchtap="closeCardMenu">
+    <view class="card-menu" catchtap="ignoreMenuEvent" role="dialog" aria-modal="true" aria-label="{{cardCopy.manageCard}}">
+      <view class="card-menu-heading">{{cardCopy.manageCard}}</view>
+      <view class="card-menu-title">{{menuCard.title}}</view>
+      <view class="card-menu-explanation">{{cardCopy.deleteExplanation}}</view>
+      <view wx:if="{{deletionError}}" class="card-menu-error" role="alert">{{deletionError}}</view>
+      <button class="card-menu-delete" catchtap="deleteMenuCard">{{deletionError ? cardCopy.retryDelete : cardCopy.deleteCard}}</button>
+      <button class="card-menu-cancel" catchtap="closeCardMenu">{{cardCopy.cancel}}</button>
+    </view>
+  </view>
 </view>

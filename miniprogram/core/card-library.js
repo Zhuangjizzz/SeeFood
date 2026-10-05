@@ -9,6 +9,9 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
   let error = null;
   let readable = false;
   let displayId = null;
+  let menuId = null;
+  let pendingDeletionId = null;
+  let deleteError = null;
   let touch = null;
   let drag = null;
   let reorderLearned = false;
@@ -125,7 +128,9 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
       const visible = previewCards(allCards.filter((card) => view.category === 'all' || card.category === view.category));
       const displayed = allCards.find((card) => card.id === displayId);
       return Object.assign({}, view, {
-        error: error || (pendingReorder ? 'storage-write' : null), allCards, cards: visible, topCard: visible[0] || null,
+        error: deleteError || error || (pendingReorder ? 'storage-write' : null), pendingDeletionId, deleteError,
+        allCards, cards: visible, topCard: visible[0] || null,
+        menuCard: view.expanded ? visible.find((card) => card.id === menuId) || null : null,
         position: position(), showExpandHint: !view.expandLearned,
         drag: drag ? clone(drag) : null, pendingReorder: !!pendingReorder,
         reorderFeedback,
@@ -146,14 +151,42 @@ function createCardLibrary({ store, getLanguage = () => 'en' }) {
       if (!CATEGORIES.includes(category)) return { ok: false, error: 'invalid-category' };
       cancelGesture();
       if (category === view.category) return { ok: true };
+      library.closeMenu();
       return saveView({ category, position: null });
     },
     expand() { return saveView({ expanded: true, expandLearned: true }); },
     collapse() {
-      cancelGesture();
+      library.closeMenu();
       return saveView({ expanded: false, position: null });
     },
     rememberPosition(next) { return saveView({ position: clone(next) }); },
+    openMenu(id) {
+      if (!view.expanded || !visibleCards().some((card) => card.id === id)) return { ok: false, error: 'menu-unavailable' };
+      library.cancelTouch();
+      displayId = null;
+      menuId = id;
+      return { ok: true };
+    },
+    closeMenu() { menuId = null; library.cancelTouch(); },
+    deleteCard(id) {
+      library.cancelTouch();
+      if (!readable) return { ok: false, error: error || 'storage-read' };
+      if (!cards.some((card) => card.id === id)) return { ok: false, error: 'card-not-found' };
+      const remaining = cards.filter((card) => card.id !== id);
+      let saved;
+      try { saved = store.get('personal-cards'); }
+      catch (_) { pendingDeletionId = id; deleteError = 'storage-read'; return { ok: false, error: deleteError }; }
+      try { store.set('personal-cards', Object.assign({}, saved, { cards: remaining })); }
+      catch (_) { pendingDeletionId = id; deleteError = 'storage-write'; return { ok: false, error: deleteError }; }
+      cards = remaining;
+      if (displayId === id) displayId = null;
+      if (menuId === id) menuId = null;
+      error = null;
+      pendingDeletionId = null;
+      deleteError = null;
+      return { ok: true };
+    },
+    retryDeletion() { return pendingDeletionId ? library.deleteCard(pendingDeletionId) : { ok: true }; },
     showCard(id) {
       if (!cards.some((card) => card.id === id)) {
         displayId = null;

@@ -4,7 +4,7 @@
   "info": {
     "title": "SeeFood development API",
     "version": "0.1.0",
-    "description": "本地开发基线；AI 使用固定模拟结果，尚未实现或部署。生命周期语义见 design.md，场景与样例见 mocks/。不含长期历史同步、菜名纠正、选菜或订单 API。"
+    "description": "本地开发接口已实现；生成使用固定模拟结果，真实 AI 与生产部署尚未接入。生命周期语义见 design.md，场景与样例见 mocks/，运行证据见 validation/2026-10-06-core.md。不含长期历史同步、菜名纠正、选菜或订单 API。"
   },
   "security": [
     {

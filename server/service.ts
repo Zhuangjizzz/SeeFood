@@ -11,6 +11,7 @@ import { ApiError, reject, hash, canonical, validate } from './contract.ts';
 import type { Json } from './contract.ts';
 import { createJobService } from './jobs.ts';
 import type { JobHandler } from './jobs.ts';
+import { dietaryReviewHandler } from './dietary-review.ts';
 import { imageCardsHandler } from './image-cards.ts';
 import { textTranslationHandler } from './text-translation.ts';
 import { createImageTranslation } from './image-translation.ts';
@@ -42,6 +43,7 @@ export interface ServiceOptions {
   jobPageSize?: number;
   mockScenario?: string;
   translationDelayMs?: number;
+  chatPartialDelayMs?: number;
 }
 export function createService(options: ServiceOptions) {
   const dataDir = resolve(options.dataDir);
@@ -106,10 +108,11 @@ export function createService(options: ServiceOptions) {
   const translations = createImageTranslation({ database, directory: resolve(dataDir, 'translations'), now, getContext, baseUrl,
     scenario: options.mockScenario, delayMs: options.translationDelayMs });
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
-    handlers: { image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, text_translation: textTranslationHandler(options.mockScenario), chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+    handlers: { dietary_review: dietaryReviewHandler(options.mockScenario), image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, text_translation: textTranslationHandler(options.mockScenario), chat: chatHandler(options.mockScenario, options.chatPartialDelayMs), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
   const receipts = createReceiptService({ database, getContext, transaction });
   const deliver = (job: Json) => receipts.delivered(translations.decorate(job));
   const cleanups = createCleanupService({ database, imageDirectory: imageDir, transaction });
+
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
     if (snapshot.purpose !== 'record') reject(400, 'INPUT_UNSUPPORTED');

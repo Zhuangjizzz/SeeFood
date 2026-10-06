@@ -827,6 +827,7 @@
                 "cardId": "card-menu-1",
                 "preferencesVersion": 1,
                 "state": "current",
+                "concern": "unknown",
                 "warnings": [
                   "Mock review only; confirm ingredients with staff."
                 ],

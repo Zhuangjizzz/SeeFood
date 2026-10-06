@@ -25,3 +25,6 @@
 .chat-input { flex: 1; width: 0; min-height: 52rpx; max-height: 220rpx; padding: 20rpx; background: #fffef8; border: 1rpx solid #cfd9c7; border-radius: 18rpx; font-size: 30rpx; line-height: 1.65; }
 .chat-send { flex-shrink: 0; min-width: 118rpx; max-width: 30%; min-height: 90rpx; padding: 20rpx 22rpx; font-size: 27rpx; white-space: normal; overflow-wrap: anywhere; }
 .composer-status { font-size: 22rpx; color: #7b8772; line-height: 1.45; margin-top: 12rpx; }
+
+.reply-retry, .reply-continue { min-height: 88rpx; margin: 14rpx 0 0; padding: 18rpx 22rpx; max-width: 100%; width: fit-content; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; text-align: left; }
+.message-status.retrying { color: #45694d; }

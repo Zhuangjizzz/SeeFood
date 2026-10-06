@@ -1616,6 +1616,11 @@
       "DietaryAssessment": {
         "type": "object",
         "properties": {
+          "concern": {
+            "type": "string",
+            "enum": ["conflict", "possible_conflict", "unknown"],
+            "description": "结构化提示类别；current 仅表示检查版本有效，不表示食用安全。旧结果未提供类别时按 unknown 呈现。"
+          },
           "cardId": {
             "type": "string",
             "minLength": 1

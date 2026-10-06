@@ -20,8 +20,10 @@ Page({
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
     const dishCopy = getDishesCopy(services.application.getState().language);
     wx.setNavigationBarTitle({ title: copy.title });
-    const messages = state.messages.map((message) => ({ ...message,
-      statusLabel: message.unsaved ? copy.saveFailed : copy[message.state] || '',
+    const messages = state.messages.map((message) => ({ ...message, ...(state.replyActions[message.id] || {}),
+      statusLabel: [message.role === 'assistant' && !state.processing && state.replyActions[message.id]?.retryPending ? copy.retryUnconfirmed :
+        message.role === 'assistant' && !state.processing && state.replyActions[message.id]?.canContinue ? copy.sendUnconfirmed : copy[message.state] || '',
+        message.unsaved ? copy.saveFailed : ''].filter(Boolean).join(' '),
       dishReferences: (message.attachments || []).filter((attachment) => attachment.type === 'dish_reference').map((attachment) => {
         const dish = state.record && (state.record.cards || []).find((card) => card.id === attachment.cardId);
         return dish ? presentDish(dish, dishCopy) : null;
@@ -32,7 +34,7 @@ Page({
     const errorText = offline ? copy.offline : state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
     this.setData({ messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record });
+      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record });
   },
   onInput(event) { this.inputVersion += 1; this.setData({ draft: event.detail.value }); },
   onKeyboardHeight(event) { this.setData({ keyboardHeight: Math.max(0, event.detail.height || 0) }); },
@@ -50,6 +52,8 @@ Page({
     this.show(); return result;
   },
   openSaveCleanup: saveRecovery.open,
+  async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
+  async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   retrySave() { const result = page.services().chat.retrySave(this.recordId); this.show(); return result; },
   openDish(event) {
     const { messageId, cardId } = event.currentTarget.dataset;

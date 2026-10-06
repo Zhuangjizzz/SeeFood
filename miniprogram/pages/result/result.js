@@ -1,5 +1,6 @@
 const receiptPage = require('../../ui/save-receipts');
 const saveRecovery = require('../../ui/save-recovery');
+const dietaryPage = require('../../ui/dietary');
 const reading = require('../../ui/history-reading');
 const recordsPage = require('../../ui/records');
 const page = require('../../ui/page');
@@ -11,6 +12,8 @@ Page({
   onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
     this.receiptVisible = true;
+    if (this.unsubscribeDietary) this.unsubscribeDietary();
+    this.unsubscribeDietary = page.services().dietaryReview.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     // A fullscreen reader can change the shared selection while this page is hidden.
     this.setData({ currentImageId: null });
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
@@ -29,9 +32,10 @@ Page({
     } else reading.restore(this, 'result', this.recordId);
 
     void page.services().jobs.refreshRecord(this.recordId);
+    void dietaryPage.refresh(this.recordId);
   },
   onPageScroll(event) { this.scrollTop = event.scrollTop; reading.capture(this, event); },
-  onHide() { this.receiptVisible = false; if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onHide() { this.receiptVisible = false; if (this.unsubscribeDietary) { this.unsubscribeDietary(); this.unsubscribeDietary = null; } if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   addPhotos() {
     if (!this.data.record) return;
@@ -64,6 +68,10 @@ Page({
     if (!batch.target || batch.target.kind !== 'append' || batch.target.recordId !== this.recordId) return Promise.resolve({ ok: false, error: 'capture-conflict' });
     return page.services().records.confirmCapture(batch);
   },
+  checkDietary() { return dietaryPage.act(this.recordId, 'startRecord'); },
+  retryDietary() { return dietaryPage.act(this.recordId, 'retry'); },
+  continueDietary() { return dietaryPage.act(this.recordId, 'continueSubmission'); },
+  retryDietarySave() { return dietaryPage.act(this.recordId, 'retrySave'); },
   retryRead() { recordsPage.showResult(this, this.recordId); },
   retryProgress() { return page.services().jobs.refreshRecord(this.recordId); },
   retryImageStage(event) {

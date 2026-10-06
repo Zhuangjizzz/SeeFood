@@ -21,6 +21,8 @@ npm run server:dev
 | --- | --- | --- |
 | `SEEFOOD_DATA_DIR` | 用户主目录下 `.seefood/development` | SQLite 与图片目录；必须位于项目外 |
 | `PORT` | `8787` | HTTP 监听端口，测试可使用 `0` |
+| `SEEFOOD_MOCK_SCENARIO` | `complete` | 固定生成场景；聊天半段失败使用 `chat-partial-failure` |
+| `SEEFOOD_CHAT_PARTIAL_DELAY_MS` | `350` | 半段失败场景从发布片段到失败的等待时间（毫秒），便于检查恢复与页面状态 |
 | `HOST` | `127.0.0.1` | 本地监听地址 |
 | `SEEFOOD_DEV_IDENTITY` | 未设置 | 仅值 `1` 显式开启开发身份 |
 | `SEEFOOD_DEV_IDENTITIES` | `demo-owner-a,demo-owner-b` | 允许使用的测试身份，逗号分隔 |

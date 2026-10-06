@@ -1,4 +1,5 @@
 const { createSaveReceipts } = require('../core/save-receipts');
+const { createDietaryReview } = require('../core/dietary-review');
 const { createLocalStore } = require('../core/local-store');
 const { createApplication } = require('../core/application');
 const { createCapture } = require('../core/capture');
@@ -54,8 +55,9 @@ function createWechatServices(platform, options = {}) {
   const cardDrafts = createCardDrafts({ repository: cardRepository, library: cardLibrary, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
   const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
   const chat = createChat({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const dietaryReview = createDietaryReview({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
-  const history = createHistory({ records, application, jobs, chat, uploads, store });
+  const history = createHistory({ records, application, jobs, chat, uploads, store, dietaryReview });
   deletions = createDeletions({ records, backend, network });
   records.subscribe((id) => {
     if (records.isDeleted(id)) {
@@ -65,7 +67,7 @@ function createWechatServices(platform, options = {}) {
     }
 
   });
-  return { receipts, deletions, imageBatches, cardRepository, cardDrafts, textTranslations, textExchange, network, history, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  return { dietaryReview, receipts, deletions, imageBatches, cardRepository, cardDrafts, textTranslations, textExchange, network, history, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 }
 
 module.exports = { createWechatServices };

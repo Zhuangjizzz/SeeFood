@@ -2,12 +2,9 @@ const { makeId } = require('./identity');
 const { createJobRecovery } = require('./recovery');
 const { createJobRetry, canAcceptRetry } = require('./job-retry');
 const { getDietaryCopy } = require('./dietary-copy');
+const { completedMessages } = require('./record-snapshot');
 const clone = value => JSON.parse(JSON.stringify(value));
 function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
-function messageSnapshot(message) {
-  const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
-  return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
-}
 function createDietaryReview({ records, backend, network, preferences, contexts, getLanguage, receipts, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
@@ -102,11 +99,10 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
       await contexts.publishPending(id); const record = read(id);
       if (preference.version !== preferences.getSnapshot().version) throw { code: 'stale-job' };
       if (latest(record)) { entry = latest(record); return; }
-      const completed = new Set((record.messages || []).filter(message => message.role === 'assistant' && message.state === 'complete').flatMap(message => [message.id, message.inReplyTo]));
       const cards = clone(record.cards).sort((a, b) => a.id.localeCompare(b.id));
       const snapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: (record.contextSnapshotVersion || 0) + 1,
         snapshot: { images: record.images.map(image => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: image.assetId || null })),
-          cards, messages: (record.messages || []).filter(message => completed.has(message.id)).map(messageSnapshot), preferences: preference } };
+          cards, messages: completedMessages(record), preferences: preference } };
       const request = { contextId: record.contextId, kind: 'dietary_review', target: { cardIds: cards.map(card => card.id), preferencesVersion: preference.version },
         input: { contextSnapshotVersion: snapshot.snapshotVersion, cards, preferences: preference } };
       const requestId = makeId('dietary'); entry = { requestId, request, snapshot };

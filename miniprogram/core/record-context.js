@@ -1,12 +1,6 @@
 const { makeId } = require('./identity');
+const { completedMessages } = require('./record-snapshot');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
-function completeMessages(record) {
-  const complete = new Set((record.messages || []).filter(message => message.role === 'assistant' && message.state === 'complete').flatMap(message => [message.id, message.inReplyTo]));
-  return (record.messages || []).filter(message => complete.has(message.id)).map(message => {
-    const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
-    return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
-  });
-}
 /** All producers of record snapshots share this queue. Polling belongs outside it. */
 function createRecordContexts({ records, backend, preferences, onDeletedContext }) {
   const pending = new Map();
@@ -66,7 +60,7 @@ function createRecordContexts({ records, backend, preferences, onDeletedContext 
         draft.chatRetries = {};
         draft.pendingContextSnapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: 1,
           snapshot: { images: draft.images.map(image => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: null })),
-            cards: clone(draft.cards || []), messages: completeMessages(draft), preferences: preferences ? preferences.getSnapshot() : record.contextSnapshot.snapshot.preferences } };
+            cards: clone(draft.cards || []), messages: completedMessages(draft), preferences: preferences ? preferences.getSnapshot() : record.contextSnapshot.snapshot.preferences } };
       });
       return service.publishPending(id);
     },

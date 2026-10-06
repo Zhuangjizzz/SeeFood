@@ -3,7 +3,7 @@ const { createJobRecovery } = require('./recovery');
 const { createJobRetry, canAcceptRetry } = require('./job-retry');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const IMAGE_STAGES = ['image_cards', 'image_translation'];
-function createJobs({ records, backend, network, translationFiles, receipts, contexts, uploads, pollMs = 100 }) {
+function createJobs({ records, backend, network, translationFiles, receipts, contexts, uploads, onCardsReady, pollMs = 100 }) {
   const recovery = createJobRecovery({ backend });
   const retries = createJobRetry({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
@@ -283,6 +283,15 @@ function createJobs({ records, backend, network, translationFiles, receipts, con
       return poll(id, imageId, kind);
     });
   }
+  async function explicitStage(id, imageId, kind, operation) {
+    const before = read(id).images.find(image => imageId ? image.id === imageId : true)?.stageJobs[kind];
+    const result = await operation();
+    const record = records.getRecord(id).record;
+    const after = record?.images.find(image => imageId ? image.id === imageId : true)?.stageJobs[kind];
+    if (result.ok && kind === 'image_cards' && after?.state === 'succeeded' &&
+      (after.jobId !== before?.jobId || after.revision !== before?.revision) && onCardsReady) await onCardsReady(id);
+    return result;
+  }
   return {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     getStageState(id, imageId, kind) {
@@ -302,16 +311,18 @@ function createJobs({ records, backend, network, translationFiles, receipts, con
         savingTranslations: [...active.keys()].filter((key) => key.startsWith(id + ':image_translation:') && key.endsWith(':save'))
           .map((key) => key.slice((id + ':image_translation:').length, -5)) };
     },
-    applyJob, saveTranslation, acceptRecoveredJob, retryStage, continueSubmission,
+    applyJob, saveTranslation, acceptRecoveredJob,
+    retryStage: (id, imageId, kind) => explicitStage(id, imageId, kind, () => retryStage(id, imageId, kind)),
+    continueSubmission: (id, imageId, kind) => explicitStage(id, imageId, kind, () => continueSubmission(id, imageId, kind)),
     retrySave(id) {
       const pending = [...unsaved.entries()].filter(([key]) => key.startsWith(id + ':'));
       for (const [, job] of pending) { const result = applyJob(id, job); if (!result.ok) return result; }
       return { ok: true };
     },
-    startImageCards: (id, imageId) => startStage(id, imageId, 'image_cards'),
+    startImageCards: (id, imageId) => explicitStage(id, imageId, 'image_cards', () => startStage(id, imageId, 'image_cards')),
     startImageTranslation: (id, imageId) => startStage(id, imageId, 'image_translation'),
     async startImageProcessing(id, imageId) {
-      const outcomes = await Promise.all(IMAGE_STAGES.map((kind) => startStage(id, imageId, kind)));
+      const outcomes = await Promise.all(IMAGE_STAGES.map((kind) => explicitStage(id, imageId, kind, () => startStage(id, imageId, kind))));
       return outcomes.find((outcome) => !outcome.ok) || { ok: true };
     },
     refreshRecord(id) {

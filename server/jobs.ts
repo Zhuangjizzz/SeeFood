@@ -57,11 +57,18 @@ export function createJobService(options: JobServiceOptions) {
   }
   function accept(owner: string, key: unknown, request: Json) {
     validate('CreateJobRequest', request);
+    // Dietary targets and input cards are sets. Image order and conversation
+    // order in all other requests retain their original meaning.
+    const normalize = (value: Json) => value.kind === 'dietary_review' ? {
+      ...value, target: { ...value.target, cardIds: [...value.target.cardIds].sort() },
+      input: { ...value.input, cards: [...value.input.cards].sort((a, b) => a.id.localeCompare(b.id)) }
+    } : value;
+    const normalized = normalize(request);
     const context = getContext(request.contextId, owner);
-    return idempotent(owner, 'POST', '/v1/jobs', key, request, () => {
-      const previous = database.prepare('SELECT * FROM jobs WHERE context_id=? AND kind=? AND target=?').get(request.contextId, request.kind, canonical(request.kind === 'dietary_review' ? { ...request.target, cardIds: [...request.target.cardIds].sort() } : request.target));
+    return idempotent(owner, 'POST', '/v1/jobs', key, normalized, () => {
+      const previous = database.prepare('SELECT * FROM jobs WHERE context_id=? AND kind=? AND target=?').get(request.contextId, request.kind, canonical(normalized.target));
       if (previous) {
-        if (previous.request !== canonical(request)) reject(409, 'IDEMPOTENCY_CONFLICT');
+        if (canonical(normalize(JSON.parse(String(previous.request)))) !== canonical(normalized)) reject(409, 'IDEMPOTENCY_CONFLICT');
         return JSON.parse(String(previous.response));
       }
       const handler = handlers[request.kind];
@@ -110,7 +117,7 @@ export function createJobService(options: JobServiceOptions) {
         kind: request.kind, target: request.target, state: 'queued', attempt: 1, revision: 1, output: null, error: null, expiresAt: context.expires_at };
       validate('Job', job);
       database.prepare('INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?)').run(job.jobId, owner, request.contextId, request.kind,
-        canonical(request.kind === 'dietary_review' ? { ...request.target, cardIds: [...request.target.cardIds].sort() } : request.target), canonical(request), JSON.stringify({ request, snapshot, assets }), JSON.stringify(job));
+        canonical(normalized.target), canonical(normalized), JSON.stringify({ request, snapshot, assets }), JSON.stringify(job));
       return job;
     });
   }

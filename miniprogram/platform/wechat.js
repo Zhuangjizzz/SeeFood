@@ -49,7 +49,15 @@ function createWechatServices(platform, options = {}) {
   let deletions;
   const contexts = createRecordContexts({ records, backend, preferences: application.preferences, onDeletedContext: (id) => deletions.retry(id) });
   const uploads = createUploads({ records, network, preferences: application.preferences, backend, contexts });
-  const jobs = createJobs({ records, backend, translationFiles, network, receipts, contexts, uploads });
+  const dietaryReview = createDietaryReview({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const jobs = createJobs({ records, backend, translationFiles, network, receipts, contexts, uploads, async onCardsReady(id) {
+    if (!application.preferences.getState().isSet) return;
+    // New explicit image work can finish while another image's check is active.
+    // Recheck only when that successful check did not yet include the new cards.
+    let result;
+    do { result = await dietaryReview.startRecord(id); }
+    while (result.ok && dietaryReview.getState(id).canStart);
+  } });
   const imageBatches = createImageBatches({ records, uploads, jobs });
   const textTranslations = createTextTranslations({ backend });
   const cardRepository = createCardRepository({ store, getLanguage: () => application.getState().language });
@@ -57,7 +65,6 @@ function createWechatServices(platform, options = {}) {
   const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
   const chat = createChat({ records, backend, network, contexts, uploads, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const cardFavorites = createCardFavorites({ chat, repository: cardRepository, library: cardLibrary });
-  const dietaryReview = createDietaryReview({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
   const history = createHistory({ records, application, jobs, chat, uploads, store, dietaryReview });
   deletions = createDeletions({ records, backend, network });

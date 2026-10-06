@@ -1,3 +1,4 @@
+const { completedMessages } = require('./record-snapshot');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 function createUploads({ records, preferences, backend, network, contexts = require('./record-context').createRecordContexts({ records, backend, preferences }) }) {
@@ -20,18 +21,10 @@ function createUploads({ records, preferences, backend, network, contexts = requ
   function snapshot(record, version) {
     return { purpose: 'record', localScopeId: record.id, recordId: record.id, snapshotVersion: version,
       snapshot: { images: record.images.map((image) => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: image.assetId })),
-        cards: clone(record.cards || []), messages: completeMessages(record), preferences: preferences.getSnapshot() } };
+        cards: clone(record.cards || []), messages: completedMessages(record), preferences: preferences.getSnapshot() } };
   }
   async function publishContext(id) {
     const result = await contexts.publishPending(id); notify(id); return result;
-  }
-  function completeMessages(record) {
-    const completed = (record.messages || []).filter((message) => message.role === 'assistant' && message.state === 'complete');
-    const included = new Set(completed.flatMap((message) => [message.id, message.inReplyTo]));
-    return (record.messages || []).filter((message) => included.has(message.id)).map((message) => {
-      const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
-      return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
-    });
   }
   function sameImages(record) {
     const images = record.contextSnapshot && record.contextSnapshot.snapshot.images;
@@ -41,7 +34,18 @@ function createUploads({ records, preferences, backend, network, contexts = requ
   async function upload(id, imageId, key) {
     let record;
     let targetId;
+    let requests;
+    let image;
     const target = (value) => value.images.find((image) => image.id === targetId);
+    function current(expectedImage) {
+      const value = read(id); const image = target(value);
+      if (value.contextId !== record.contextId || !image || requests &&
+        (image.requests.upload !== requests.upload || image.requests.complete !== requests.complete)) throw { code: 'stale-job' };
+      if (expectedImage && ((image.uploadAttempt?.requestId || image.requests.upload) !==
+        (expectedImage.uploadAttempt?.requestId || expectedImage.requests.upload) ||
+        image.uploadTicket?.uploadId !== expectedImage.uploadTicket?.uploadId)) throw { code: 'stale-job' };
+      return image;
+    }
     try {
       if (network) await network.requireOnline();
       record = read(id);
@@ -64,20 +68,21 @@ function createUploads({ records, preferences, backend, network, contexts = requ
         }
         return current;
       });
-      let image = target(read(id));
+      image = current(); requests = { ...image.requests };
       if (!image.assetId) {
         let asset;
         let renewed = false;
         while (!asset) {
-          image = target(read(id));
+          image = current();
           if (!image.uploadTicket) {
             const key = image.uploadAttempt ? image.uploadAttempt.requestId : image.requests.upload;
             const ticket = await backend.createUpload({ contextId: record.contextId, imageId: image.id,
               kind: image.kind, mimeType: image.mimeType, sizeBytes: image.sizeBytes }, key);
+            current(image);
             save(id, (draft) => { target(draft).uploadTicket = ticket; });
-            image = target(read(id));
+            image = current();
           }
-          const complete = () => { read(id); return backend.completeUpload(image.uploadTicket.uploadId,
+          const complete = () => { current(image); return backend.completeUpload(image.uploadTicket.uploadId,
             { contextId: record.contextId, imageId: image.id }, image.requests.complete); };
           try {
             if (resuming.has(key)) {
@@ -94,7 +99,9 @@ function createUploads({ records, preferences, backend, network, contexts = requ
               }
               if (!asset) asset = await complete();
             }
+            current(image);
           } catch (error) {
+            current(image);
             if (error.code !== 'UPLOAD_EXPIRED' || renewed) throw error;
             save(id, (draft) => {
               const current = target(draft);
@@ -107,13 +114,13 @@ function createUploads({ records, preferences, backend, network, contexts = requ
           }
         }
         if (asset.contextId !== record.contextId || asset.imageId !== image.id || asset.uploadId !== image.uploadTicket.uploadId || !asset.assetId) throw { code: 'DEPENDENCY_MISSING' };
-        if (read(id).contextId !== record.contextId) throw { code: 'stale-job' };
+        current(image);
         save(id, (draft) => { target(draft).assetId = asset.assetId; target(draft).original.assetId = asset.assetId; });
       }
       await contexts.run(id, async () => {
         // Another image may have confirmed its asset while this one transferred.
         // Replay any uncertain accepted body before constructing the next version.
-        if (read(id).contextId !== record.contextId) throw { code: 'stale-job' };
+        current();
         record = await publishContext(id);
         if (!sameImages(record)) save(id, (draft) => {
           draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1);
@@ -125,8 +132,8 @@ function createUploads({ records, preferences, backend, network, contexts = requ
     } catch (error) {
       const code = error.code || error.message || 'TEMPORARY_FAILURE';
       if (record && targetId) {
-        const current = records.getRecord(id);
-        if (current.ok && current.record.contextId !== record.contextId) return { ok: false, error: 'stale-job' };
+        if (code === 'stale-job') return { ok: false, error: code };
+        try { current(image); } catch (stale) { return { ok: false, error: stale.code }; }
         const failed = records.updateRecord(id, (draft) => { target(draft).uploadState = 'failed'; target(draft).uploadError = code; });
         notify(id);
         if (!failed.ok) return { ok: false, error: failed.error };

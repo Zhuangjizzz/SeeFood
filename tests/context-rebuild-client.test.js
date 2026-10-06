@@ -29,7 +29,8 @@ async function setup(t, options = {}) {
   const id = (await services.records.confirmCapture(capture)).recordId;
   assert.equal((await services.imageBatches.startBatch(id, capture.id)).ok, true);
   assert.equal((await services.chat.sendQuickQuestion(id, 'communicate')).ok, true);
-  return { server, disk, backend, services, id, traffic, expire() { time += 10001; server.retention.sweep(); }, offline(value) { online = !value; } };
+  return { server, disk, backend, services, id, traffic, expire() { time += 10001; server.retention.sweep(); },
+    advance(milliseconds) { time += milliseconds; server.retention.sweep(); }, offline(value) { online = !value; } };
 }
 
 test('expired history stays readable offline; an explicit new question rebuilds from saved text without changing old record, cards, messages or images', async t => {
@@ -78,6 +79,46 @@ test('appending after temporary expiry rebuilds the same record and uploads only
   assert.deepEqual(reopened.records.getRecord(id).record, after);
   assert.equal(reopened.records.listHistory().records.length, 1);
   assert.equal(reopened.jobs.applyJob(id, { ...before.images[0].stageJobs.image_cards, revision: 999 }).ok, false);
+});
+
+for (const renewal of [false, true]) test(`a ${renewal ? 'renewed' : 'new'} upload ticket delivered after concurrent context rebuilding cannot poison the appended image or its explicit retry`, async t => {
+  const app = await setup(t, renewal ? { contextRetentionMs: 30 * 60 * 1000 } : {}); const { disk, services, id } = app;
+  const addition = await batch(disk, 'menu-screenshot.png', { kind: 'append', recordId: id });
+  assert.equal((await services.records.confirmCapture(addition)).ok, true);
+  const send = disk.platform.request; let release; let received;
+  if (renewal) {
+    disk.platform.request = options => options.method === 'PUT' && options.url.includes('/_uploads/') ? options.fail(new Error('network lost before bytes')) : send(options);
+    assert.equal((await services.uploads.uploadRecord(id, addition.images[0].id)).error, 'network-unavailable');
+    disk.platform.request = send;
+    app.advance(15 * 60 * 1000 + 1);
+  }
+  const arrived = new Promise(resolve => { received = resolve; });
+  disk.platform.request = options => {
+    if (options.method === 'POST' && options.url.endsWith('/v1/uploads')) {
+      const success = options.success;
+      options.success = response => { release = () => success(response); received(response); };
+      disk.platform.request = send;
+    }
+    send(options);
+  };
+  const oldWork = services.imageBatches.startBatch(id, addition.id);
+  const delivered = await arrived; assert.equal(delivered.statusCode, 201);
+  const oldContextId = services.records.getRecord(id).record.contextId;
+  if (renewal) app.advance(15 * 60 * 1000); else app.expire();
+  assert.equal((await services.chat.sendQuickQuestion(id, 'explain')).ok, true);
+  const rebuilt = services.records.getRecord(id).record;
+  assert.notEqual(rebuilt.contextId, oldContextId);
+  release(); assert.equal((await oldWork).error, 'stale-job');
+  assert.deepEqual(services.records.getRecord(id).record.images, rebuilt.images);
+  const retried = await services.imageBatches.retryUploads(id, addition.images[0].id);
+  assert.equal(retried.ok, true, JSON.stringify(retried));
+  const after = services.records.getRecord(id).record;
+  assert.equal(after.contextId, rebuilt.contextId);
+  assert.equal(after.images[1].uploadState, 'uploaded');
+  assert.equal(after.images[1].stageJobs.image_cards.state, 'succeeded');
+  assert.equal(after.images[1].stageJobs.image_translation.state, 'succeeded');
+  assert.deepEqual(after.messages, rebuilt.messages);
+  assert.deepEqual(after.cards.slice(0, rebuilt.cards.length), rebuilt.cards);
 });
 
 test('a record without saved dish text uploads its required original for a new question, and a missing original asks for replacement', async t => {
@@ -202,6 +243,35 @@ test('native chat and result show five-language missing-material recovery and op
   assert.equal(traffic.length, before);
   const result = nativePage(t, services, 'result'); result.onLoad({ recordId: id, addPhotos: '1' });
   result.onShow(); assert.equal(result.data.showAppendInput, true); assert.equal(result.data.record.id, id); result.onUnload();
+});
+
+test('result and detail reentry keep an unstarted dietary check read-only after expiry and language changes until an explicit check', async t => {
+  const app = await setup(t); const { services, disk, backend, id, traffic } = app;
+  app.offline(true); await services.network.refresh();
+  services.preferences.beginEdit(); services.preferences.toggleOption('allergies', 'egg');
+  assert.equal(services.preferences.save().ok, true);
+  assert.equal((await services.dietaryReview.startRecord(id)).error, 'network-unavailable');
+  const before = services.records.getRecord(id).record; app.expire(); app.offline(false);
+  const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal(reopened.dietaryReview.getState(id).canStart, true);
+  const result = nativePage(t, reopened, 'result'); result.onLoad({ recordId: id });
+  const detail = nativePage(t, reopened, 'dish-detail'); detail.onLoad({ recordId: id, cardId: before.cardIds[0] });
+  const dietaryPage = require('../miniprogram/ui/dietary'); const boundary = traffic.length;
+  for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN']) {
+    reopened.application.chooseLanguage(language); result.onShow(); detail.onShow();
+    await dietaryPage.refresh(id);
+    for (let count = 0; reopened.dietaryReview.getState(id).running && count < 100; count++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(reopened.dietaryReview.getState(id).running, false);
+    assert.equal(detail.data.dietary.assessment.state, 'pending');
+    assert.equal(reopened.records.getRecord(id).record.contextId, before.contextId);
+    result.onHide(); detail.onHide();
+  }
+  assert.equal(traffic.slice(boundary).filter(item => ['PUT', 'POST'].includes(item.method)).length, 0);
+  assert.deepEqual(reopened.records.getRecord(id).record.cards, before.cards);
+  assert.equal((await detail.checkDietary()).ok, true);
+  assert.notEqual(reopened.records.getRecord(id).record.contextId, before.contextId);
+  assert.equal(reopened.dietaryReview.getState(id).assessments[before.cardIds[0]].state, 'current');
+  result.onUnload(); detail.onUnload();
 });
 
 test('a saved current dietary assessment remains current across context rebuilding, while a new preference check uses the new context', async t => {

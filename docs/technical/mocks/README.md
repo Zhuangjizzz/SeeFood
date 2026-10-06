@@ -30,6 +30,14 @@
 
 `scenarios.json` 的状态为 `specified_not_executed`。开发时按场景实现模拟运行器和测试，记录实际执行结果；不能把一份场景定义计为已经通过的用例。
 
+## 聊天半段失败联调
+
+使用 `SEEFOOD_MOCK_SCENARIO=chat-partial-failure SEEFOOD_CHAT_PARTIAL_DELAY_MS=6000 npm run server:dev`，导入菜单并进入对话。每个新聊天任务的第一次尝试先发布 `complete=false` 的固定片段，等待后失败；点击该回复的重试操作，第二次尝试生成完整回答并替换同一回复。新建另一问题可以重复此场景。图片处理仍使用正常样例。
+
+片段和任务状态写入实际 SQLite，使用相同 `SEEFOOD_DATA_DIR` 重启服务可以恢复。重试的 `queued.output` 按契约为 `null`，客户端在原消息中保留已保存的片段；进入新尝试后发布的正文整体替换旧正文，不拼接两次尝试。重开只查询原任务，未能确认接收的请求由用户显式继续，复用已保存的正文和幂等键。
+
+`tests/chat-retry.test.js` 在公开 HTTP、客户端业务与 Page 边界覆盖该流程及故障；实际模拟器的可见状态、触控与键盘另行检查。
+
 ## 文档静态校验
 
 已使用 OpenAPI 规范校验器及 JSON Schema 2020-12 校验器检查接口定义与交换样例：

@@ -2,6 +2,7 @@ const { makeId } = require('./identity');
 const { getChatCopy } = require('./chat-copy');
 const { LANGUAGES } = require('./i18n');
 const { createJobRecovery } = require('./recovery');
+const { createJobRetry, canAcceptRetry } = require('./job-retry');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
@@ -9,11 +10,15 @@ function messageSnapshot(message) {
 }
 function createChat({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
-  const recovery = createJobRecovery({ backend });
+  const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* Page lifetime does not control persistence. */ } }); }
   function read(id) { const result = records.getRecord(id); if (!result.ok) throw { code: result.error }; return result.record; }
   function save(id, update, publish = true) { const result = records.updateRecord(id, update); if (!result.ok) throw { code: result.error }; if (publish) notify(id); return result.record; }
-  function pendingMessage(record) { return (record.messages || []).find((message) => message.role === 'assistant' && ['sending', 'waiting', 'partial'].includes(message.state)); }
+  function pendingMessage(record) { return (record.messages || []).find((message) => message.role === 'assistant' && ['sending', 'waiting', 'partial', 'retrying'].includes(message.state)); }
+  function messageState(job) {
+    return job.state === 'succeeded' ? 'complete' : ['failed', 'cancelled', 'expired'].includes(job.state) ? 'failed' : job.output ? 'partial' : job.attempt > 1 ? 'retrying' : 'waiting';
+  }
+  function hasRetry(record, except) { return Object.keys(record.chatRetries || {}).some((key) => key !== except); }
   function checked(record, job) {
     const target = job && job.target; const entry = target && record.chatRequests && record.chatRequests[target.assistantMessageId];
     const request = entry && entry.request;
@@ -37,26 +42,28 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
             (card.pairedLanguage === 'zh-CN' ? card.pairedText !== null : typeof card.pairedText !== 'string' || !card.pairedText);
         })) throw { code: 'DEPENDENCY_MISSING' };
     }
-    if (job.state === 'succeeded' && (!job.output || !job.output.complete)) throw { code: 'DEPENDENCY_MISSING' };
+    if (job.output && job.output.complete !== (job.state === 'succeeded') || job.state === 'succeeded' && !job.output) throw { code: 'DEPENDENCY_MISSING' };
     return entry;
   }
   function apply(id, job, allowAssociation) {
     try {
       const record = read(id); checked(record, job);
       const key = job.target.assistantMessageId; const previous = record.chatJobs && record.chatJobs[key];
+      const intent = record.chatRetries && record.chatRetries[key]; const nextAttempt = canAcceptRetry(intent, previous, job);
       if (!previous && job.attempt !== 1) return { ok: false, error: 'stale-job' };
-      if ((!previous && !allowAssociation) || previous && (previous.jobId !== job.jobId || previous.attempt !== job.attempt || job.revision < previous.revision ||
+      if ((!previous && !allowAssociation) || previous && (previous.jobId !== job.jobId || previous.attempt !== job.attempt && !nextAttempt || job.revision < previous.revision ||
         job.revision === previous.revision && previous.locallySavedRevision === job.revision)) return { ok: false, error: 'stale-job' };
       const waiting = unsaved.get(id);
-      if (waiting && waiting.jobId === job.jobId && waiting !== job && (waiting.attempt !== job.attempt || job.revision <= waiting.revision)) return { ok: false, error: 'stale-job' };
+      if (waiting && waiting.jobId === job.jobId && waiting !== job && (waiting.attempt > job.attempt || waiting.attempt === job.attempt && job.revision <= waiting.revision)) return { ok: false, error: 'stale-job' };
       unsaved.set(id, clone(job));
       save(id, (draft) => {
         draft.chatJobs = Object.assign({}, draft.chatJobs, { [key]: Object.assign({}, clone(job), { locallySavedRevision: job.revision }) });
         const user = draft.messages.find((message) => message.id === job.target.userMessageId);
         const assistant = draft.messages.find((message) => message.id === key);
         user.state = 'complete';
-        assistant.state = job.state === 'succeeded' ? 'complete' : ['failed', 'cancelled', 'expired'].includes(job.state) ? 'failed' : job.output ? 'partial' : 'waiting';
-        assistant.jobId = job.jobId;
+        assistant.state = messageState(job);
+        Object.assign(assistant, { jobId: job.jobId, attempt: job.attempt, complete: job.output?.complete === true });
+        if (nextAttempt) delete draft.chatRetries[key];
         if (job.output) Object.assign(assistant, { text: job.output.text, contentLanguage: job.output.contentLanguage, attachments: clone(job.output.attachments) });
       }, false);
       unsaved.delete(id); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
@@ -87,7 +94,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
     return run(id, async () => {
       if (network) await network.requireOnline();
       if (!backend.enabled) throw { code: 'backend-unavailable' };
-      if (pendingMessage(read(id))) throw { code: 'JOB_STATE_CONFLICT' };
+      if (pendingMessage(read(id)) || hasRetry(read(id))) throw { code: 'JOB_STATE_CONFLICT' };
       const assistantId = makeId('assistant'); const userId = makeId('user');
       const acceptance = await contexts.run(id, async () => {
         await contexts.publishPending(id);
@@ -116,6 +123,32 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
       return acceptance.ok ? poll(id, assistantId) : acceptance;
     });
   }
+  function retryReply(id, assistantId) {
+    return run(id, async () => {
+      if (network) await network.requireOnline();
+      if (!backend.enabled) throw { code: 'backend-unavailable' };
+      let record = read(id);
+      const pending = pendingMessage(record);
+      if (pending && pending.id !== assistantId || hasRetry(record, assistantId)) throw { code: 'JOB_STATE_CONFLICT' };
+      const waiting = unsaved.get(id);
+      if (waiting) { const saved = apply(id, waiting, true); if (!saved.ok) return saved; record = read(id); }
+      let intent = record.chatRetries && record.chatRetries[assistantId];
+      const job = record.chatJobs && record.chatJobs[assistantId];
+      if (!intent && job && ['queued', 'running'].includes(job.state)) return poll(id, assistantId);
+      if (!intent) {
+        intent = retries.prepare(job);
+        save(id, (draft) => { draft.chatRetries = Object.assign({}, draft.chatRetries, { [assistantId]: intent }); });
+      }
+      const result = await retries.submit(intent, {
+        isCurrent() {
+          const current = read(id);
+          return current.contextId === intent.contextId && current.chatRetries?.[assistantId]?.requestId === intent.requestId;
+        },
+        accept: (next) => apply(id, next, false)
+      });
+      return result.ok ? poll(id, assistantId) : result;
+    });
+  }
   return {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     getState(id) {
@@ -123,13 +156,39 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         const record = read(id); const messages = clone(record.messages || []); const waiting = unsaved.get(id);
         if (waiting && waiting.output) {
           const message = messages.find((item) => item.id === waiting.target.assistantMessageId);
-          if (message) Object.assign(message, waiting.output, { state: waiting.output.complete ? 'complete' : 'partial', unsaved: true });
+          if (message) Object.assign(message, waiting.output, { state: messageState(waiting), attempt: waiting.attempt, unsaved: true });
         }
-        return { record, messages, running: active.has(id) || !!pendingMessage(record), error: errors.get(id) || null,
+        const replyActions = {};
+        for (const key of Object.keys(record.chatRequests || {})) {
+          const job = record.chatJobs?.[key]; const pending = pendingMessage(record);
+          replyActions[key] = { canRetry: job?.state === 'failed' && job.error?.retryable === true, canContinue: !job,
+            retryPending: !!record.chatRetries?.[key], actionDisabled: active.has(id) || !!waiting || !!(pending && pending.id !== key) || hasRetry(record, key) };
+        }
+        return { record, messages, replyActions, processing: active.has(id), running: active.has(id) || !!pendingMessage(record) || hasRetry(record), error: errors.get(id) || null,
           unsavedJob: waiting ? clone(waiting) : null, copy: getChatCopy(getLanguage()) };
-      } catch (error) { return { record: null, messages: [], running: false, error: error.code, unsavedJob: null, copy: getChatCopy(getLanguage()) }; }
+      } catch (error) { return { record: null, messages: [], replyActions: {}, processing: false, running: false, error: error.code, unsavedJob: null, copy: getChatCopy(getLanguage()) }; }
     },
     send,
+    retryReply,
+    continueSubmission(id, assistantId) {
+      return run(id, async () => {
+        if (network) await network.requireOnline();
+        if (!backend.enabled) throw { code: 'backend-unavailable' };
+        const record = read(id); const entry = record.chatRequests?.[assistantId];
+        const pending = pendingMessage(record);
+        if (!entry) throw { code: 'DEPENDENCY_MISSING' };
+        if (pending && pending.id !== assistantId || hasRetry(record)) throw { code: 'JOB_STATE_CONFLICT' };
+        if (record.chatJobs?.[assistantId]) return poll(id, assistantId);
+        const accepted = await contexts.run(id, async () => {
+          await contexts.publishPending(id);
+          return retries.continueSubmission(entry, {
+            isCurrent() { const current = read(id); return current.contextId === entry.request.contextId && current.chatRequests?.[assistantId]?.requestId === entry.requestId; },
+            accept: (job) => apply(id, job, true)
+          });
+        });
+        return accepted.ok ? poll(id, assistantId) : accepted;
+      });
+    },
     sendQuickQuestion(id, questionId) {
       const question = getChatCopy(getLanguage()).questions.find((item) => item.id === questionId);
       return question ? send(id, question.text) : Promise.resolve({ ok: false, error: 'INPUT_UNSUPPORTED' });
@@ -144,7 +203,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         const record = read(id);
         eligible = Object.values(record.chatRequests || {}).filter((entry) => {
           const job = record.chatJobs && record.chatJobs[entry.request.target.assistantMessageId];
-          return !job || ['queued', 'running'].includes(job.state) || job.locallySavedRevision !== job.revision;
+          return !job || record.chatRetries?.[entry.request.target.assistantMessageId] || ['queued', 'running'].includes(job.state) || job.locallySavedRevision !== job.revision;
         }).map((entry) => entry.request);
         if (!eligible.length) return Promise.resolve({ ok: true });
       }

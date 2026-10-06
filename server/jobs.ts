@@ -5,12 +5,12 @@ import { ApiError, reject, canonical, validate, hash } from './contract.ts';
 import type { Json } from './contract.ts';
 
 export interface FrozenJob { request: Json; snapshot: Json; assets: Json[]; }
-export interface GenerationContext extends FrozenJob { job: Json; images: Buffer[]; }
+export interface GenerationContext extends FrozenJob { job: Json; images: Buffer[]; publishPartial: (output: Json) => void; }
 export interface JobHandler {
   purpose: 'record' | 'communication';
   prepare(request: Json, snapshot: Json, asset: (id: string, imageId: string, kind?: string) => Json): Json[];
   generate(context: GenerationContext): Promise<Json>;
-  validateOutput?(output: Json, frozen: FrozenJob): void;
+  validateOutput?(output: Json, frozen: FrozenJob, phase?: 'partial' | 'complete'): void;
 }
 interface JobServiceOptions {
   database: DatabaseSync; now: () => number;
@@ -121,7 +121,7 @@ export function createJobService(options: JobServiceOptions) {
         const siblings = database.prepare("SELECT j.response FROM jobs j JOIN contexts c ON c.id=j.context_id WHERE j.owner=? AND c.scope=? AND j.kind='chat' AND j.id<>?").all(owner, context.scope, id);
         if (siblings.some((sibling) => ['queued', 'running'].includes(JSON.parse(String(sibling.response)).state))) reject(409, 'JOB_STATE_CONFLICT');
       }
-      const next = { ...job, state: 'queued', attempt: job.attempt + 1, revision: job.revision + 1, error: null };
+      const next = { ...job, state: 'queued', attempt: job.attempt + 1, revision: job.revision + 1, output: null, error: null };
       validate('Job', next);
       database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(next), id);
       return next;
@@ -139,17 +139,22 @@ export function createJobService(options: JobServiceOptions) {
         if (!handler) return;
         job = { ...job, state: 'running', revision: job.revision + 1 };
         database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(job), job.jobId);
-        const output = await handler.generate({ ...frozen, job, images: frozen.assets.map((asset) => {
+        const output = await handler.generate({ ...frozen, job, publishPartial(output) {
+          if (job.kind !== 'chat' || output.complete !== false) reject(409, 'DEPENDENCY_MISSING');
+          handler.validateOutput?.(output, frozen, 'partial');
+          const next = { ...job, revision: job.revision + 1, output };
+          if (publish(next, saved)) job = next;
+        }, images: frozen.assets.map((asset) => {
           let bytes: Buffer;
           try { bytes = readFileSync(asset.path); } catch { return reject(409, 'DEPENDENCY_MISSING'); }
           if (hash(bytes) !== asset.contentHash) reject(409, 'DEPENDENCY_MISSING');
           return bytes;
         }) });
-        handler.validateOutput?.(output, frozen);
+        handler.validateOutput?.(output, frozen, 'complete');
         publish({ ...job, state: 'succeeded', revision: job.revision + 1, output, error: null }, saved);
       } catch (error) {
         const failure = error instanceof ApiError ? error : new ApiError(503, 'TEMPORARY_FAILURE', true);
-        publish({ ...job, state: 'failed', revision: job.revision + 1, output: null,
+        publish({ ...job, state: 'failed', revision: job.revision + 1, output: job.output,
           error: { code: failure.code, messageKey: `errors.${failure.code.toLowerCase()}`, retryable: failure.retryable, details: failure.details } }, saved);
       }
   }
@@ -169,6 +174,7 @@ export function createJobService(options: JobServiceOptions) {
     try { getContext(String(saved.context_id), String(saved.owner)); } catch { return; }
     validate('Job', job);
     database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(job), job.jobId);
+    return true;
   }
   const timer = setInterval(() => {
     if (!stopped) work();

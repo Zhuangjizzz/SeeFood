@@ -6,6 +6,7 @@ const { getImagesCopy } = require('../core/images-copy');
 const { getHistoryCopy } = require('../core/history-copy');
 const { getChatCopy } = require('../core/chat-copy');
 const { readCards } = require('./dish-results');
+const { getStageRetryCopy } = require('../core/stage-retry-copy');
 
 const { getRecoveryCopy } = require('../core/recovery-copy');
 
@@ -80,9 +81,12 @@ function showResult(target, recordId) {
   const cards = readCards(record, jobState);
   const visibleUnsavedCards = (jobState.unsavedJobs || []).some((job) => job.kind === 'image_cards' && job.state === 'succeeded' &&
     job.output.cards.some((card) => card.sourceImageIds.includes(currentImage.id)));
+  const cardsRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_cards');
+  const translationRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_translation');
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
     historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
+    stageCopy: getStageRetryCopy(application.language), cardsRetry, translationRetry,
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: currentImage.original.saveState !== 'saved' || currentImage.uploadError === 'original-missing',
     originalSaveLabel: currentImage.original.saveState === 'saved' ? imageCopy.saved : imageCopy.saveFailed,
@@ -105,6 +109,8 @@ function showResult(target, recordId) {
       return Object.assign({}, describe(Object.assign({}, record, { images: [image] }), application, imageUpload), image, {
         processingLabel: uploadLabel([image], imageUpload, recordCopy, getUploadCopy(application.language)),
         canRetryUpload: imageUpload.canRetry,
+        cardsRetry: page.services().jobs.getStageState(recordId, image.id, 'image_cards'),
+        translationRetry: page.services().jobs.getStageState(recordId, image.id, 'image_translation'),
         cardsStateLabel: cards ? dishCopy[cards.state] : image.jobRequests && image.jobRequests.image_cards ? recoveryCopy.checking : dishCopy.unstarted,
         translationStateLabel: translationLabel(translation, image.jobRequests && image.jobRequests.image_translation, imageCopy, recoveryCopy),
         translationSaveLabel: pending.some((job) => job.kind === 'image_translation') ? imageCopy.saveFailed :

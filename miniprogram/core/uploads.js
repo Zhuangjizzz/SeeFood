@@ -1,6 +1,6 @@
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
-function createUploads({ records, preferences, backend, network, contexts = require('./record-context').createRecordContexts({ records, backend }) }) {
+function createUploads({ records, preferences, backend, network, contexts = require('./record-context').createRecordContexts({ records, backend, preferences }) }) {
   const active = new Map();
   const resuming = new Set();
   const errors = new Map();
@@ -56,6 +56,7 @@ function createUploads({ records, preferences, backend, network, contexts = requ
       save(id, (draft) => { target(draft).uploadState = 'uploading'; delete target(draft).uploadError; });
       // Resolve uncertain acceptance before allocating the next version.
       record = await contexts.run(id, async () => {
+        await contexts.prepare(id, { purpose: 'images', requiredImageIds: [targetId] });
         let current = await publishContext(id);
         if (!sameImages(current)) {
           save(id, (draft) => { draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1); });
@@ -106,11 +107,13 @@ function createUploads({ records, preferences, backend, network, contexts = requ
           }
         }
         if (asset.contextId !== record.contextId || asset.imageId !== image.id || asset.uploadId !== image.uploadTicket.uploadId || !asset.assetId) throw { code: 'DEPENDENCY_MISSING' };
+        if (read(id).contextId !== record.contextId) throw { code: 'stale-job' };
         save(id, (draft) => { target(draft).assetId = asset.assetId; target(draft).original.assetId = asset.assetId; });
       }
       await contexts.run(id, async () => {
         // Another image may have confirmed its asset while this one transferred.
         // Replay any uncertain accepted body before constructing the next version.
+        if (read(id).contextId !== record.contextId) throw { code: 'stale-job' };
         record = await publishContext(id);
         if (!sameImages(record)) save(id, (draft) => {
           draft.pendingContextSnapshot = snapshot(draft, draft.contextSnapshotVersion + 1);

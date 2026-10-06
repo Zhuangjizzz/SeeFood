@@ -58,7 +58,7 @@ function createWechatBackend(platform, store, config, network) {
       if (network) await network.requireOnline();
       // A business token is attached only to this service's own resource endpoint.
       const prefix = config.baseUrl + '/v1/image-artifacts/';
-      if (!artifact.remoteUrl.startsWith(prefix) || artifact.remoteUrl.slice(prefix.length) !== encodeURIComponent(artifact.id)) throw { code: 'DEPENDENCY_MISSING' };
+      if (!artifact.remoteUrl.startsWith(prefix) || artifact.remoteUrl.slice(prefix.length).split('?')[0] !== encodeURIComponent(artifact.id) || artifact.remoteUrl.includes('#')) throw { code: 'DEPENDENCY_MISSING' };
       const accessToken = await session();
       return new Promise((resolve, reject) => platform.downloadFile({ url: artifact.remoteUrl,
         header: { Authorization: `Bearer ${accessToken}` }, timeout: 30000,

@@ -7,6 +7,7 @@
   <block wx:if="{{record}}">
     <view wx:if="{{offline}}" class="notice record-offline" role="status">{{historyCopy.offline}}</view>
     <view wx:if="{{positionSaveFailed}}" class="notice" role="status">{{historyCopy.positionFailed}}</view>
+    <view wx:if="{{expirationNotice}}" class="notice expiration-notice" role="alert">{{expirationNotice}}<button class="text-button" bindtap="addPhotos">{{expirationCopy.addPhotos}}</button></view>
     <view class="record-heading">{{title}}</view>
     <view class="record-meta">{{createdAtLabel}} · {{imageCount}} {{recordCopy.photos}}</view>
     <view class="record-status paper">

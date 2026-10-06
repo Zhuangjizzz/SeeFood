@@ -46,15 +46,15 @@ function createWechatServices(platform, options = {}) {
   const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform), network);
   const receipts = createSaveReceipts({ store, backend, network });
   let deletions;
-  const contexts = createRecordContexts({ records, backend, onDeletedContext: (id) => deletions.retry(id) });
+  const contexts = createRecordContexts({ records, backend, preferences: application.preferences, onDeletedContext: (id) => deletions.retry(id) });
   const uploads = createUploads({ records, network, preferences: application.preferences, backend, contexts });
-  const jobs = createJobs({ records, backend, translationFiles, network, receipts });
+  const jobs = createJobs({ records, backend, translationFiles, network, receipts, contexts, uploads });
   const imageBatches = createImageBatches({ records, uploads, jobs });
   const textTranslations = createTextTranslations({ backend });
   const cardRepository = createCardRepository({ store, getLanguage: () => application.getState().language });
   const cardDrafts = createCardDrafts({ repository: cardRepository, library: cardLibrary, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
   const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
-  const chat = createChat({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const chat = createChat({ records, backend, network, contexts, uploads, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const dietaryReview = createDietaryReview({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
   const history = createHistory({ records, application, jobs, chat, uploads, store, dietaryReview });

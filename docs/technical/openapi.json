@@ -684,6 +684,7 @@
               "INPUT_LIMIT_EXCEEDED",
               "UPLOAD_INCOMPLETE",
               "UPLOAD_EXPIRED",
+              "DOWNLOAD_EXPIRED",
               "JOB_STATE_CONFLICT",
               "CONTEXT_EXPIRED",
               "CONTEXT_DELETED",

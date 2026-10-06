@@ -38,7 +38,7 @@ Page({
         if (attachment.type !== 'communication_card') return null;
         const saved = favorites.cards.some((card) => card.sourceMessageId === message.id && card.sourceAttachmentIndex === index);
         const error = this.favoriteErrors?.[message.id + ':' + index] || favorites.error;
-        return { ...attachment.card, index, sourceContent: attachment.card, saved,
+        return { ...attachment.card, index, sourceContent: attachment.card, saved, saveFailed: error === 'storage-write',
           favoriteError: error ? ['card-unavailable', 'card-changed'].includes(error) ? copy.favoriteUnavailable : copy.favoriteFailed : '' };
       }).filter(Boolean)
     }));
@@ -47,7 +47,8 @@ Page({
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
     this.renderedChatState = state;
     this.setData({ draft: state.draft.text, draftSaveFailed: !!state.draftError, hasNewReply: reading.hasNew(this, state), messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
+      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob,
+      favoriteSaveFailed: messages.some((message) => message.communicationCards.some((card) => card.saveFailed)), recordAvailable: !!state.record }, () => reading.render(this, state));
 
   },
   onInput(event) { const result = page.services().chat.editDraft(this.recordId, event.detail.value); this.show(); return result; },

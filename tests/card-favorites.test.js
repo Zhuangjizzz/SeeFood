@@ -188,11 +188,13 @@ test('five-language native chat collection reports real write failures and succe
     assert.equal(shown.pairedLanguage, 'en');
     disk.storage.set = (key, value) => { if (key.endsWith(':personal-cards')) throw new Error('disk full'); write(key, value); };
     const failed = page.favoriteCard(event); assert.equal(failed.error, 'storage-write');
+    assert.equal(page.data.favoriteSaveFailed, true);
     assert.equal(page.data.messages[1].communicationCards[0].saved, false);
     assert.equal(page.data.messages[1].communicationCards[0].favoriteError, page.data.chatCopy.favoriteFailed);
     assert.ok(page.data.chatCopy.favoriteRetry);
     disk.storage.set = write;
     const saved = page.favoriteCard(event); assert.equal(saved.ok, true);
+    assert.equal(page.data.favoriteSaveFailed, false);
     assert.equal(page.data.messages[1].communicationCards[0].saved, true);
     assert.equal(page.data.messages[1].communicationCards[0].favoriteError, '');
     assert.ok(page.data.chatCopy.favoriteSaved); assert.equal(page.data.draft, 'Keep this unsent question');

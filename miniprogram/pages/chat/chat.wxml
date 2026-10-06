@@ -20,7 +20,7 @@
           <button wx:if="{{!card.saved}}" class="favorite-card text-button" data-message-id="{{item.id}}" data-index="{{card.index}}" bindtap="favoriteCard">{{card.favoriteError ? chatCopy.favoriteRetry : chatCopy.favorite}}</button>
         </view>
       </view>
-      <view wx:if="{{saveFailed || draftSaveFailed || positionSaveFailed}}" class="notice save-recovery" role="status"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
+      <view wx:if="{{saveFailed || draftSaveFailed || positionSaveFailed || favoriteSaveFailed}}" class="notice save-recovery" role="status"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
       <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
     </view>
   </scroll-view>

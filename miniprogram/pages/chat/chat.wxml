@@ -21,7 +21,7 @@
         </view>
       </view>
       <view wx:if="{{saveFailed || draftSaveFailed || positionSaveFailed || favoriteSaveFailed}}" class="notice save-recovery" role="status"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
-      <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
+      <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{needsMaterial}}" class="text-button add-material" bindtap="addPhotos">{{expirationCopy.addPhotos}}</button><button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
     </view>
   </scroll-view>
   <view wx:if="{{hasNewReply}}" class="new-reply-entry"><button class="new-reply-button" bindtap="viewLatest">{{chatCopy.newReply}} ↓</button></view>

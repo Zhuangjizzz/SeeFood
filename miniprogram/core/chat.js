@@ -9,7 +9,7 @@ function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
   return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
 }
-function createChat({ records, backend, network, preferences, contexts, getLanguage, receipts, pollMs = 100 }) {
+function createChat({ records, backend, network, preferences, contexts, uploads, getLanguage, receipts, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   records.subscribe((id) => { if (records.isDeleted(id)) { unsaved.delete(id); errors.delete(id); } });
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
@@ -101,7 +101,8 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
     if (active.has(id)) return Promise.resolve({ ok: false, error: 'JOB_STATE_CONFLICT' });
     errors.delete(id);
     const work = Promise.resolve().then(operation).catch((error) => {
-      const code = error.code || error.message || 'TEMPORARY_FAILURE'; errors.set(id, code); return { ok: false, error: code };
+      if (error.contextId && records.getRecord(id).record?.contextId !== error.contextId) return { ok: false, error: 'stale-job' };
+      const code = error.code || error.message || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED') contexts.markExpired(id, error.contextId); errors.set(id, code); return { ok: false, error: code };
     }).finally(() => { active.delete(id); notify(id); });
     active.set(id, work); notify(id); return work;
   }
@@ -111,6 +112,12 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
     return run(id, async () => {
       if (network) await network.requireOnline();
       if (!backend.enabled) throw { code: 'backend-unavailable' };
+      const prepared = await contexts.run(id, () => contexts.prepare(id, { purpose: 'chat' }));
+      if (!prepared.cards?.length) for (const imageId of prepared.contextRebuild?.requiredImageIds || []) {
+        if (read(id).images.find(image => image.id === imageId)?.assetId) continue;
+        if (!uploads) throw { code: 'rebuild-material-missing' };
+        const uploaded = await uploads.uploadRecord(id, imageId); if (!uploaded.ok) throw { code: uploaded.error };
+      }
       if (pendingMessage(read(id)) || hasRetry(read(id))) throw { code: 'JOB_STATE_CONFLICT' };
       const assistantId = makeId('assistant'); const userId = makeId('user');
       const acceptance = await contexts.run(id, async () => {
@@ -143,11 +150,46 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
       return acceptance.ok ? poll(id, assistantId) : acceptance;
     });
   }
+  async function rebuildReply(id, assistantId) {
+    let record = read(id); const previous = record.chatRequests?.[assistantId];
+    const message = (record.messages || []).find(item => item.id === assistantId);
+    if (!previous || !message || message.state === 'complete') throw { code: 'JOB_STATE_CONFLICT' };
+    for (const imageId of !previous.snapshot.snapshot.cards.length ? previous.snapshot.snapshot.images.map(image => image.imageId) : []) {
+      const image = read(id).images.find(item => item.id === imageId);
+      if (!image || image.original.saveState !== 'saved') throw { code: 'rebuild-material-missing' };
+      if (image.assetId) continue;
+      save(id, draft => { draft.images.find(item => item.id === imageId).uploadState = 'pending'; });
+      const uploaded = await uploads.uploadRecord(id, imageId); if (!uploaded.ok) throw { code: uploaded.error };
+    }
+    await contexts.run(id, async () => {
+      record = await contexts.publishPending(id);
+      const snapshot = clone(previous.snapshot); snapshot.snapshotVersion = record.contextSnapshotVersion + 1;
+      snapshot.snapshot.images = snapshot.snapshot.images.map(image => ({ ...image, assetId: record.images.find(item => item.id === image.imageId)?.assetId || null }));
+      const request = { ...clone(previous.request), contextId: record.contextId,
+        input: { ...previous.request.input, contextSnapshotVersion: snapshot.snapshotVersion } };
+      save(id, draft => {
+        draft.pendingContextSnapshot = snapshot;
+        draft.chatRequests[assistantId] = { requestId: makeId('chat'), request, snapshot };
+        delete draft.chatJobs?.[assistantId]; delete draft.chatRetries?.[assistantId];
+        const reply = draft.messages.find(item => item.id === assistantId); reply.state = 'sending'; delete reply.expired;
+      });
+      unsaved.delete(id);
+      await contexts.publishPending(id);
+    });
+    const entry = read(id).chatRequests[assistantId];
+    const accepted = await retries.continueSubmission(entry, {
+      isCurrent() { const current = read(id); return current.contextId === entry.request.contextId && current.chatRequests?.[assistantId]?.requestId === entry.requestId; },
+      accept: job => apply(id, job, true)
+    });
+    return accepted.ok ? poll(id, assistantId) : accepted;
+  }
   function retryReply(id, assistantId) {
     return run(id, async () => {
       if (network) await network.requireOnline();
       if (!backend.enabled) throw { code: 'backend-unavailable' };
+      await contexts.run(id, () => contexts.prepare(id, { purpose: 'chat' }));
       let record = read(id);
+      if (record.chatRequests?.[assistantId]?.request.contextId !== record.contextId) return rebuildReply(id, assistantId);
       const pending = pendingMessage(record);
       if (pending && pending.id !== assistantId || hasRetry(record, assistantId)) throw { code: 'JOB_STATE_CONFLICT' };
       const waiting = unsaved.get(id);
@@ -189,7 +231,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         const replyActions = {};
         for (const key of Object.keys(record.chatRequests || {})) {
           const job = record.chatJobs?.[key]; const pending = pendingMessage(record);
-          replyActions[key] = { canRetry: job?.state === 'failed' && job.error?.retryable === true, canContinue: !job,
+          replyActions[key] = { canRetry: job?.state === 'expired' || job?.state === 'failed' && job.error?.retryable === true || (record.chatRequests[key].request.contextId !== record.contextId && messages.some(message => message.id === key && message.state !== 'complete')), canContinue: !job && record.chatRequests[key].request.contextId === record.contextId,
             retryPending: !!record.chatRetries?.[key], actionDisabled: active.has(id) || !!waiting || !!(pending && pending.id !== key) || hasRetry(record, key) };
         }
         return { ...drafts.read(id, record), record, messages, replyActions, processing: active.has(id), running: active.has(id) || !!pendingMessage(record) || hasRetry(record), error: errors.get(id) || null,
@@ -215,7 +257,9 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
       return run(id, async () => {
         if (network) await network.requireOnline();
         if (!backend.enabled) throw { code: 'backend-unavailable' };
+        await contexts.run(id, () => contexts.prepare(id, { purpose: 'chat' }));
         const record = read(id); const entry = record.chatRequests?.[assistantId];
+        if (entry && entry.request.contextId !== record.contextId) return rebuildReply(id, assistantId);
         const pending = pendingMessage(record);
         if (!entry) throw { code: 'DEPENDENCY_MISSING' };
         if (pending && pending.id !== assistantId || hasRetry(record)) throw { code: 'JOB_STATE_CONFLICT' };
@@ -244,7 +288,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         const record = read(id);
         eligible = Object.values(record.chatRequests || {}).filter((entry) => {
           const job = record.chatJobs && record.chatJobs[entry.request.target.assistantMessageId];
-          return !job || record.chatRetries?.[entry.request.target.assistantMessageId] || ['queued', 'running'].includes(job.state) || job.locallySavedRevision !== job.revision;
+          return entry.request.contextId === record.contextId && (!job || record.chatRetries?.[entry.request.target.assistantMessageId] || ['queued', 'running'].includes(job.state) || job.locallySavedRevision !== job.revision);
         }).map((entry) => entry.request);
         if (!eligible.length) return Promise.resolve({ ok: true });
       }

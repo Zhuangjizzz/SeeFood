@@ -55,3 +55,9 @@
 成功提示逐项绑定菜品 ID 和偏好版本。`concern` 是可选契约字段，旧样例缺失时仍合法且按未知处理；`warnings` 保留该菜品的生成语言。确认清真或犹太洁食要求时，固定提示保留认证、配料与制作条件待核实说明。
 
 推荐快捷问题使用相同的固定分类。保存蛋过敏或纯素偏好后，`dietary-conflict` 场景中的明确含蛋例不进入建议；默认场景仍保留可能冲突与待核实原因，不从可能配料推断明确安全。详情可以直接提交 `chat-dish-accepted` 示例中的具体菜品问题，不必等待重查任务。实际输入、任务接收、保存和重开见 `tests/chat-dietary.test.js`；原生模拟器核验另行记录。
+
+## 临时材料到期与续取
+
+S16／S23 的本地运行使用 `SEEFOOD_CONTEXT_RETENTION_MS` 与 `SEEFOOD_ARTIFACT_URL_TTL_MS` 分别控制新上下文硬期限和下载凭证期限；既有上下文不因配置变化延长或缩短。可选 `SEEFOOD_SAVED_CONTEXT_RETENTION_MS` 只在完整保存回执且无活动／待提交依赖时提前清理。
+
+`tests/retention-http.test.js` 在真实 HTTP、SQLite 和图片文件上用可控时钟验证硬到期、下载续取、回执／依赖保留，并通过 SIGKILL 后同目录重启验证过期工作不会恢复写回。`tests/context-rebuild-client.test.js` 通过实际本机文件与 HTTP 验证离线历史、主动聊天／追加／重试重建、消息身份、缺图、丢响应和保存失败。原生模拟器及真机检查分别记录，不能由这些测试代替。

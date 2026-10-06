@@ -40,7 +40,12 @@ function createWechatBackend(platform, store, config, network) {
     const accessToken = await session();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` };
     if (key) headers['Idempotency-Key'] = key;
-    return send(config.baseUrl + path, method, data, headers);
+    try { return await send(config.baseUrl + path, method, data, headers); }
+    catch (error) {
+      const contextRoute = path.match(/^\/v1\/contexts\/([^/]+)/);
+      const contextId = data?.contextId || (contextRoute ? decodeURIComponent(contextRoute[1]) : undefined);
+      throw contextId ? { ...error, contextId } : error;
+    }
   }
   return {
     enabled, identityKey: config.identity,
@@ -58,7 +63,7 @@ function createWechatBackend(platform, store, config, network) {
       if (network) await network.requireOnline();
       // A business token is attached only to this service's own resource endpoint.
       const prefix = config.baseUrl + '/v1/image-artifacts/';
-      if (!artifact.remoteUrl.startsWith(prefix) || artifact.remoteUrl.slice(prefix.length) !== encodeURIComponent(artifact.id)) throw { code: 'DEPENDENCY_MISSING' };
+      if (!artifact.remoteUrl.startsWith(prefix) || artifact.remoteUrl.slice(prefix.length).split('?')[0] !== encodeURIComponent(artifact.id) || artifact.remoteUrl.includes('#')) throw { code: 'DEPENDENCY_MISSING' };
       const accessToken = await session();
       return new Promise((resolve, reject) => platform.downloadFile({ url: artifact.remoteUrl,
         header: { Authorization: `Bearer ${accessToken}` }, timeout: 30000,

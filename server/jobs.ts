@@ -28,14 +28,16 @@ export function createJobService(options: JobServiceOptions) {
     UNIQUE(context_id, kind, target));`);
   let stopped = false; const active = new Map<string, Promise<void>>();
   const interval = Math.max(10, options.workerDelayMs || 20);
-  function row(id: string, owner: string) {
+  function row(id: string, owner: string, allowExpired = false) {
     const value = database.prepare('SELECT * FROM jobs WHERE id=?').get(id);
     if (!value) return reject(404, 'NOT_FOUND');
     if (value.owner !== owner) return reject(403, 'FORBIDDEN');
-    getContext(String(value.context_id), owner);
+    try { getContext(String(value.context_id), owner); } catch (error) {
+      if (!allowExpired || !(error instanceof ApiError) || error.code !== 'CONTEXT_EXPIRED') throw error;
+    }
     return value;
   }
-  function get(id: string, owner: string) { return JSON.parse(String(row(id, owner).response)); }
+  function get(id: string, owner: string) { return JSON.parse(String(row(id, owner, true).response)); }
   function list(contextId: string, owner: string, cursor?: string) {
     getContext(contextId, owner);
     let after = '';
@@ -69,7 +71,11 @@ export function createJobService(options: JobServiceOptions) {
         for (const previousChat of existingChats) {
           const target = JSON.parse(String(previousChat.target));
           const reused = [target.userMessageId, target.assistantMessageId].some((id) => [request.target.userMessageId, request.target.assistantMessageId].includes(id));
-          if (reused) reject(409, previousChat.scope === context.scope ? 'IDEMPOTENCY_CONFLICT' : 'DEPENDENCY_MISSING');
+          if (reused) {
+            const retired = JSON.parse(String(previousChat.response)).state === 'expired';
+            if (!retired || previousChat.scope !== context.scope || target.userMessageId !== request.target.userMessageId || target.assistantMessageId !== request.target.assistantMessageId)
+              reject(409, previousChat.scope === context.scope ? 'IDEMPOTENCY_CONFLICT' : 'DEPENDENCY_MISSING');
+          }
           if (previousChat.scope === context.scope && ['queued', 'running'].includes(JSON.parse(String(previousChat.response)).state)) reject(409, 'JOB_STATE_CONFLICT');
         }
       }

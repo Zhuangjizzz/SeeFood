@@ -1,4 +1,5 @@
 const page = require('./page');
+const { getExpirationCopy } = require('../core/expiration-copy');
 const receiptPage = require('./save-receipts');
 const saveRecovery = require('./save-recovery');
 const { getDietary } = require('./dietary');
@@ -87,11 +88,14 @@ function showResult(target, recordId) {
     job.output.cards.some((card) => card.sourceImageIds.includes(currentImage.id)));
   const cardsRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_cards');
   const translationRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_translation');
+  const expirationCopy = getExpirationCopy(application.language);
+  const expirationErrors = [jobState.error, uploadStatus.error, cardsRetry.error, translationRetry.error];
+  const expirationNotice = expirationErrors.includes('rebuild-material-missing') ? expirationCopy.missing : record.contextUnavailable || expirationErrors.includes('CONTEXT_EXPIRED') ? expirationCopy.expired : '';
   const renderedImage = { path: imageView.variant === 'translation' ? imageView.path : null, entries: receiptPage.imageEntries(record, jobState, currentImage.id, { translationOnly: true, imageLoaded: true }) };
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
     saveRecoveryCopy: saveRecovery.copy(), historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
-    dietary, stageCopy: getStageRetryCopy(application.language), cardsRetry, translationRetry,
+    dietary, expirationCopy, expirationNotice, stageCopy: getStageRetryCopy(application.language), cardsRetry, translationRetry,
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
     uploadOriginalMissing: currentImage.original.saveState !== 'saved' || currentImage.uploadError === 'original-missing',
     originalSaveLabel: currentImage.original.saveState === 'saved' ? imageCopy.saved : imageCopy.saveFailed,

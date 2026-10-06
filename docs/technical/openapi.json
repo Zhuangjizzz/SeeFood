@@ -684,6 +684,7 @@
               "INPUT_LIMIT_EXCEEDED",
               "UPLOAD_INCOMPLETE",
               "UPLOAD_EXPIRED",
+              "DOWNLOAD_EXPIRED",
               "JOB_STATE_CONFLICT",
               "CONTEXT_EXPIRED",
               "CONTEXT_DELETED",
@@ -1498,6 +1499,7 @@
             "format": "uri"
           },
           "remoteUrlExpiresAt": {
+            "description": "Short-lived download credential expiry. GET the same Job to renew the URL while its context is retained; renewal does not change content revision.",
             "type": "string",
             "format": "date-time"
           },

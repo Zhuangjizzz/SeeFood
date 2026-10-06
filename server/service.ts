@@ -18,6 +18,7 @@ import { createImageTranslation } from './image-translation.ts';
 import { chatHandler } from './chat.ts';
 import { createReceiptService } from './receipts.ts';
 import { createCleanupService } from './cleanups.ts';
+import { createRetentionService } from './retention.ts';
 
 async function readJson(req: IncomingMessage): Promise<Json> {
   const chunks = []; let size = 0;
@@ -44,6 +45,9 @@ export interface ServiceOptions {
   mockScenario?: string;
   translationDelayMs?: number;
   chatPartialDelayMs?: number;
+  contextRetentionMs?: number;
+  savedContextRetentionMs?: number;
+  artifactUrlTtlMs?: number;
 }
 export function createService(options: ServiceOptions) {
   const dataDir = resolve(options.dataDir);
@@ -62,6 +66,10 @@ export function createService(options: ServiceOptions) {
     CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, owner TEXT NOT NULL, context_id TEXT NOT NULL REFERENCES contexts(id), image_id TEXT NOT NULL, kind TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, secret_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, received_hash TEXT, asset_id TEXT);
     CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, owner TEXT NOT NULL, context_id TEXT NOT NULL REFERENCES contexts(id), image_id TEXT NOT NULL, upload_id TEXT NOT NULL UNIQUE REFERENCES uploads(id), path TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, content_hash TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS idempotency (owner TEXT NOT NULL, method TEXT NOT NULL, path TEXT NOT NULL, key TEXT NOT NULL, body TEXT NOT NULL, response TEXT NOT NULL, PRIMARY KEY(owner,method,path,key));`);
+  database.exec('CREATE TABLE IF NOT EXISTS context_expirations (context_id TEXT PRIMARY KEY REFERENCES contexts(id), reason TEXT NOT NULL, cleaned INTEGER NOT NULL DEFAULT 0)');
+  const contextRetentionMs = options.contextRetentionMs ?? 24 * 60 * 60 * 1000;
+  for (const value of [contextRetentionMs, options.artifactUrlTtlMs ?? 15 * 60 * 1000]) if (!Number.isFinite(value) || value <= 0) throw new Error('Retention durations must be positive milliseconds');
+  if (options.savedContextRetentionMs !== undefined && (!Number.isFinite(options.savedContextRetentionMs) || options.savedContextRetentionMs < 0)) throw new Error('Saved retention must be nonnegative milliseconds');
   const now = options.now || Date.now;
   const expiry = (duration: number) => new Date(now() + duration).toISOString();
   function transaction<T>(operation: () => T): T {
@@ -74,7 +82,7 @@ export function createService(options: ServiceOptions) {
     if (!row) return reject(404, 'NOT_FOUND');
     if (row.owner !== ownerId) return reject(403, 'FORBIDDEN');
     if (row.deleted) return reject(410, 'CONTEXT_DELETED');
-    if (Date.parse(String(row.expires_at)) <= now()) return reject(410, 'CONTEXT_EXPIRED');
+    if (Date.parse(String(row.expires_at)) <= now() || database.prepare('SELECT 1 FROM context_expirations WHERE context_id=?').get(id)) return reject(410, 'CONTEXT_EXPIRED');
     return row;
   }
   function getSnapshot(id: string, ownerId: string, version?: number): Json {
@@ -106,12 +114,13 @@ export function createService(options: ServiceOptions) {
     return `http://${address.address.includes(':') ? `[${address.address}]` : address.address}:${address.port}`;
   }
   const translations = createImageTranslation({ database, directory: resolve(dataDir, 'translations'), now, getContext, baseUrl,
-    scenario: options.mockScenario, delayMs: options.translationDelayMs });
+    scenario: options.mockScenario, delayMs: options.translationDelayMs, urlTtlMs: options.artifactUrlTtlMs });
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
     handlers: { dietary_review: dietaryReviewHandler(options.mockScenario), image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, text_translation: textTranslationHandler(options.mockScenario), chat: chatHandler(options.mockScenario, options.chatPartialDelayMs), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
   const receipts = createReceiptService({ database, getContext, transaction });
   const deliver = (job: Json) => receipts.delivered(translations.decorate(job));
   const cleanups = createCleanupService({ database, imageDirectory: imageDir, transaction });
+  const retention = createRetentionService({ database, now, imageDirectory: imageDir, transaction, contextEligibility: receipts.contextEligibility, savedContextRetentionMs: options.savedContextRetentionMs });
 
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
@@ -233,7 +242,7 @@ export function createService(options: ServiceOptions) {
           catch { reject(409, 'DEPENDENCY_MISSING'); }
         }
       }
-      const expiresAt = existing ? String(existing.expires_at) : expiry(24 * 60 * 60 * 1000);
+      const expiresAt = existing ? String(existing.expires_at) : expiry(contextRetentionMs);
       const response: Json = { contextId: id, purpose: body.purpose, localScopeId: body.localScopeId, snapshotVersion: body.snapshotVersion, expiresAt };
       if (body.purpose === 'record') response.recordId = body.recordId;
       if (!existing) database.prepare('INSERT INTO contexts (id,owner,purpose,scope,latest_version,expires_at) VALUES (?,?,?,?,?,?)').run(id, ownerId, body.purpose, body.localScopeId, body.snapshotVersion, expiresAt);
@@ -250,6 +259,7 @@ export function createService(options: ServiceOptions) {
     return String(session.owner);
   }
   async function handle(req: IncomingMessage, res: ServerResponse) {
+    retention.sweep();
     const url = new URL(req.url || '/', 'http://localhost');
     const route = url.pathname;
     const byteRoute = route.match(/^\/_uploads\/([^/]+)$/);
@@ -275,7 +285,7 @@ export function createService(options: ServiceOptions) {
       if (jobRoute && req.method === 'GET') return send(res, 200, deliver(jobs.get(decodeURIComponent(jobRoute[1]), ownerId)));
       const artifactRoute = route.match(/^\/v1\/image-artifacts\/([^/]+)$/);
       if (artifactRoute && req.method === 'GET') {
-        const bytes = translations.download(decodeURIComponent(artifactRoute[1]), ownerId);
+        const bytes = translations.download(decodeURIComponent(artifactRoute[1]), ownerId, url.searchParams);
         res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': bytes.length, 'Cache-Control': 'private, no-store' });
         return res.end(bytes);
       }
@@ -308,5 +318,5 @@ export function createService(options: ServiceOptions) {
       else res.destroy();
     });
   });
-  return { server, retention: receipts, close: async () => { cleanups.close(); await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
+  return { server, retention: { ...receipts, sweep: retention.sweep }, close: async () => { retention.close(); cleanups.close(); await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
 }

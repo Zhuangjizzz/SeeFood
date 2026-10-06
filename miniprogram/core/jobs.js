@@ -1,8 +1,9 @@
+const { makeId } = require('./identity');
 const { createJobRecovery } = require('./recovery');
 const { createJobRetry, canAcceptRetry } = require('./job-retry');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const IMAGE_STAGES = ['image_cards', 'image_translation'];
-function createJobs({ records, backend, network, translationFiles, receipts, pollMs = 100 }) {
+function createJobs({ records, backend, network, translationFiles, receipts, contexts, uploads, pollMs = 100 }) {
   const recovery = createJobRecovery({ backend });
   const retries = createJobRetry({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
@@ -86,7 +87,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
       }, false);
       if (receipts) receipts.saved(job, { locallySavedRevision: job.revision, locallySavedArtifactIds: [] });
       unsaved.delete(key); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
-    } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
+    } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id, error.contextId); errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   function acceptRecoveredJob(id, job) {
       try {
@@ -99,7 +100,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
             Object.assign({}, clone(job), { locallySavedRevision: null }); });
         }
         return applyJob(id, job);
-      } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
+      } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id, error.contextId); errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   async function saveTranslation(id, imageId) {
     const key = keyFor(id, 'image_translation', imageId);
@@ -162,7 +163,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
   function run(key, id, operation) {
     if (!active.has(key)) {
       errors.delete(id);
-      active.set(key, Promise.resolve().then(operation).catch((error) => { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); return { ok: false, error: code }; })
+      active.set(key, Promise.resolve().then(operation).catch((error) => { if (error.contextId && records.getRecord(id).record?.contextId !== error.contextId) return { ok: false, error: 'stale-job' }; const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id, error.contextId); errors.set(id, code); return { ok: false, error: code }; })
         .finally(() => { active.delete(key); notify(id); }));
     }
     return active.get(key);
@@ -199,9 +200,36 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
       notify(id); return value;
     });
   }
+  async function prepareRebuiltStage(id, imageId, kind) {
+    if (!contexts) return false;
+    await contexts.run(id, () => contexts.prepare(id, { purpose: 'images', requiredImageIds: [imageId] }));
+    const record = read(id); const image = record.images.find(item => item.id === imageId);
+    const oldContextId = image?.stageJobs?.[kind]?.contextId || image?.jobRequests?.[kind]?.contextId;
+    if (!oldContextId || oldContextId === record.contextId) return false;
+    if (image.original.saveState !== 'saved') throw { code: 'rebuild-material-missing' };
+    if (!image.assetId) {
+      save(id, draft => { draft.images.find(item => item.id === imageId).uploadState = 'pending'; });
+      const uploaded = await uploads.uploadRecord(id, imageId); if (!uploaded.ok) throw { code: uploaded.error };
+    }
+    await contexts.run(id, async () => {
+      const current = read(id); const target = current.images.find(item => item.id === imageId);
+      const request = { contextId: current.contextId, kind, target: { imageId }, input: {
+        contextSnapshotVersion: current.contextSnapshotVersion, assetId: target.assetId, targetLanguage: target.targetLanguage } };
+      if (kind === 'image_cards') request.input.inputKind = target.kind;
+      save(id, draft => {
+        const item = draft.images.find(value => value.id === imageId);
+        item.stageJobs[kind] = null; item.requests[kind] = makeId(kind); delete item.stageRetries?.[kind];
+        item.jobRequests = { ...item.jobRequests, [kind]: request };
+        item.jobSnapshots = { ...item.jobSnapshots, [kind]: clone(current.contextSnapshot) };
+      });
+    });
+    return true;
+  }
   function continueSubmission(id, imageId, kind) {
     return stageRun(id, imageId, kind, 'continue', async () => {
       if (!IMAGE_STAGES.includes(kind)) return { ok: false, error: 'INPUT_UNSUPPORTED' };
+      if (network) await network.requireOnline();
+      await prepareRebuiltStage(id, imageId, kind);
       const image = read(id).images.find((item) => item.id === imageId);
       const request = image && image.jobRequests && image.jobRequests[kind];
       if (!request) return { ok: false, error: 'DEPENDENCY_MISSING' };
@@ -233,6 +261,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
       const image = read(id).images.find((item) => item.id === imageId);
       if (!image || !image.stageJobs[kind]) return { ok: false, error: 'DEPENDENCY_MISSING' };
       if (network) await network.requireOnline();
+      if (await prepareRebuiltStage(id, imageId, kind)) return continueSubmission(id, imageId, kind);
       let intent = image.stageRetries && image.stageRetries[kind];
       if (!intent) {
         intent = retries.prepare(image.stageJobs[kind]);
@@ -261,7 +290,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
       const key = keyFor(id, kind, imageId); const job = image?.stageJobs?.[kind];
       const busy = [...active.keys()].some((value) => value === key || value.startsWith(key + ':') ||
         (record.images[0]?.id === imageId && value === keyFor(id, kind, 'first')));
-      return { busy, canRetry: !busy && job?.state === 'failed' && job.error?.retryable === true,
+      return { busy, canRetry: !busy && (job?.state === 'expired' || job?.state === 'failed' && job.error?.retryable === true),
         canContinue: !busy && !job && !!image?.jobRequests?.[kind],
         retryPending: !!image?.stageRetries?.[kind], error: stageErrors.get(key) || null };
     },
@@ -289,7 +318,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, pol
       return run(`${id}:refresh`, id, async () => {
         const record = read(id);
         const requests = record.images.flatMap((image) => IMAGE_STAGES.filter((kind) => image.jobRequests && image.jobRequests[kind] &&
-          (!image.stageJobs[kind] || image.stageRetries?.[kind] || ['queued', 'running'].includes(image.stageJobs[kind].state) ||
+          image.jobRequests[kind].contextId === record.contextId && (!image.stageJobs[kind] || image.stageRetries?.[kind] || ['queued', 'running'].includes(image.stageJobs[kind].state) ||
             image.stageJobs[kind].locallySavedRevision !== image.stageJobs[kind].revision)).map((kind) => image.jobRequests[kind]));
         const fileSaves = [];
         const recovered = await recovery.recover({ contextId: record.contextId, requests, apply: (job) => {

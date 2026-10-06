@@ -2,6 +2,7 @@ const receiptPage = require('../../ui/save-receipts');
 const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const reading = require('../../ui/chat-reading');
+const { getExpirationCopy } = require('../../core/expiration-copy');
 const { presentDish, getDishesCopy } = require('../../core/dishes-copy');
 
 Page({
@@ -22,6 +23,7 @@ Page({
   onUnload() { this.onHide(); },
   show() {
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
+    const expirationCopy = getExpirationCopy(services.application.getState().language);
     const favorites = services.cardFavorites.getState(this.recordId);
     const dishCopy = getDishesCopy(services.application.getState().language);
     wx.setNavigationBarTitle({ title: copy.title });
@@ -43,11 +45,11 @@ Page({
       }).filter(Boolean)
     }));
     const offline = !services.network.getState().online;
-    const errorText = offline ? copy.offline : state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
+    const errorText = offline ? copy.offline : state.error === 'rebuild-material-missing' ? expirationCopy.missing : state.error === 'CONTEXT_EXPIRED' || state.record?.contextUnavailable ? expirationCopy.expired : state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
     this.renderedChatState = state;
     this.setData({ draft: state.draft.text, draftSaveFailed: !!state.draftError, hasNewReply: reading.hasNew(this, state), messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob,
+      errorText, offline, expirationCopy, needsMaterial: state.error === 'rebuild-material-missing', saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob,
       favoriteSaveFailed: messages.some((message) => message.communicationCards.some((card) => card.saveFailed)), recordAvailable: !!state.record }, () => reading.render(this, state));
 
   },
@@ -71,6 +73,7 @@ Page({
     this.show(); return result;
   },
   presentVisibleMessages(state, visibleMessageIds) { if (!this.chatVisible) return; receiptPage.present(page.services(), receiptPage.chatEntries(state, visibleMessageIds)); },
+  addPhotos() { wx.navigateTo({ url: `/pages/result/result?recordId=${encodeURIComponent(this.recordId)}&addPhotos=1` }); },
   openSaveCleanup: saveRecovery.open,
   async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },

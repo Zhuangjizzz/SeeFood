@@ -9,7 +9,7 @@ const { recordError } = require('../../core/records-copy');
 
 Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
-  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
+  onLoad(options) { this.openAppendOnShow = options.addPhotos === '1'; this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
     this.receiptVisible = true;
     if (this.unsubscribeDietary) this.unsubscribeDietary();
@@ -26,6 +26,7 @@ Page({
     this.unsubscribeJobs = page.services().jobs.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     recordsPage.showResult(this, this.recordId);
     capturePage.showCapture(this);
+    if (this.openAppendOnShow) { this.openAppendOnShow = false; this.addPhotos(); }
     if (this.appendReturnPosition) {
       wx.pageScrollTo({ scrollTop: this.appendReturnPosition.scrollTop, duration: 0 });
       this.appendReturnPosition = null;

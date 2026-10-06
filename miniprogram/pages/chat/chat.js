@@ -20,8 +20,10 @@ Page({
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
     const dishCopy = getDishesCopy(services.application.getState().language);
     wx.setNavigationBarTitle({ title: copy.title });
-    const messages = state.messages.map((message) => ({ ...message,
-      statusLabel: message.unsaved ? copy.saveFailed : copy[message.state] || '',
+    const messages = state.messages.map((message) => ({ ...message, ...(state.replyActions[message.id] || {}),
+      statusLabel: [message.role === 'assistant' && !state.processing && state.replyActions[message.id]?.retryPending ? copy.retryUnconfirmed :
+        message.role === 'assistant' && !state.processing && state.replyActions[message.id]?.canContinue ? copy.sendUnconfirmed : copy[message.state] || '',
+        message.unsaved ? copy.saveFailed : ''].filter(Boolean).join(' '),
       dishReferences: (message.attachments || []).filter((attachment) => attachment.type === 'dish_reference').map((attachment) => {
         const dish = state.record && (state.record.cards || []).find((card) => card.id === attachment.cardId);
         return dish ? presentDish(dish, dishCopy) : null;
@@ -33,7 +35,8 @@ Page({
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
     this.renderedChatState = state;
     this.setData({ draft: state.draft.text, draftSaveFailed: !!state.draftError, hasNewReply: reading.hasNew(this, state), messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
+      errorText, offline, saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
+
   },
   onInput(event) { const result = page.services().chat.editDraft(this.recordId, event.detail.value); this.show(); return result; },
   clearDraft() { const result = page.services().chat.clearDraft(this.recordId); this.show(); return result; },
@@ -54,6 +57,8 @@ Page({
     const result = await page.services().chat.sendQuickQuestion(this.recordId, event.currentTarget.dataset.id);
     this.show(); return result;
   },
+  async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
+  async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   retrySave() { const result = page.services().chat.retrySave(this.recordId); this.show(); return result; },
   openDish(event) {
     const { messageId, cardId } = event.currentTarget.dataset;

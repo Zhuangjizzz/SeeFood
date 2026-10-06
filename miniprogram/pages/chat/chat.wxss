@@ -32,3 +32,5 @@
 .draft-clear { min-height: 88rpx; padding: 16rpx 8rpx; font-size: 24rpx; line-height: 1.5; white-space: normal; }
 .draft-save-error, .reading-save-error { font-size: 24rpx; line-height: 1.5; }
 .reading-save-error { flex-shrink: 0; margin: 0 24rpx 12rpx; }
+.reply-retry, .reply-continue { min-height: 88rpx; margin: 14rpx 0 0; padding: 18rpx 22rpx; max-width: 100%; width: fit-content; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; text-align: left; }
+.message-status.retrying { color: #45694d; }

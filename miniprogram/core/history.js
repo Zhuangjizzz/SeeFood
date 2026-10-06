@@ -9,13 +9,14 @@ function position(value) {
   return { anchorId: typeof value.anchorId === 'string' ? value.anchorId : null, offset: value.offset, scrollTop: value.scrollTop };
 }
 function source(value) { return { view: value && value.view === 'history' ? 'history' : 'home', historySource: value && value.historySource === 'mine' ? 'mine' : 'home' }; }
-function createHistory({ records, application, jobs, chat, uploads, store }) {
-  function processingState(record, imageState, chatState) {
+function createHistory({ records, application, jobs, chat, uploads, store, dietaryReview }) {
+  function processingState(record, imageState, chatState, dietaryState) {
     const stages = record.images.flatMap((image) => ['image_cards', 'image_translation'].map((kind) =>
       (imageState.unsavedJobs || []).find((job) => job.kind === kind && job.target.imageId === image.id) ||
       image.stageJobs[kind] || { state: 'pending' }));
     const replies = Object.values(record.chatJobs || {}).map((job) => chatState.unsavedJob && chatState.unsavedJob.jobId === job.jobId ? chatState.unsavedJob : job);
-    const states = stages.concat(replies).map((job) => job.state);
+    const reviews = (dietaryState.jobs || []).map(job => dietaryState.unsavedJob?.jobId === job.jobId ? dietaryState.unsavedJob : job);
+    const states = stages.concat(replies, reviews).map((job) => job.state);
     const succeeded = states.some((state) => state === 'succeeded');
     const failed = states.some((state) => ['failed', 'cancelled', 'expired'].includes(state)) || record.images.some((image) => image.uploadState === 'failed');
     if (failed) return succeeded ? 'partialFailed' : 'failed';
@@ -31,10 +32,12 @@ function createHistory({ records, application, jobs, chat, uploads, store }) {
     const copy = application.getState().copy;
     const originalsSaved = record.images.every((image) => image.original.saveState === 'saved');
     const translationsSaved = record.images.every((image) => !image.translation || image.translation.saveState === 'saved');
+    const dietaryState = dietaryReview ? dietaryReview.getState(record.id) : {};
     const imageState = jobs.getState(record.id); const chatState = chat.getState(record.id); const upload = uploads.getState(record.id);
     const artifacts = record.images.flatMap((image) => [image.original].concat(image.translation || []));
     const missingImages = artifacts.filter((artifact) => artifact.saveState !== 'saved').length;
-    const unsaved = (imageState.unsavedJobs || []).length || chatState.unsavedJob || chatState.draftError || ['storage-read', 'storage-write'].includes(upload.error);
+    const unsaved = (imageState.unsavedJobs || []).length || chatState.unsavedJob || chatState.draftError || dietaryState.unsavedJob || ['storage-read', 'storage-write'].includes(upload.error);
+
     const saving = record.images.some((image) => image.original.saveState === 'saving' ||
       image.translation && image.translation.saveState === 'saving' && (imageState.savingTranslations || []).includes(image.id)) || record.saveState === 'saving';
     const saveState = unsaved || record.saveState === 'failed' ? 'failed' : saving ? 'saving' : originalsSaved && translationsSaved ? 'saved' : 'partial';
@@ -42,11 +45,11 @@ function createHistory({ records, application, jobs, chat, uploads, store }) {
     return { id: record.id, title: record.title || `${record.kind === 'dish' ? copy.dish : copy.menu} · ${dateTime(record.createdAt).split(' ')[0]}`,
       createdAtLabel: dateTime(record.createdAt), imageCount: record.images.length,
       thumbnail: first && first.original.saveState === 'saved' ? first.localOriginalPath : null,
-      processingState: processingState(record, imageState, chatState), saveState, missingImages, offlineAvailable: saveState === 'saved' };
+      processingState: processingState(record, imageState, chatState, dietaryState), saveState, missingImages, offlineAvailable: saveState === 'saved' };
   }
   return { describe,
     subscribe(listener) {
-      const stops = [uploads, jobs, chat, records].map((service) => service.subscribe(listener));
+      const stops = [uploads, jobs, chat, records, dietaryReview].filter(Boolean).map((service) => service.subscribe(listener));
       return () => stops.forEach((stop) => stop());
     },
     saveListPosition(view, value) {

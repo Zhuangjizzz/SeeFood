@@ -109,7 +109,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
         image.original.localPath = image.localOriginalPath;
         image.original.saveState = 'saved';
         if (isDeleted(record.id)) {
-          files.removeUncommittedOriginals(record.id);
+          service.finishDeletion(record.id);
           return failure(submission, 'record-missing');
         }
       } catch (_) {
@@ -146,7 +146,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     activeSaves.set(batchId, result);
     return result;
   }
-  return {
+  const service = {
     async confirmCapture(batch) {
       if (!validBatch(batch)) return { ok: false, error: 'capture-invalid' };
       try { if (deletions().some((entry) => (entry.batchIds || []).includes(batch.id))) return { ok: false, error: 'record-missing' }; }
@@ -277,6 +277,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
       } catch (_) { return { ok: false, error: 'storage-read', records: [] }; }
     }
   };
+  return service;
 }
 
 module.exports = { createRecords };

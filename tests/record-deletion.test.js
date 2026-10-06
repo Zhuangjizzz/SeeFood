@@ -157,3 +157,17 @@ test('deleting complete image and chat results removes their public retained del
   const fresh = createWechatServices(disk.platform); assert.equal(fresh.records.getRecord(id).ok, false);
   assert.equal(JSON.stringify(fresh.store.get('records', [])).includes(old.messages[0].id), false);
 });
+
+test('failure to remove an original copied after deletion reopens local cleanup instead of reporting files removed', async (t) => {
+  const disk = recordPlatform(t); const services = createWechatServices(disk.platform); const { id } = await save(services, disk);
+  const capture = createCapture({ media: { chooseImages: async () => [disk.material('menu-photo.png')] }, getLanguage: () => 'en' });
+  await capture.chooseImages({ source: 'album', target: { kind: 'append', recordId: id } });
+  const copy = disk.fileSystem.copyFile; const remove = disk.fileSystem.rmdirSync; let release; let destination;
+  disk.fileSystem.copyFile = (options) => { destination = options.destPath; release = () => { fs.mkdirSync(require('node:path').dirname(destination), { recursive: true }); copy(options); }; };
+  const saving = services.records.confirmCapture(capture.confirm().batch);
+  await services.deletions.deleteRecord(id); disk.fileSystem.rmdirSync = () => { throw new Error('temporarily locked'); }; release(); await saving;
+  assert.equal(services.deletions.getState().entries[0].localState, 'failed');
+  assert.equal(fs.existsSync(destination), true);
+  disk.fileSystem.rmdirSync = remove; await services.deletions.retry(id);
+  assert.equal(fs.existsSync(destination), false); assert.equal(services.deletions.getState().entries[0].localState, 'succeeded');
+});

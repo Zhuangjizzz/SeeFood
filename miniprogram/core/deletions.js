@@ -14,17 +14,17 @@ function createDeletions({ records, backend, network }) {
         try {
           let value = cleanup.cleanupId && cleanup.state !== 'failed' ? await backend.getCleanup(cleanup.cleanupId) : await backend.deleteContext(cleanup.contextId);
           for (let poll = 0; ; poll += 1) {
-          if (!value || value.contextId !== cleanup.contextId || typeof value.cleanupId !== 'string' || !['queued', 'running', 'succeeded', 'failed'].includes(value.state) || cleanup.cleanupId && value.cleanupId !== cleanup.cleanupId) throw { code: 'DEPENDENCY_MISSING' };
-          const stored = records.updateDeletion(id, (draft) => {
-            const target = draft.cleanups.find((item) => item.contextId === cleanup.contextId);
-            if (target.cleanupId && target.cleanupId !== value.cleanupId) throw new Error('Cleanup identity changed');
-            if (target.state !== 'succeeded') Object.assign(target, value);
-            draft.pendingCleanupIds = draft.cleanups.filter((item) => item.state !== 'succeeded' && item.cleanupId).map((item) => item.cleanupId);
-          });
-          if (!stored.ok) return stored;
-          if (!['queued', 'running'].includes(value.state) || poll >= 99) break;
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          value = await backend.getCleanup(value.cleanupId);
+            if (!value || value.contextId !== cleanup.contextId || typeof value.cleanupId !== 'string' || !['queued', 'running', 'succeeded', 'failed'].includes(value.state) || cleanup.cleanupId && value.cleanupId !== cleanup.cleanupId) throw { code: 'DEPENDENCY_MISSING' };
+            const stored = records.updateDeletion(id, (draft) => {
+              const target = draft.cleanups.find((item) => item.contextId === cleanup.contextId);
+              if (target.cleanupId && target.cleanupId !== value.cleanupId) throw new Error('Cleanup identity changed');
+              if (target.state !== 'succeeded') Object.assign(target, value);
+              draft.pendingCleanupIds = draft.cleanups.filter((item) => item.state !== 'succeeded' && item.cleanupId).map((item) => item.cleanupId);
+            });
+            if (!stored.ok) return stored;
+            if (!['queued', 'running'].includes(value.state) || poll >= 99) break;
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            value = await backend.getCleanup(value.cleanupId);
           }
         } catch (error) {
           records.updateDeletion(id, (draft) => { const target = draft.cleanups.find((item) => item.contextId === cleanup.contextId); target.error = error.code || 'TEMPORARY_FAILURE'; });

@@ -40,7 +40,12 @@ function createWechatBackend(platform, store, config, network) {
     const accessToken = await session();
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` };
     if (key) headers['Idempotency-Key'] = key;
-    return send(config.baseUrl + path, method, data, headers);
+    try { return await send(config.baseUrl + path, method, data, headers); }
+    catch (error) {
+      const contextRoute = path.match(/^\/v1\/contexts\/([^/]+)/);
+      const contextId = data?.contextId || (contextRoute ? decodeURIComponent(contextRoute[1]) : undefined);
+      throw contextId ? { ...error, contextId } : error;
+    }
   }
   return {
     enabled, identityKey: config.identity,

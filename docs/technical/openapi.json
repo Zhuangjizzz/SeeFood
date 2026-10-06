@@ -1499,6 +1499,7 @@
             "format": "uri"
           },
           "remoteUrlExpiresAt": {
+            "description": "Short-lived download credential expiry. GET the same Job to renew the URL while its context is retained; renewal does not change content revision.",
             "type": "string",
             "format": "date-time"
           },

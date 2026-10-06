@@ -26,7 +26,7 @@ function createTextExchange({ store, translations, getLanguage, receipts }) {
   function current(speaker, operation) {
     const target = state.sides[speaker];
     return target && state.localScopeId === operation.context.localScopeId && target.inputVersion === operation.request.input.inputVersion &&
-      target.operation && target.operation.request.target.requestId === operation.request.target.requestId;
+      target.operation && target.operation.request.contextId === operation.request.contextId && target.operation.request.target.requestId === operation.request.target.requestId;
   }
   function consumer(speaker, operation) {
     return {
@@ -57,7 +57,19 @@ function createTextExchange({ store, translations, getLanguage, receipts }) {
     const key = operation.request.target.requestId + ':' + action;
     if (!active.has(key)) {
       const promise = Promise.resolve().then(() => translations[action](operation, consumer(speaker, operation)))
-        .catch((error) => ({ ok: false, error: error.code || 'TEMPORARY_FAILURE' }))
+        .catch(async (error) => {
+          if (error.code !== 'CONTEXT_EXPIRED' || action !== 'submit' || !current(speaker, operation)) return { ok: false, error: error.code || 'TEMPORARY_FAILURE' };
+          const nextOperation = clone(operation); nextOperation.request.contextId = makeId('communication');
+          nextOperation.context.snapshotVersion = state.snapshotVersion + 1; nextOperation.request.input.contextSnapshotVersion = nextOperation.context.snapshotVersion;
+          const saved = change(next => {
+            next.contextId = nextOperation.request.contextId; next.snapshotVersion = nextOperation.context.snapshotVersion;
+            next.sides[speaker].operation = nextOperation; next.sides[speaker].job = null; next.sides[speaker].error = null;
+          });
+          operation = nextOperation;
+          if (!saved.ok) return saved;
+          try { return await translations.submit(operation, consumer(speaker, operation)); }
+          catch (failure) { return { ok: false, error: failure.code || 'TEMPORARY_FAILURE' }; }
+        })
         .then((result) => {
           if (!result.ok && result.error !== 'stale-job' && current(speaker, operation)) {
             change((next) => { next.sides[speaker].error = result.error; });
@@ -115,7 +127,7 @@ function createTextExchange({ store, translations, getLanguage, receipts }) {
       const operation = state.sides[speaker].operation;
       if (!operation) return { ok: false, error: 'empty-input' };
       const recovered = await run(speaker, clone(operation), 'recover');
-      return (recovered.ok && recovered.pending) || recovered.error === 'NOT_FOUND' ? run(speaker, clone(operation), 'submit') : recovered;
+      return (recovered.ok && recovered.pending) || ['NOT_FOUND', 'CONTEXT_EXPIRED'].includes(recovered.error) ? run(speaker, clone(operation), 'submit') : recovered;
     },
     applyJob(speaker, operation, job) { return translations.applyJob(operation, job, consumer(speaker, operation)); },
     restoreInput(speaker) {

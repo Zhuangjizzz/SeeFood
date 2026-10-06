@@ -131,3 +131,166 @@ test('explicit retry after a partial reply expires preserves its question and re
   assert.equal(traffic.slice(start).filter(item => item.method === 'POST' && item.data?.kind === 'chat').length, 1);
   assert.equal(traffic.slice(start).filter(item => item.url.endsWith('/v1/uploads')).length, 0);
 });
+
+test('an unconfirmed question is never regenerated on expired reentry; explicit continuation rebuilds that same saved pair', async t => {
+  const app = await setup(t); const { services, disk, id, traffic, backend } = app;
+  const send = disk.platform.request;
+  disk.platform.request = options => options.method === 'POST' && options.data?.kind === 'chat' ? options.fail(new Error('offline before acceptance')) : send(options);
+  assert.equal((await services.chat.send(id, 'Keep this exact question')).error, 'network-unavailable');
+  const saved = services.records.getRecord(id).record; const replyId = saved.messages.at(-1).id;
+  disk.platform.request = send; app.expire(); const start = traffic.length;
+  const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal((await reopened.chat.refreshRecord(id)).error, 'CONTEXT_EXPIRED');
+  assert.equal(traffic.slice(start).filter(item => item.method === 'PUT' || item.method === 'POST').length, 0);
+  assert.equal(reopened.chat.getState(id).running, false);
+  const continued = await reopened.chat.continueSubmission(id, replyId); assert.equal(continued.ok, true, JSON.stringify(continued));
+  const after = reopened.records.getRecord(id).record;
+  assert.deepEqual(after.messageIds, saved.messageIds); assert.equal(after.messages.at(-2).text, 'Keep this exact question');
+  assert.equal(after.messages.at(-1).state, 'complete'); assert.notEqual(after.contextId, saved.contextId);
+});
+
+test('rebuild metadata failure leaves the old identity and draft intact; lost new-context acceptance reuses its durable identity after recreation', async t => {
+  const app = await setup(t); const { services, disk, id, traffic, backend } = app;
+  services.chat.editDraft(id, 'Preserve this draft');
+  const original = services.records.getRecord(id).record;
+  app.expire(); const write = disk.storage.set; const start = traffic.length;
+  disk.storage.set = (key, value) => { if (key.endsWith(':records')) throw new Error('ENOSPC'); return write(key, value); };
+  assert.equal((await services.chat.sendDraft(id)).error, 'storage-write'); disk.storage.set = write;
+  assert.equal(services.records.getRecord(id).record.contextId, original.contextId);
+  assert.equal(services.chat.getState(id).draft.text, 'Preserve this draft');
+  assert.equal(traffic.slice(start).filter(item => item.method === 'PUT' || item.method === 'POST').length, 0);
+  const send = disk.platform.request; let lost;
+  disk.platform.request = options => {
+    if (!lost && options.method === 'PUT') { lost = { url: options.url, body: structuredClone(options.data) }; options.success = () => options.fail(new Error('new context response lost')); }
+    send(options);
+  };
+  assert.equal((await services.chat.sendDraft(id)).error, 'network-unavailable');
+  const pending = services.records.getRecord(id).record;
+  assert.notEqual(pending.contextId, original.contextId); assert.deepEqual(pending.messageIds, original.messageIds);
+  disk.platform.request = send;
+  const reopened = createWechatServices(disk.platform, { backend }); const resume = traffic.length;
+  assert.equal((await reopened.chat.sendDraft(id)).ok, true);
+  const firstPut = traffic.slice(resume).find(item => item.method === 'PUT');
+  assert.equal(firstPut.url, lost.url); assert.deepEqual(firstPut.data, lost.body);
+  assert.equal(reopened.records.getRecord(id).record.contextId, pending.contextId);
+  assert.equal(reopened.records.getRecord(id).record.messages.at(-2).text, 'Preserve this draft');
+  assert.equal(reopened.chat.getState(id).draft.text, '');
+});
+
+function nativePage(t, services, name) {
+  const previous = { Page: global.Page, wx: global.wx, getApp: global.getApp, getCurrentPages: global.getCurrentPages };
+  t.after(() => Object.assign(global, previous)); let definition; const routes = [];
+  global.getApp = () => ({ services }); global.getCurrentPages = () => [1, 2];
+  global.wx = { setNavigationBarTitle() {}, setTabBarItem() {}, pageScrollTo() {}, navigateTo({ url }) { routes.push(url); } };
+  global.Page = value => { definition = value; };
+  const file = require.resolve(`../miniprogram/pages/${name}/${name}`); delete require.cache[file]; require(file);
+  return { ...definition, routes, data: { ...definition.data }, setData(value) { Object.assign(this.data, value); } };
+}
+
+test('native chat and result show five-language missing-material recovery and open the existing record append sheet', async t => {
+  const app = await setup(t, { mockScenario: 'no-cards' }); const { services, id, traffic } = app;
+  app.expire(); fs.unlinkSync(services.records.getRecord(id).record.images[0].localOriginalPath);
+  assert.equal((await services.chat.send(id, 'Please explain')).error, 'rebuild-material-missing');
+  const chat = nativePage(t, services, 'chat'); chat.onLoad({ recordId: id });
+  const before = traffic.length;
+  for (const language of ['en', 'ja', 'ko', 'es', 'zh-CN']) {
+    services.application.chooseLanguage(language); chat.show();
+    assert.equal(chat.data.needsMaterial, true); assert.equal(chat.data.errorText, chat.data.expirationCopy.missing);
+    assert.ok(chat.data.expirationCopy.addPhotos.length); chat.addPhotos();
+    assert.equal(chat.routes.at(-1), `/pages/result/result?recordId=${encodeURIComponent(id)}&addPhotos=1`);
+  }
+  assert.equal(traffic.length, before);
+  const result = nativePage(t, services, 'result'); result.onLoad({ recordId: id, addPhotos: '1' });
+  result.onShow(); assert.equal(result.data.showAppendInput, true); assert.equal(result.data.record.id, id); result.onUnload();
+});
+
+test('a saved current dietary assessment remains current across context rebuilding, while a new preference check uses the new context', async t => {
+  const app = await setup(t); const { services, id, traffic } = app;
+  services.preferences.beginEdit(); services.preferences.toggleOption('allergies', 'egg'); services.preferences.save();
+  assert.equal((await services.dietaryReview.startRecord(id)).ok, true);
+  const before = services.records.getRecord(id).record; const cardId = before.cardIds[0];
+  assert.equal(services.dietaryReview.getState(id).assessments[cardId].state, 'current');
+  app.expire(); const start = traffic.length;
+  assert.equal((await services.chat.sendQuickQuestion(id, 'explain')).ok, true);
+  const preserved = services.dietaryReview.getState(id);
+  assert.equal(preserved.assessments[cardId].state, 'current'); assert.equal(preserved.canStart, false);
+  assert.deepEqual(services.records.getRecord(id).record.dietaryAssessments, before.dietaryAssessments);
+  assert.equal(traffic.slice(start).filter(item => item.method === 'POST' && item.data?.kind === 'dietary_review').length, 0);
+  app.expire(); services.preferences.beginEdit(); services.preferences.toggleOption('allergies', 'peanut'); services.preferences.save();
+  const reviewed = await services.dietaryReview.startRecord(id); assert.equal(reviewed.ok, true, JSON.stringify(reviewed));
+  assert.equal(services.dietaryReview.getState(id).assessments[cardId].preferencesVersion, services.preferences.getSnapshot().version);
+});
+
+test('new independent text and card-draft translations continue after temporary expiry without erasing saved sides or draft identity', async t => {
+  const app = await setup(t); const { services, traffic } = app;
+  services.textExchange.edit('visitor', 'No peanuts'); assert.equal((await services.textExchange.submit('visitor')).ok, true);
+  const prior = services.textExchange.getState();
+  services.cardDrafts.beginNew(); services.cardDrafts.edit({ text: 'Could you bring water?' });
+  assert.equal((await services.cardDrafts.translate()).ok, true); const draft = services.cardDrafts.getState().draft;
+  app.expire(); const start = traffic.length;
+  assert.equal((await services.textExchange.refresh()).ok, true); assert.equal((await services.cardDrafts.refresh()).ok, true);
+  assert.equal(traffic.length, start);
+  services.textExchange.edit('staff', '没有花生');
+  const exchange = await services.textExchange.submit('staff'); assert.equal(exchange.ok, true, JSON.stringify(exchange));
+  const after = services.textExchange.getState();
+  assert.deepEqual(after.sides.visitor.result, prior.sides.visitor.result); assert.notEqual(after.contextId, prior.contextId);
+  services.cardDrafts.edit({ text: 'Could you bring warm water?' });
+  const translated = await services.cardDrafts.translate(); assert.equal(translated.ok, true, JSON.stringify(translated));
+  const next = services.cardDrafts.getState().draft; assert.equal(next.cardId, draft.cardId); assert.notEqual(next.contextId, draft.contextId);
+  assert.equal(next.text, 'Could you bring warm water?'); assert.equal(services.cardDrafts.getState().canSave, true);
+});
+
+test('an old upload finishing after context rebuilding cannot replace the new context or its pending image association', async t => {
+  const app = await setup(t); const { services, disk, id } = app;
+  const added = await batch(disk, 'menu-screenshot.png', { kind: 'append', recordId: id }); await services.records.confirmCapture(added);
+  const send = disk.platform.request; let release; let ready;
+  const waiting = new Promise(resolve => { ready = resolve; });
+  disk.platform.request = options => {
+    if (options.method === 'PUT' && options.url.includes('/_uploads/')) { release = () => send(options); ready(); }
+    else send(options);
+  };
+  const uploading = services.uploads.uploadRecord(id, added.images[0].id); await waiting;
+  app.expire(); assert.equal((await services.chat.sendQuickQuestion(id, 'explain')).ok, true);
+  const rebuilt = services.records.getRecord(id).record;
+  assert.equal(rebuilt.images[1].uploadState, 'pending');
+  release(); await uploading;
+  const after = services.records.getRecord(id).record;
+  assert.equal(after.contextId, rebuilt.contextId); assert.equal(after.images[1].assetId, null);
+  assert.equal(after.images[1].uploadState, 'pending');
+  disk.platform.request = send;
+  assert.equal((await services.imageBatches.retryUploads(id, added.images[0].id)).ok, true);
+});
+
+test('an explicitly retried dietary check can rebuild expired inputs without changing the saved preference or dish identity', async t => {
+  const app = await setup(t, { mockScenario: 'dietary-failure' }); const { services, id } = app;
+  services.preferences.beginEdit(); services.preferences.toggleOption('allergies', 'egg'); services.preferences.save();
+  await services.dietaryReview.startRecord(id);
+  const before = services.records.getRecord(id).record; const old = services.dietaryReview.getState(id).jobs[0]; assert.equal(old.state, 'failed');
+  app.expire(); const retried = await services.dietaryReview.retry(id); assert.equal(retried.ok, true, JSON.stringify(retried));
+  const after = services.records.getRecord(id).record; const current = services.dietaryReview.getState(id).jobs[0];
+  assert.notEqual(after.contextId, before.contextId); assert.notEqual(current.jobId, old.jobId);
+  assert.deepEqual(current.target, old.target); assert.deepEqual(after.cards, before.cards);
+});
+
+test('a delayed expiry response for an old context cannot mark a rebuilt context unavailable', async t => {
+  const app = await setup(t); const { services, disk, id } = app; const send = disk.platform.request;
+  const added = await batch(disk, 'menu-screenshot.png', { kind: 'append', recordId: id }); await services.records.confirmCapture(added);
+  disk.platform.request = options => {
+    if (options.method === 'POST' && options.data?.kind === 'image_cards') options.success = () => options.fail(new Error('accepted response lost'));
+    send(options);
+  };
+  await services.imageBatches.startBatch(id, added.id); disk.platform.request = send;
+  app.expire(); let release; let ready; const waiting = new Promise(resolve => { ready = resolve; });
+  disk.platform.request = options => {
+    if (!release && options.method === 'GET' && /\/contexts\/.+\/jobs/.test(options.url)) {
+      const success = options.success; options.success = result => { release = () => success(result); ready(); };
+    }
+    send(options);
+  };
+  const oldRefresh = services.jobs.refreshRecord(id); await waiting;
+  assert.equal((await services.chat.sendQuickQuestion(id, 'explain')).ok, true);
+  const before = services.records.getRecord(id).record; release(); await oldRefresh;
+  const after = services.records.getRecord(id).record;
+  assert.equal(after.contextId, before.contextId); assert.equal(after.contextUnavailable, undefined); assert.equal(services.jobs.getState(id).error, null);
+  disk.platform.request = send;
+});

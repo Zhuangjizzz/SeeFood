@@ -125,6 +125,8 @@ function createUploads({ records, preferences, backend, network, contexts = requ
     } catch (error) {
       const code = error.code || error.message || 'TEMPORARY_FAILURE';
       if (record && targetId) {
+        const current = records.getRecord(id);
+        if (current.ok && current.record.contextId !== record.contextId) return { ok: false, error: 'stale-job' };
         const failed = records.updateRecord(id, (draft) => { target(draft).uploadState = 'failed'; target(draft).uploadError = code; });
         notify(id);
         if (!failed.ok) return { ok: false, error: failed.error };

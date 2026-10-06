@@ -19,13 +19,23 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
     return request.contextId === record.contextId && request.target.preferencesVersion === preferences.getSnapshot().version &&
       request.input.cards.every(card => same(card, (record.cards || []).find(item => item.id === card.id)));
   }
+  function savedSource(record, card, version) {
+    return Object.values(record.dietaryReviews || {}).find(entry => entry.request.target.preferencesVersion === version && entry.request.input.cards.some(item => same(item, card)));
+  }
+  function savedCurrent(record) {
+    const version = preferences.getSnapshot().version;
+    return record.cards?.length && record.cards.every(card => record.dietaryAssessments?.[card.id]?.preferencesVersion === version && savedSource(record, card, version));
+  }
   function entries(record) { return Object.values(record.dietaryReviews || {}).filter(entry => current(record, entry)); }
   function latest(record) { return entries(record).find(entry => entry.request.target.cardIds.length === (record.cards || []).length); }
   function run(id, operation) {
     const version = preferences.getSnapshot().version; const key = `${id}:${version}`;
     if (active.has(key)) return active.get(key);
     errors.delete(id);
-    const work = Promise.resolve().then(operation).catch(error => { const code = error.code || error.message || 'TEMPORARY_FAILURE';
+    const work = Promise.resolve().then(operation).catch(error => {
+      if (error.contextId && records.getRecord(id).record?.contextId !== error.contextId) return { ok: false, error: 'stale-job' };
+      const code = error.code || error.message || 'TEMPORARY_FAILURE';
+      if (code === 'CONTEXT_EXPIRED' && !records.isDeleted(id)) contexts.markExpired(id, error.contextId);
       if (!records.isDeleted(id) && preferences.getSnapshot().version === version && code !== 'stale-job') errors.set(id, code);
       return { ok: false, error: code }; })
       .finally(() => { active.delete(key); notify(id); });
@@ -80,33 +90,34 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
     }
     return { ok: true, pending: true };
   }
-  function startRecord(id) {
-    return run(id, async () => {
-      const existing = latest(read(id));
-      if (existing) return existing.job ? poll(id, existing.requestId) : { ok: true, pending: true };
-      if (!read(id).cards?.length) return { ok: true };
-      if (network) await network.requireOnline();
-      const preference = preferences.getSnapshot(); let entry;
-      await contexts.run(id, async () => {
-        await contexts.publishPending(id); const record = read(id);
-        if (preference.version !== preferences.getSnapshot().version) throw { code: 'stale-job' };
-        if (latest(record)) { entry = latest(record); return; }
-        const completed = new Set((record.messages || []).filter(message => message.role === 'assistant' && message.state === 'complete').flatMap(message => [message.id, message.inReplyTo]));
-        const cards = clone(record.cards).sort((a, b) => a.id.localeCompare(b.id));
-        const snapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: (record.contextSnapshotVersion || 0) + 1,
-          snapshot: { images: record.images.map(image => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: image.assetId || null })),
-            cards, messages: (record.messages || []).filter(message => completed.has(message.id)).map(messageSnapshot), preferences: preference } };
-        const request = { contextId: record.contextId, kind: 'dietary_review', target: { cardIds: cards.map(card => card.id), preferencesVersion: preference.version },
-          input: { contextSnapshotVersion: snapshot.snapshotVersion, cards, preferences: preference } };
-        const requestId = makeId('dietary'); entry = { requestId, request, snapshot };
-        save(id, draft => { draft.pendingContextSnapshot = clone(snapshot); draft.dietaryReviews = { ...draft.dietaryReviews, [requestId]: clone(entry) }; });
-        await contexts.publishPending(id);
-      });
-      if (!current(read(id), entry)) return { ok: false, error: 'stale-job' };
-      const result = apply(id, await backend.createJob(entry.request, entry.requestId), true);
-      return result.ok ? poll(id, entry.requestId) : result;
+  async function beginRecord(id) {
+    if (savedCurrent(read(id))) return { ok: true };
+    const existing = latest(read(id));
+    if (existing) return existing.job ? poll(id, existing.requestId) : { ok: true, pending: true };
+    if (!read(id).cards?.length) return { ok: true };
+    if (network) await network.requireOnline();
+    const preference = preferences.getSnapshot(); let entry;
+    await contexts.run(id, async () => {
+      await contexts.prepare(id, { purpose: 'text' });
+      await contexts.publishPending(id); const record = read(id);
+      if (preference.version !== preferences.getSnapshot().version) throw { code: 'stale-job' };
+      if (latest(record)) { entry = latest(record); return; }
+      const completed = new Set((record.messages || []).filter(message => message.role === 'assistant' && message.state === 'complete').flatMap(message => [message.id, message.inReplyTo]));
+      const cards = clone(record.cards).sort((a, b) => a.id.localeCompare(b.id));
+      const snapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: (record.contextSnapshotVersion || 0) + 1,
+        snapshot: { images: record.images.map(image => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: image.assetId || null })),
+          cards, messages: (record.messages || []).filter(message => completed.has(message.id)).map(messageSnapshot), preferences: preference } };
+      const request = { contextId: record.contextId, kind: 'dietary_review', target: { cardIds: cards.map(card => card.id), preferencesVersion: preference.version },
+        input: { contextSnapshotVersion: snapshot.snapshotVersion, cards, preferences: preference } };
+      const requestId = makeId('dietary'); entry = { requestId, request, snapshot };
+      save(id, draft => { draft.pendingContextSnapshot = clone(snapshot); draft.dietaryReviews = { ...draft.dietaryReviews, [requestId]: clone(entry) }; });
+      await contexts.publishPending(id);
     });
+    if (!current(read(id), entry)) return { ok: false, error: 'stale-job' };
+    const result = apply(id, await backend.createJob(entry.request, entry.requestId), true);
+    return result.ok ? poll(id, entry.requestId) : result;
   }
+  function startRecord(id) { return run(id, () => beginRecord(id)); }
   const service = {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     startRecord,
@@ -123,7 +134,7 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
           const value = delivered || saved;
           const related = eligible.find(item => item.request.target.cardIds.includes(card.id));
           const job = related && related.job;
-          const valid = value?.preferencesVersion === version && related?.request.input.cards.some(item => same(item, card));
+          const valid = value?.preferencesVersion === version && !!savedSource(record, card, version);
           const state = valid ? 'current' : job && ['queued', 'running'].includes(job.state) ? 'checking' : job && ['failed', 'expired', 'cancelled'].includes(job.state) ? 'failed' : 'pending';
           assessments[card.id] = valid ? { ...clone(value), concern: value.concern || 'unknown', unsaved: !!delivered } :
             { cardId: card.id, preferencesVersion: version, state, warnings: [], concern: 'unknown', unsaved: false };
@@ -131,8 +142,8 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
         const running = active.has(`${id}:${version}`); const pending = Object.values(assessments).some(value => value.state !== 'current');
         return { assessments, pending, running, error: errors.get(id) || null, unsavedJob: waiting ? clone(waiting) : null,
           jobs: eligible.map(value => value.job).filter(Boolean).map(clone),
-          canStart: !!record.cards?.length && !entry && !running, canContinue: !!entry && !entry.job && !running,
-          canRetry: !!entry?.job && entry.job.state === 'failed' && entry.job.error?.retryable === true && !running, copy };
+          canStart: !!record.cards?.length && pending && !entry && !running, canContinue: !!entry && !entry.job && !running,
+          canRetry: !!entry?.job && (entry.job.state === 'expired' || entry.job.state === 'failed' && entry.job.error?.retryable === true) && !running, copy };
       } catch (error) { return { assessments: {}, jobs: [], pending: false, running: false, error: error.code || 'storage-read', unsavedJob: null, copy }; }
     },
     applyJob: (id, job) => apply(id, job, false), acceptRecoveredJob: (id, job) => apply(id, job, true),
@@ -153,6 +164,8 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
       return run(id, async () => {
         const entry = latest(read(id)); if (!entry) return { ok: false, error: 'DEPENDENCY_MISSING' };
         if (network) await network.requireOnline();
+        await contexts.run(id, () => contexts.prepare(id, { purpose: 'text' }));
+        if (!current(read(id), entry)) return beginRecord(id);
         await contexts.run(id, () => contexts.publishPending(id));
         const result = await retries.continueSubmission(entry, { isCurrent: () => current(read(id), entry), accept: job => apply(id, job, true) });
         return result.ok ? poll(id, entry.requestId) : result;
@@ -163,6 +176,8 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
         if (unsaved.has(id)) { const saved = service.retrySave(id); if (!saved.ok) return saved; }
         const entry = latest(read(id)); if (!entry?.job) return { ok: false, error: 'DEPENDENCY_MISSING' };
         if (network) await network.requireOnline();
+        await contexts.run(id, () => contexts.prepare(id, { purpose: 'text' }));
+        if (!current(read(id), entry)) return beginRecord(id);
         let intent = entry.retry;
         if (!intent) { intent = retries.prepare(entry.job); save(id, draft => { draft.dietaryReviews[entry.requestId].retry = intent; }); }
         const result = await retries.submit(intent, { isCurrent: () => current(read(id), entry), accept: job => apply(id, job, true) });

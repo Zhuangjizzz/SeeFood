@@ -101,7 +101,8 @@ function createChat({ records, backend, network, preferences, contexts, uploads,
     if (active.has(id)) return Promise.resolve({ ok: false, error: 'JOB_STATE_CONFLICT' });
     errors.delete(id);
     const work = Promise.resolve().then(operation).catch((error) => {
-      const code = error.code || error.message || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED') contexts.markExpired(id); errors.set(id, code); return { ok: false, error: code };
+      if (error.contextId && records.getRecord(id).record?.contextId !== error.contextId) return { ok: false, error: 'stale-job' };
+      const code = error.code || error.message || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED') contexts.markExpired(id, error.contextId); errors.set(id, code); return { ok: false, error: code };
     }).finally(() => { active.delete(id); notify(id); });
     active.set(id, work); notify(id); return work;
   }

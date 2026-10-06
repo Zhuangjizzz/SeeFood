@@ -87,7 +87,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, con
       }, false);
       if (receipts) receipts.saved(job, { locallySavedRevision: job.revision, locallySavedArtifactIds: [] });
       unsaved.delete(key); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
-    } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id); errors.set(id, code); notify(id); return { ok: false, error: code }; }
+    } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id, error.contextId); errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   function acceptRecoveredJob(id, job) {
       try {
@@ -100,7 +100,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, con
             Object.assign({}, clone(job), { locallySavedRevision: null }); });
         }
         return applyJob(id, job);
-      } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id); errors.set(id, code); notify(id); return { ok: false, error: code }; }
+      } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id, error.contextId); errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
   async function saveTranslation(id, imageId) {
     const key = keyFor(id, 'image_translation', imageId);
@@ -163,7 +163,7 @@ function createJobs({ records, backend, network, translationFiles, receipts, con
   function run(key, id, operation) {
     if (!active.has(key)) {
       errors.delete(id);
-      active.set(key, Promise.resolve().then(operation).catch((error) => { const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id); errors.set(id, code); return { ok: false, error: code }; })
+      active.set(key, Promise.resolve().then(operation).catch((error) => { if (error.contextId && records.getRecord(id).record?.contextId !== error.contextId) return { ok: false, error: 'stale-job' }; const code = error.code || 'TEMPORARY_FAILURE'; if (code === 'CONTEXT_EXPIRED' && contexts) contexts.markExpired(id, error.contextId); errors.set(id, code); return { ok: false, error: code }; })
         .finally(() => { active.delete(key); notify(id); }));
     }
     return active.get(key);

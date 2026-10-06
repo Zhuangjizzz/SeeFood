@@ -39,7 +39,7 @@ function createCardDrafts({ repository, library, translations, getLanguage, rece
   }
   function current(operation) {
     return draft && draft.localScopeId === operation.context.localScopeId && draft.inputVersion === operation.request.input.inputVersion &&
-      draft.operation && draft.operation.request.target.requestId === operation.request.target.requestId;
+      draft.operation && draft.operation.request.contextId === operation.request.contextId && draft.operation.request.target.requestId === operation.request.target.requestId;
   }
   function consumer(operation) {
     return {
@@ -59,7 +59,17 @@ function createCardDrafts({ repository, library, translations, getLanguage, rece
     const key = operation.request.target.requestId + ':' + action;
     if (!active.has(key)) {
       const promise = Promise.resolve().then(() => translations[action](operation, consumer(operation)))
-        .catch((error) => ({ ok: false, error: error.code || 'TEMPORARY_FAILURE' }))
+        .catch(async (error) => {
+          if (error.code !== 'CONTEXT_EXPIRED' || action !== 'submit' || !current(operation)) return { ok: false, error: error.code || 'TEMPORARY_FAILURE' };
+          const nextOperation = clone(operation); nextOperation.request.contextId = makeId('communication');
+          nextOperation.context.snapshotVersion = draft.snapshotVersion + 1; nextOperation.request.input.contextSnapshotVersion = nextOperation.context.snapshotVersion;
+          const next = clone(draft); next.contextId = nextOperation.request.contextId; next.snapshotVersion = nextOperation.context.snapshotVersion;
+          next.operation = nextOperation; next.job = null; next.error = null;
+          const saved = persist(next); operation = nextOperation;
+          if (!saved.ok) return saved;
+          try { return await translations.submit(operation, consumer(operation)); }
+          catch (failure) { return { ok: false, error: failure.code || 'TEMPORARY_FAILURE' }; }
+        })
         .then((result) => {
           if (result.ok && result.pending && current(operation)) { const next = clone(draft); next.error = 'submission-pending'; persist(next); }
           if (!result.ok && result.error !== 'stale-job' && result.error !== 'storage-write' && current(operation)) {
@@ -144,7 +154,7 @@ function createCardDrafts({ repository, library, translations, getLanguage, rece
       if (!draft || needsResume || !draft.operation) return { ok: false, error: 'empty-input' };
       const operation = clone(draft.operation);
       const result = await run(operation, 'recover');
-      return (result.ok && result.pending) || result.error === 'NOT_FOUND' ? run(operation, 'submit') : result;
+      return (result.ok && result.pending) || ['NOT_FOUND', 'CONTEXT_EXPIRED'].includes(result.error) ? run(operation, 'submit') : result;
     },
     applyJob(operation, job) { return translations.applyJob(operation, job, consumer(operation)); },
     save() {

@@ -18,7 +18,8 @@ function createRecordContexts({ records, backend, preferences, onDeletedContext 
       const next = previous.catch(() => {}).then(operation).finally(() => { if (pending.get(id) === next) pending.delete(id); });
       pending.set(id, next); return next;
     },
-    markExpired(id) {
+    markExpired(id, expectedContextId) {
+      if (expectedContextId && read(id).contextId !== expectedContextId) return read(id);
       return save(id, draft => {
         draft.contextUnavailable = true;
         for (const image of draft.images) for (const job of Object.values(image.stageJobs || {})) if (job && ['queued', 'running'].includes(job.state)) { job.state = 'expired'; job.error = { code: 'CONTEXT_EXPIRED', retryable: false }; }
@@ -26,6 +27,7 @@ function createRecordContexts({ records, backend, preferences, onDeletedContext 
           const job = draft.chatJobs?.[messageId]; if (job && ['queued', 'running'].includes(job.state)) { job.state = 'expired'; job.error = { code: 'CONTEXT_EXPIRED', retryable: false }; }
           const message = (draft.messages || []).find(item => item.id === messageId); if (message && message.state !== 'complete') { message.state = 'failed'; message.expired = true; }
         }
+        for (const entry of Object.values(draft.dietaryReviews || {})) if (entry.job && ['queued', 'running'].includes(entry.job.state)) { entry.job.state = 'expired'; entry.job.error = { code: 'CONTEXT_EXPIRED', retryable: false }; }
         draft.chatRetries = {};
       });
     },
@@ -49,7 +51,7 @@ function createRecordContexts({ records, backend, preferences, onDeletedContext 
           image.assetId = null; image.original.assetId = null;
           delete image.uploadTicket; delete image.uploadAttempt;
           image.requests.upload = makeId('upload'); image.requests.complete = makeId('complete');
-          if (required.includes(image.id)) image.uploadState = 'pending';
+          if (required.includes(image.id) || image.uploadState !== 'uploaded') image.uploadState = 'pending';
           for (const job of Object.values(image.stageJobs || {})) if (job && ['queued', 'running'].includes(job.state)) {
             job.state = 'expired'; job.error = { code: 'CONTEXT_EXPIRED', retryable: false };
           }

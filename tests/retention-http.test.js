@@ -99,3 +99,19 @@ test('fully saved outputs are collected after the configured grace, with a durab
   assert.equal((await request(restarted.url, 'PUT', `/v1/contexts/${source.contextId}`, source.bound, token)).body.code, 'CONTEXT_EXPIRED');
   assert.equal((await request(restarted.url, 'GET', `/v1/jobs/${cards.jobId}`, undefined, token)).body.state, 'expired');
 });
+
+test('hard expiry after process death is enforced before interrupted work can restart, using the retained SQLite directory', async t => {
+  const { start } = require('./support/http-service'); const directory = temporary(t);
+  let process = await start(t, directory, { SEEFOOD_CONTEXT_RETENTION_MS: '1000', SEEFOOD_TRANSLATION_DELAY_MS: '5000' });
+  const token = await session(process.url); const source = await uploaded(process.url, token);
+  const input = { ...source.body.input }; delete input.inputKind;
+  const job = (await request(process.url, 'POST', '/v1/jobs', { ...source.body, kind: 'image_translation', input }, token, 'translation')).body;
+  await new Promise(resolve => setTimeout(resolve, 60)); await process.stop('SIGKILL');
+  await new Promise(resolve => setTimeout(resolve, Math.max(0, Date.parse(job.expiresAt) - Date.now() + 25)));
+  process = await start(t, directory);
+  const expired = (await request(process.url, 'GET', `/v1/jobs/${job.jobId}`, undefined, token)).body;
+  assert.equal(expired.state, 'expired'); assert.equal(expired.attempt, 1); assert.equal(expired.output, null);
+  assert.equal((await request(process.url, 'POST', '/v1/jobs', source.body, token, 'late')).body.code, 'CONTEXT_EXPIRED');
+  assert.deepEqual(fs.readdirSync(path.join(directory, 'images')), []);
+  assert.deepEqual(fs.readdirSync(path.join(directory, 'translations')), []);
+});

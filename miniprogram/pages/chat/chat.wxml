@@ -1,9 +1,9 @@
 <view class="chat-shell" style="padding-bottom: {{keyboardHeight}}px;">
-  <scroll-view class="chat-messages" scroll-y enhanced>
+  <scroll-view class="chat-messages" scroll-y enhanced scroll-top="{{chatScrollTop}}" bindscroll="onMessagesScroll">
     <view class="chat-content">
       <view wx:if="{{!messages.length && recordAvailable}}" class="chat-empty paper">{{chatCopy.empty}}</view>
       <view class="mock-note">{{chatCopy.mock}}</view>
-      <view wx:for="{{messages}}" wx:key="id" class="message message-{{item.role}}" id="message-{{item.id}}">
+      <view wx:for="{{messages}}" wx:key="id" class="message message-{{item.role}}" id="message-{{item.id}}" data-message-id="{{item.id}}">
         <view class="message-text" selectable>{{item.text}}</view>
         <view wx:if="{{item.role === 'assistant'}}" class="message-status {{item.state}}">{{item.statusLabel}}</view>
         <button wx:for="{{item.dishReferences}}" wx:for-item="dish" wx:key="id" class="chat-dish" data-message-id="{{item.id}}" data-card-id="{{dish.id}}" bindtap="openDish">
@@ -17,14 +17,18 @@
       <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
     </view>
   </scroll-view>
-  <view class="chat-composer">
+  <view wx:if="{{hasNewReply}}" class="new-reply-entry"><button class="new-reply-button" bindtap="viewLatest">{{chatCopy.newReply}} ↓</button></view>
+  <view wx:if="{{positionSaveFailed}}" class="notice reading-save-error" role="alert">{{chatCopy.positionSaveFailed}}<button class="text-button" bindtap="retryReadingSave">{{chatCopy.retrySave}}</button></view>
+  <view class="chat-composer" style="padding-bottom: {{keyboardHeight > 0 ? '20rpx' : 'calc(20rpx + env(safe-area-inset-bottom))'}};">
     <scroll-view class="quick-questions" scroll-x>
       <view class="quick-strip"><button wx:for="{{chatCopy.questions}}" wx:key="id" class="quick-question" disabled="{{!canSend}}" data-id="{{item.id}}" bindtap="askQuickQuestion">{{item.label}}</button></view>
     </scroll-view>
     <view class="compose-row">
-      <textarea class="chat-input" value="{{draft}}" placeholder="{{chatCopy.placeholder}}" maxlength="-1" auto-height adjust-position="{{false}}" cursor-spacing="16" bindinput="onInput" bindkeyboardheightchange="onKeyboardHeight" />
+      <textarea class="chat-input" value="{{draft}}" placeholder="{{chatCopy.placeholder}}" maxlength="-1" auto-height adjust-position="{{false}}" cursor-spacing="16" bindinput="onInput" bindlinechange="onComposerResize" bindkeyboardheightchange="onKeyboardHeight" />
       <button class="primary-button chat-send" disabled="{{!canSend || !draft}}" bindtap="send">{{chatCopy.send}}</button>
     </view>
+    <view class="draft-actions"><button wx:if="{{draft}}" class="text-button draft-clear" bindtap="clearDraft">{{chatCopy.clearDraft}}</button></view>
+    <view wx:if="{{draftSaveFailed}}" class="notice draft-save-error" role="alert">{{chatCopy.draftSaveFailed}}<button class="text-button" bindtap="retryDraftSave">{{chatCopy.retrySave}}</button></view>
     <view wx:if="{{running}}" class="composer-status" role="status">{{chatCopy.busy}}</view>
   </view>
 </view>

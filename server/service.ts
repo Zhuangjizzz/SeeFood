@@ -91,17 +91,18 @@ export function createService(options: ServiceOptions) {
     if (!row) return reject(409, 'DEPENDENCY_MISSING');
     return JSON.parse(String(row.body));
   }
-  function replay(ownerId: string, method: string, path: string, key: unknown, body: Json): Json | undefined {
+  function replay(ownerId: string, method: string, path: string, key: unknown, body: Json, normalize?: (body: Json) => Json): Json | undefined {
     if (typeof key !== 'string' || !key.trim()) return reject(400, 'INPUT_UNSUPPORTED');
     const saved = database.prepare('SELECT * FROM idempotency WHERE owner=? AND method=? AND path=? AND key=?').get(ownerId, method, path, key);
     if (saved) {
-      if (saved.body !== canonical(body)) reject(409, 'IDEMPOTENCY_CONFLICT');
+      const previous = normalize ? canonical(normalize(JSON.parse(String(saved.body)))) : saved.body;
+      if (previous !== canonical(normalize ? normalize(body) : body)) reject(409, 'IDEMPOTENCY_CONFLICT');
       return JSON.parse(String(saved.response));
     }
   }
-  function idempotent(ownerId: string, method: string, path: string, key: unknown, body: Json, operation: () => Json): Json {
+  function idempotent(ownerId: string, method: string, path: string, key: unknown, body: Json, operation: () => Json, normalize?: (body: Json) => Json): Json {
     return transaction(() => {
-      const saved = replay(ownerId, method, path, key, body);
+      const saved = replay(ownerId, method, path, key, body, normalize);
       if (saved) return saved;
       const response = operation();
       database.prepare('INSERT INTO idempotency VALUES (?,?,?,?,?,?)').run(ownerId, method, path, String(key), canonical(body), JSON.stringify(response));

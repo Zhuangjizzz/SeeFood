@@ -16,7 +16,7 @@ interface JobServiceOptions {
   database: DatabaseSync; now: () => number;
   getContext: (id: string, owner: string) => any;
   getSnapshot: (id: string, owner: string, version?: number) => Json;
-  idempotent: (owner: string, method: string, path: string, key: unknown, body: Json, operation: () => Json) => Json;
+  idempotent: (owner: string, method: string, path: string, key: unknown, body: Json, operation: () => Json, normalize?: (body: Json) => Json) => Json;
   handlers: Record<string, JobHandler>; workerDelayMs?: number; pageSize?: number;
 }
 /** Durable acceptance, identity and execution are shared by all job kinds. */
@@ -119,7 +119,7 @@ export function createJobService(options: JobServiceOptions) {
       database.prepare('INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?)').run(job.jobId, owner, request.contextId, request.kind,
         canonical(normalized.target), canonical(normalized), JSON.stringify({ request, snapshot, assets }), JSON.stringify(job));
       return job;
-    });
+    }, normalize);
   }
   function retry(id: string, owner: string, key: unknown, request: Json) {
     validate('RetryRequest', request);

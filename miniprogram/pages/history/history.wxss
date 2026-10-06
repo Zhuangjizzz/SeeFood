@@ -12,3 +12,14 @@
 .history-chevron { color: #829277; font-size: 38rpx; flex-shrink: 0; }
 .history-empty .primary-button { margin-top: 28rpx; white-space: normal; }
 .history-local-note { color: #78896c; font-size: 23rpx; line-height: 1.6; padding: 28rpx 4rpx 0; }
+.history-item { position: relative; }
+.history-record { padding-right: 100rpx; }
+.history-menu { position: absolute; top: 4rpx; right: 6rpx; width: 88rpx; min-height: 88rpx; padding: 0; font-size: 36rpx; letter-spacing: 4rpx; }
+.history-manage { min-height: 88rpx; min-width: 100rpx; white-space: normal; flex-shrink: 0; }
+.cleanup-panel { margin: 24rpx 0; padding: 24rpx; border-radius: 24rpx; }
+.cleanup-heading { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; font-size: 28rpx; font-weight: 600; }
+.cleanup-heading button { min-height: 88rpx; min-width: 88rpx; }
+.cleanup-entry { font-size: 24rpx; line-height: 1.6; padding: 16rpx 0; border-top: 1rpx solid #d8decf; overflow-wrap: anywhere; }
+.cleanup-entry view:first-child { color: #78896c; }
+.cleanup-boundary { font-size: 23rpx; line-height: 1.6; color: #64765e; }
+.cleanup-retry { min-height: 88rpx; width: 100%; white-space: normal; margin-top: 12rpx; }

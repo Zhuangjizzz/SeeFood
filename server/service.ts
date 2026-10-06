@@ -15,6 +15,7 @@ import { imageCardsHandler } from './image-cards.ts';
 import { textTranslationHandler } from './text-translation.ts';
 import { createImageTranslation } from './image-translation.ts';
 import { chatHandler } from './chat.ts';
+import { createCleanupService } from './cleanups.ts';
 
 async function readJson(req: IncomingMessage): Promise<Json> {
   const chunks = []; let size = 0;
@@ -105,6 +106,7 @@ export function createService(options: ServiceOptions) {
     scenario: options.mockScenario, delayMs: options.translationDelayMs });
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
     handlers: { image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, text_translation: textTranslationHandler(options.mockScenario), chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+  const cleanups = createCleanupService({ database, imageDirectory: imageDir, transaction });
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
     if (snapshot.purpose !== 'record') reject(400, 'INPUT_UNSUPPORTED');
@@ -275,6 +277,9 @@ export function createService(options: ServiceOptions) {
 
       }
       const contextRoute = route.match(/^\/v1\/contexts\/([^/]+)$/);
+      if (contextRoute && req.method === 'DELETE') return send(res, 202, cleanups.deleteContext(decodeURIComponent(contextRoute[1]), ownerId));
+      const cleanupRoute = route.match(/^\/v1\/cleanups\/([^/]+)$/);
+      if (cleanupRoute && req.method === 'GET') return send(res, 200, cleanups.getCleanup(decodeURIComponent(cleanupRoute[1]), ownerId));
       if (contextRoute && req.method === 'PUT') return send(res, 200, putContext(decodeURIComponent(contextRoute[1]), ownerId, await readJson(req)));
       if (route === '/v1/uploads' && req.method === 'POST') {
         const address = server.address();
@@ -293,5 +298,5 @@ export function createService(options: ServiceOptions) {
       else res.destroy();
     });
   });
-  return { server, close: async () => { await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
+  return { server, close: async () => { cleanups.close(); await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
 }

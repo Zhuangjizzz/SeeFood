@@ -44,6 +44,8 @@ function createWechatBackend(platform, store, config, network) {
   }
   return {
     enabled,
+    deleteContext: (id) => business('DELETE', `/v1/contexts/${encodeURIComponent(id)}`),
+    getCleanup: (id) => business('GET', `/v1/cleanups/${encodeURIComponent(id)}`),
     createJob: (body, key) => business('POST', '/v1/jobs', body, key),
     getJob: (id) => business('GET', `/v1/jobs/${encodeURIComponent(id)}`),
     listContextJobs: (id, cursor) => business('GET', `/v1/contexts/${encodeURIComponent(id)}/jobs${cursor === undefined ? '' : '?cursor=' + encodeURIComponent(cursor)}`),

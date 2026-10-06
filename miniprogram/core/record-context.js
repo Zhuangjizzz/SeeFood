@@ -1,7 +1,7 @@
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 /** All producers of record snapshots share this queue. Polling belongs outside it. */
-function createRecordContexts({ records, backend }) {
+function createRecordContexts({ records, backend, onDeletedContext }) {
   const pending = new Map();
   function read(id) { const result = records.getRecord(id); if (!result.ok) throw { code: result.error }; return result.record; }
   return {
@@ -15,6 +15,10 @@ function createRecordContexts({ records, backend }) {
       if (!body) return record;
       const response = await backend.putContext(record.contextId, clone(body));
       if (!response || response.contextId !== record.contextId || response.snapshotVersion !== body.snapshotVersion) throw { code: 'SNAPSHOT_CONFLICT' };
+      if (records.isDeleted(id)) {
+        if (onDeletedContext) await onDeletedContext(id);
+        throw { code: 'record-missing' };
+      }
       const current = read(id);
       if (current.contextId !== record.contextId || JSON.stringify(current.pendingContextSnapshot) !== JSON.stringify(body)) throw { code: 'SNAPSHOT_CONFLICT' };
       const saved = records.updateRecord(id, (draft) => {

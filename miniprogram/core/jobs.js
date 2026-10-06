@@ -6,7 +6,13 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
   const recovery = createJobRecovery({ backend });
   const retries = createJobRetry({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
-  const previews = new Map();
+  const previews = new Map(); const previewOwners = new Map();
+  records.subscribe((id) => {
+    if (!records.isDeleted(id)) return;
+    for (const [key, owner] of previewOwners) if (owner === id) { previews.delete(key); previewOwners.delete(key); }
+    for (const key of unsaved.keys()) if (key.startsWith(id + ':')) unsaved.delete(key);
+    errors.delete(id);
+  });
   const stageErrors = new Map();
   const keyFor = (id, kind, imageId) => `${id}:${kind}:${imageId}`;
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* A page cannot interrupt result persistence. */ } }); }
@@ -115,8 +121,10 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
           Object.assign(target.translation, clone(artifact));
           target.stageJobs.image_translation.output.artifact = clone(artifact);
         });
-        const temporaryPath = await backend.downloadArtifact(artifact); previews.set(artifact.id, temporaryPath);
+        const temporaryPath = await backend.downloadArtifact(artifact); previews.set(artifact.id, temporaryPath); previewOwners.set(artifact.id, id);
+        read(id);
         const local = await translationFiles.copyTranslation(artifact, temporaryPath, id);
+        if (records.isDeleted(id)) { previews.delete(artifact.id); records.finishDeletion(id); throw { code: 'record-missing' }; }
         save(id, (draft) => {
           const target = draft.images.find((item) => item.id === imageId);
           if (!target.translation || target.translation.id !== artifact.id) throw new Error('stale translation');
@@ -124,6 +132,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         });
         return { ok: true };
       } catch (error) {
+        if (records.isDeleted(id)) { previews.delete(artifact.id); records.finishDeletion(id); }
         const code = error.code || 'translation-write';
         try { save(id, (draft) => {
           const target = draft.images.find((item) => item.id === imageId);
@@ -255,6 +264,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         retryPending: !!image?.stageRetries?.[kind], error: stageErrors.get(key) || null };
     },
     getState(id) {
+      if (!records.getRecord(id).ok) return { running: false, error: 'record-missing', unsavedJob: null, unsavedJobs: [], previewPaths: {}, savingTranslations: [] };
       const pending = [...unsaved.entries()].filter(([key]) => key.startsWith(id + ':')).map(([, job]) => clone(job));
       return { running: [...active.keys()].some((key) => key.startsWith(id + ':')), error: errors.get(id) || null,
         unsavedJob: pending.find((job) => job.kind === 'image_cards') || null, unsavedJobs: pending, previewPaths: Object.fromEntries(previews),

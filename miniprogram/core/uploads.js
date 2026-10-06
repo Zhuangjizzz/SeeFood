@@ -76,8 +76,8 @@ function createUploads({ records, preferences, backend, network, contexts = requ
             save(id, (draft) => { target(draft).uploadTicket = ticket; });
             image = target(read(id));
           }
-          const complete = () => backend.completeUpload(image.uploadTicket.uploadId,
-            { contextId: record.contextId, imageId: image.id }, image.requests.complete);
+          const complete = () => { read(id); return backend.completeUpload(image.uploadTicket.uploadId,
+            { contextId: record.contextId, imageId: image.id }, image.requests.complete); };
           try {
             if (resuming.has(key)) {
               // A lost completion response may already own an asset, even after the byte ticket expires.

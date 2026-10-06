@@ -64,6 +64,28 @@ test('reordering dietary target and input card sets replays one job through the 
   assert.equal(jobs.filter(job => job.kind === 'dietary_review').length, 1);
 });
 
+test('upgrading an actual legacy SQLite directory preserves an unsorted dietary request and its original idempotency key', async t => {
+  const fs = require('node:fs'); const path = require('node:path'); const { gunzipSync } = require('node:zlib');
+  const fixture = path.join(__dirname, 'fixtures/legacy-dietary-idempotency');
+  const legacy = JSON.parse(fs.readFileSync(path.join(fixture, 'request.json'), 'utf8'));
+  const directory = temporary(t);
+  fs.writeFileSync(path.join(directory, 'metadata.sqlite'), gunzipSync(fs.readFileSync(path.join(fixture, 'metadata.sqlite.gz'))));
+  const { createService } = await import('../server/service.ts');
+  const service = createService({ dataDir: directory, now: () => legacy.now, enableDevSession: true, devIdentities: ['demo-owner-a'] });
+  await new Promise(resolve => service.server.listen(0, '127.0.0.1', resolve)); t.after(() => service.close());
+  const url = `http://127.0.0.1:${service.server.address().port}`; const token = await session(url);
+  const before = (await request(url, 'GET', '/v1/jobs/' + legacy.jobId, undefined, token)).body;
+  assert.equal(before.state, 'succeeded');
+  const replay = await request(url, 'POST', '/v1/jobs', legacy.request, token, legacy.key);
+  assert.equal(replay.status, 202); assert.equal(replay.body.jobId, legacy.jobId);
+  const reordered = structuredClone(legacy.request); reordered.target.cardIds.reverse(); reordered.input.cards.reverse();
+  for (const key of [legacy.key, 'new-key-after-upgrade']) {
+    const same = await request(url, 'POST', '/v1/jobs', reordered, token, key);
+    assert.equal(same.status, 202); assert.equal(same.body.jobId, legacy.jobId);
+  }
+  assert.deepEqual((await request(url, 'GET', '/v1/jobs/' + legacy.jobId, undefined, token)).body, before);
+});
+
 test('checks reject foreign known cards even when copied into a rewritten snapshot and reject unbound output card IDs or preference versions', async t => {
   const server = await start(t, temporary(t)); const token = await session(server.url); const other = await session(server.url, 'demo-owner-b');
   const own = await ready(server.url, token, 'owned'); const foreign = await ready(server.url, other, 'foreign'); const sibling = await ready(server.url, token, 'sibling');

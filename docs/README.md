@@ -20,6 +20,7 @@
 | HTTP 请求、响应与精确类型 | [OpenAPI](technical/openapi.json)；跨对象与生命周期语义见技术设计 |
 | 固定联调数据与异常场景 | [模拟样例](technical/mocks/README.md) |
 | 启动本地 HTTP 服务、连接小程序与运行检查 | [本地联调](technical/local-development.md) |
+| 核对已实现范围、D01–D20 证据与后续补验 | [核心实现验证](technical/validation/2026-10-06-core.md) |
 | 饮食偏好选项与内容核验 | [偏好内容](product/preferences-content.md) |
 | 色彩、字体和组件外观参考 | [页面设计的视觉方向](design/README.md#视觉方向与多语言)；按需进入 `references/` 中的外部材料 |
 | 外部方案的依据与实测 | [技术调研](research/README.md) |

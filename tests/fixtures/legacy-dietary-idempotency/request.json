@@ -1,0 +1,75 @@
+{
+  "sourceRevision": "0bfeca12850d9f8337aae91a9a926cceec38201b",
+  "now": 1791244800000,
+  "key": "legacy-unsorted-review",
+  "request": {
+    "contextId": "legacy-dietary-context",
+    "kind": "dietary_review",
+    "target": {
+      "cardIds": [
+        "z-card",
+        "a-card"
+      ],
+      "preferencesVersion": 2
+    },
+    "input": {
+      "contextSnapshotVersion": 1,
+      "cards": [
+        {
+          "id": "z-card",
+          "recordId": "legacy-dietary-record",
+          "sourceImageIds": [
+            "saved-image"
+          ],
+          "nameZh": "示例炒饭",
+          "localizedName": "Example fried rice",
+          "contentLanguage": "en",
+          "price": {
+            "rawText": null,
+            "amount": null,
+            "currency": null,
+            "unit": null,
+            "variant": null
+          },
+          "summary": "Saved local example",
+          "details": [],
+          "uncertainty": [
+            "Ingredients need confirmation."
+          ]
+        },
+        {
+          "id": "a-card",
+          "recordId": "legacy-dietary-record",
+          "sourceImageIds": [
+            "saved-image"
+          ],
+          "nameZh": "示例炒饭",
+          "localizedName": "Example fried rice",
+          "contentLanguage": "en",
+          "price": {
+            "rawText": null,
+            "amount": null,
+            "currency": null,
+            "unit": null,
+            "variant": null
+          },
+          "summary": "Saved local example",
+          "details": [],
+          "uncertainty": [
+            "Ingredients need confirmation."
+          ]
+        }
+      ],
+      "preferences": {
+        "version": 2,
+        "allergies": [
+          "egg"
+        ],
+        "restrictions": [],
+        "tastes": [],
+        "notes": ""
+      }
+    }
+  },
+  "jobId": "245bcadb-a78a-4558-a04d-cc7fd1ec7b71"
+}

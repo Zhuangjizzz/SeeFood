@@ -87,6 +87,7 @@ test('a dish-specific staff question visibly names the selected dish and produce
   const offset = traffic.length;
   assert.equal((await services.chat.askAboutDish(id, 'foreign-card')).ok, false);
   assert.equal(traffic.length, offset);
+  assert.equal(services.chat.editDraft(id, 'Keep my independently typed next question').ok, true);
   assert.equal((await services.chat.askAboutDish(id, second.id)).ok, true);
   const current = services.records.getRecord(id).record; const [user, assistant] = current.messages;
   assert.match(user.text, /清蒸鱼/); assert.equal(user.role, 'user');
@@ -96,6 +97,7 @@ test('a dish-specific staff question visibly names the selected dish and produce
   assert.equal(assistant.attachments[1].card.textZh.includes(record.cards[0].nameZh), false);
   const frozen = current.chatRequests[assistant.id].snapshot.snapshot;
   assert.equal(frozen.cards.length, 2); assert.equal(frozen.images.length, 1);
+  assert.equal(services.chat.getState(id).draft.text, 'Keep my independently typed next question');
   const invalid = structuredClone(current.chatRequests[assistant.id].request);
   invalid.target = { userMessageId: 'foreign-question', assistantMessageId: 'foreign-answer' }; invalid.input.dishCardId = 'foreign-card';
   await assert.rejects(() => services.backend.createJob(invalid, 'foreign-specific-dish'), error => error.code === 'DEPENDENCY_MISSING');

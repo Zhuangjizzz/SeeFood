@@ -5,6 +5,7 @@
       <view class="mock-note">{{chatCopy.mock}}</view>
       <view wx:for="{{messages}}" wx:key="id" class="message message-{{item.role}}" id="message-{{item.id}}">
         <view class="message-text" selectable>{{item.text}}</view>
+        <view wx:if="{{item.recommendationNotice}}" class="recommendation-stale" role="status">{{item.recommendationNotice}}</view>
         <view wx:if="{{item.role === 'assistant'}}" class="message-status {{item.state}}">{{item.statusLabel}}</view>
         <button wx:if="{{item.canRetry}}" class="reply-retry text-button" disabled="{{item.actionDisabled || offline}}" data-id="{{item.id}}" bindtap="retryReply">{{chatCopy.retryReply}}</button>
         <button wx:if="{{item.canContinue}}" class="reply-continue text-button" disabled="{{item.actionDisabled || offline}}" data-id="{{item.id}}" bindtap="continueSend">{{chatCopy.continueSend}}</button>

@@ -3,7 +3,8 @@ const { presentDish, getDishesCopy } = require('../../core/dishes-copy');
 
 Page({
   data: { messages: [], draft: '', chatCopy: {}, running: false, errorText: '', keyboardHeight: 0 },
-  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.inputVersion = 0; },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.inputVersion = 0;
+    this.source = options.source; this.sourceCardId = page.routeValue(options.cardId); },
   onShow() {
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => this.show());
@@ -19,6 +20,7 @@ Page({
     const dishCopy = getDishesCopy(services.application.getState().language);
     wx.setNavigationBarTitle({ title: copy.title });
     const messages = state.messages.map((message) => ({ ...message, ...(state.replyActions[message.id] || {}),
+      recommendationNotice: message.recommendationBasisUnknown ? copy.unknownRecommendation : message.recommendationStale ? copy.staleRecommendation : '',
       statusLabel: [message.role === 'assistant' && !state.processing && state.replyActions[message.id]?.retryPending ? copy.retryUnconfirmed :
         message.role === 'assistant' && !state.processing && state.replyActions[message.id]?.canContinue ? copy.sendUnconfirmed : copy[message.state] || '',
         message.unsaved ? copy.saveFailed : ''].filter(Boolean).join(' '),
@@ -60,5 +62,11 @@ Page({
       !state.record || !(state.record.cards || []).some((card) => card.id === cardId && card.recordId === this.recordId)) return;
     wx.navigateTo({ url: `/pages/dish-detail/dish-detail?recordId=${encodeURIComponent(this.recordId)}&cardId=${encodeURIComponent(cardId)}` });
   },
-  back() { if (getCurrentPages().length > 1) wx.navigateBack(); else wx.redirectTo({ url: `/pages/result/result?recordId=${encodeURIComponent(this.recordId)}` }); }
+  back() {
+    if (getCurrentPages().length > 1) { wx.navigateBack(); return; }
+    const record = page.services().records.getRecord(this.recordId);
+    if (this.source === 'detail' && record.ok && (record.record.cards || []).some(card => card.id === this.sourceCardId && card.recordId === this.recordId)) {
+      wx.redirectTo({ url: `/pages/dish-detail/dish-detail?recordId=${encodeURIComponent(this.recordId)}&cardId=${encodeURIComponent(this.sourceCardId)}` });
+    } else wx.redirectTo({ url: `/pages/result/result?recordId=${encodeURIComponent(this.recordId)}` });
+  }
 });

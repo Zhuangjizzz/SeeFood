@@ -23,11 +23,16 @@ function createCardRepository({ store, getLanguage = () => 'en' }) {
   }
   return {
     readDraft(slot = 'new') {
-      try { return { ok: true, draft: clone(read().drafts?.[slot] || null) }; }
+      try {
+        const saved = read();
+        if (slot.startsWith('edit:') && !saved.cards.some((card) => card.id === slot.slice(5))) return { ok: false, error: 'card-not-found' };
+        return { ok: true, draft: clone(saved.drafts?.[slot] || null) };
+      }
       catch (_) { return { ok: false, error: 'storage-read' }; }
     },
     writeDraft(draft, { slot = 'new', create = false } = {}) {
       return update((saved) => {
+        if (draft.mode === 'edit' && (!saved.cards.some((card) => card.id === draft.cardId) || slot !== 'edit:' + draft.cardId)) return { ok: false, error: 'card-not-found' };
         const previous = saved.drafts?.[slot];
         if (create ? !!previous : !previous || previous.localScopeId !== draft.localScopeId || previous.inputVersion > draft.inputVersion ||
             previous.snapshotVersion > draft.snapshotVersion) return { ok: false, error: 'stale-draft' };
@@ -52,6 +57,22 @@ function createCardRepository({ store, getLanguage = () => 'en' }) {
           pairedLanguage: draft.sourceLanguage, edited: true, saveState: 'saved',
           order: saved.cards.length ? Math.min(...saved.cards.map((item) => item.order)) - 1 : 0 };
         saved.cards.unshift(card); delete saved.drafts.new;
+        return { ok: true, card: clone(card) };
+      });
+    },
+    commitEdit(localScopeId, inputVersion, cardId) {
+      return update((saved) => {
+        const slot = 'edit:' + cardId;
+        const draft = saved.drafts?.[slot];
+        const card = saved.cards.find((item) => item.id === cardId);
+        if (!card) return { ok: false, error: 'card-not-found' };
+        if (!draft || draft.mode !== 'edit' || draft.cardId !== cardId || draft.localScopeId !== localScopeId || draft.inputVersion !== inputVersion) return { ok: false, error: 'stale-draft' };
+        if (!draft.text.trim() || !draft.textZh.trim() || !draft.title.trim() || draft.needsChineseReview ||
+            !CATEGORIES.includes(draft.category) || !COLORS.includes(draft.color)) return { ok: false, error: 'incomplete-card' };
+        Object.assign(card, { title: draft.title.trim(), category: draft.category, color: draft.color,
+          textZh: draft.textZh.trim(), pairedText: draft.sourceLanguage === 'zh-CN' ? null : draft.text.trim(),
+          pairedLanguage: draft.sourceLanguage, edited: true, saveState: 'saved' });
+        delete saved.drafts[slot];
         return { ok: true, card: clone(card) };
       });
     }

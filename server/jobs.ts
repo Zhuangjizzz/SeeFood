@@ -108,6 +108,25 @@ export function createJobService(options: JobServiceOptions) {
       return job;
     });
   }
+  function retry(id: string, owner: string, key: unknown, request: Json) {
+    validate('RetryRequest', request);
+    row(id, owner);
+    return idempotent(owner, 'POST', `/v1/jobs/${id}/retry`, key, request, () => {
+      const job = get(id, owner);
+      if (job.state !== 'failed' || job.error?.retryable !== true || job.attempt !== request.expectedAttempt) {
+        return reject(409, 'JOB_STATE_CONFLICT', { currentAttempt: job.attempt, state: job.state });
+      }
+      if (job.kind === 'chat') {
+        const context = getContext(job.contextId, owner);
+        const siblings = database.prepare("SELECT j.response FROM jobs j JOIN contexts c ON c.id=j.context_id WHERE j.owner=? AND c.scope=? AND j.kind='chat' AND j.id<>?").all(owner, context.scope, id);
+        if (siblings.some((sibling) => ['queued', 'running'].includes(JSON.parse(String(sibling.response)).state))) reject(409, 'JOB_STATE_CONFLICT');
+      }
+      const next = { ...job, state: 'queued', attempt: job.attempt + 1, revision: job.revision + 1, error: null };
+      validate('Job', next);
+      database.prepare('UPDATE jobs SET response=? WHERE id=?').run(JSON.stringify(next), id);
+      return next;
+    });
+  }
   async function execute(saved: any) {
       if (stopped) return;
       let job = JSON.parse(String(saved.response));
@@ -157,6 +176,6 @@ export function createJobService(options: JobServiceOptions) {
     if (!stopped) work();
   }, interval);
   timer.unref();
-  return { accept, get, list, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
+  return { accept, retry, get, list, async close() { stopped = true; clearInterval(timer); await Promise.all(active.values()); } };
 
 }

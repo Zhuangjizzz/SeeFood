@@ -6,19 +6,34 @@ function defaultTitle(text) { return Array.from(text.trim().replace(/\s+/g, ' ')
 
 function createCardDrafts({ repository, library, translations, getLanguage }) {
   let draft = null; let saveError = null; let dirty = false; let needsResume = false; let pendingCreate = false;
+  let slot = 'new'; let targetMissing = false;
   const listeners = new Set(); const active = new Map();
   function notify() { listeners.forEach((listener) => { try { listener(); } catch (_) { /* Rendering cannot interrupt persistence. */ } }); }
-  function load() {
-    const result = repository.readDraft();
+  function missingTarget() {
+    draft = null; targetMissing = true; saveError = null; dirty = false; needsResume = false; pendingCreate = false; notify();
+    return { ok: false, error: 'card-not-found' };
+  }
+  function checkTarget() {
+    if (!slot.startsWith('edit:')) return { ok: true };
+    const result = repository.readDraft(slot);
+    if (result.error === 'card-not-found') return missingTarget();
+    if (!result.ok) { saveError = result.error; notify(); }
+    return result;
+  }
+  function load(nextSlot = slot) {
+    slot = nextSlot;
+    const result = repository.readDraft(slot);
+    if (result.error === 'card-not-found') return missingTarget();
     if (!result.ok) { saveError = result.error; return result; }
-    draft = result.draft; pendingCreate = false; needsResume = !!draft; dirty = false; saveError = null; notify(); return result;
+    draft = result.draft; targetMissing = false; pendingCreate = false; needsResume = !!draft; dirty = false; saveError = null; notify(); return result;
   }
   load();
   function persist(next, options) {
     draft = next;
     if (options?.create) pendingCreate = true;
-    const result = repository.writeDraft(next, { create: pendingCreate });
+    const result = repository.writeDraft(next, { slot, create: pendingCreate });
     if (result.ok) pendingCreate = false;
+    if (result.error === 'card-not-found') return missingTarget();
     if (result.error === 'stale-draft') { load(); return result; }
     dirty = !result.ok; saveError = result.ok ? null : result.error; notify(); return result;
   }
@@ -57,10 +72,12 @@ function createCardDrafts({ repository, library, translations, getLanguage }) {
     return active.get(key);
   }
   const service = {
-    getState() { return { draft: clone(draft), needsResume, saveError, dirty,
+    getState() { return { draft: clone(draft), needsResume, saveError, dirty, targetMissing,
       canSave: !!draft && !needsResume && !dirty && !saveError && !!draft.text.trim() && !!draft.textZh.trim() && !!draft.title.trim() && !draft.needsChineseReview }; },
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     beginNew({ category = 'all' } = {}) {
+      if (dirty && slot !== 'new') return { ok: false, error: saveError };
+      if (slot !== 'new') { const result = load('new'); if (!result.ok) return result; }
       if (saveError === 'storage-read') return { ok: false, error: saveError };
       if (draft) { needsResume = true; notify(); return { ok: true, resumable: true }; }
       needsResume = false;
@@ -69,6 +86,24 @@ function createCardDrafts({ repository, library, translations, getLanguage }) {
         text: '', textZh: '', title: '', titleEdited: false, category: CATEGORIES.includes(category) ? category : 'service', color: 'green',
         needsChineseReview: false, operation: null, job: null, error: null }, { create: true });
     },
+    beginEdit(cardId) {
+      if (dirty) {
+        if (slot !== 'edit:' + cardId) return { ok: false, error: saveError };
+        needsResume = true; notify(); return { ok: true, resumable: true };
+      }
+      const result = load('edit:' + cardId); if (!result.ok) return result;
+      const loaded = library.reload(); if (!loaded.ok) { saveError = loaded.error; notify(); return loaded; }
+      const card = library.getState().allCards.find((item) => item.id === cardId);
+      if (!card) return missingTarget();
+      if (draft) { needsResume = true; notify(); return { ok: true, resumable: true }; }
+      needsResume = false;
+      return persist({ mode: 'edit', cardId, localScopeId: makeId('card-draft'), contextId: makeId('communication'),
+        snapshotVersion: 0, inputVersion: 1, sourceLanguage: card.pairedLanguage, targetLanguage: 'zh-CN',
+        text: card.pairedLanguage === 'zh-CN' ? card.textZh : card.pairedText, textZh: card.textZh,
+        title: card.title, titleEdited: true, category: card.category, color: card.color,
+        needsChineseReview: false, operation: null, job: null, error: null }, { create: true });
+    },
+    resumeEdit() { const result = checkTarget(); return result.ok ? service.resumeNew() : result; },
     resumeNew() { if (!draft) return { ok: false, error: 'draft-not-found' }; needsResume = false; notify(); return { ok: true }; },
     edit(patch) {
       if (!draft || needsResume) return { ok: false, error: 'draft-not-found' };
@@ -99,6 +134,7 @@ function createCardDrafts({ repository, library, translations, getLanguage }) {
       return saved.ok ? run(operation, 'submit') : Promise.resolve(saved);
     },
     async refresh() {
+      const target = checkTarget(); if (!target.ok) return target;
       if (dirty || saveError) return { ok: false, error: saveError };
       if (!draft || needsResume || !draft.operation || (draft.job && !['queued', 'running'].includes(draft.job.state))) return { ok: true };
       return run(clone(draft.operation), 'recover');
@@ -113,18 +149,20 @@ function createCardDrafts({ repository, library, translations, getLanguage }) {
     applyJob(operation, job) { return translations.applyJob(operation, job, consumer(operation)); },
     save() {
       if (!draft || !service.getState().canSave) return { ok: false, error: saveError || 'incomplete-card' };
-      const result = repository.commitNew(draft.localScopeId, draft.inputVersion);
+      const result = draft.mode === 'edit' ? repository.commitEdit(draft.localScopeId, draft.inputVersion, draft.cardId) :
+        repository.commitNew(draft.localScopeId, draft.inputVersion);
+      if (result.error === 'card-not-found') return missingTarget();
       if (!result.ok) { saveError = result.error; notify(); return result; }
       draft = null; needsResume = false; dirty = false; saveError = null;
       library.reload(); library.revealCard(result.card.id); notify(); return result;
     },
     discard() {
       if (!draft) return { ok: true };
-      const result = repository.discardDraft(draft.localScopeId);
+      const result = repository.discardDraft(draft.localScopeId, slot);
       if (!result.ok) { saveError = result.error; notify(); return result; }
       draft = null; needsResume = false; dirty = false; saveError = null; notify(); return result;
     },
-    retrySave() { return saveError === 'storage-read' ? load() : draft ? persist(clone(draft)) : { ok: true }; }
+    retrySave() { return draft && dirty ? persist(clone(draft)) : saveError === 'storage-read' ? load() : draft ? persist(clone(draft)) : { ok: true }; }
   };
   return service;
 }

@@ -261,6 +261,8 @@ export function createService(options: ServiceOptions) {
     if (route.startsWith('/v1/')) {
       const ownerId = owner(req);
       if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, translations.decorate(jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req))));
+      const retryRoute = route.match(/^\/v1\/jobs\/([^/]+)\/retry$/);
+      if (retryRoute && req.method === 'POST') return send(res, 202, translations.decorate(jobs.retry(decodeURIComponent(retryRoute[1]), ownerId, req.headers['idempotency-key'], await readJson(req))));
       const jobRoute = route.match(/^\/v1\/jobs\/([^/]+)$/);
       if (jobRoute && req.method === 'GET') return send(res, 200, translations.decorate(jobs.get(decodeURIComponent(jobRoute[1]), ownerId)));
       const artifactRoute = route.match(/^\/v1\/image-artifacts\/([^/]+)$/);

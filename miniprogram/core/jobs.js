@@ -2,7 +2,7 @@ const { createJobRecovery } = require('./recovery');
 const { createJobRetry, canAcceptRetry } = require('./job-retry');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 const IMAGE_STAGES = ['image_cards', 'image_translation'];
-function createJobs({ records, backend, network, translationFiles, pollMs = 100 }) {
+function createJobs({ records, backend, network, translationFiles, receipts, pollMs = 100 }) {
   const recovery = createJobRecovery({ backend });
   const retries = createJobRetry({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
@@ -84,6 +84,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
           draft.cardIds = draft.cards.map((card) => card.id);
         }
       }, false);
+      if (receipts) receipts.saved(job, { locallySavedRevision: job.revision, locallySavedArtifactIds: [] });
       unsaved.delete(key); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
@@ -130,6 +131,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
           if (!target.translation || target.translation.id !== artifact.id) throw new Error('stale translation');
           Object.assign(target.translation, local, { saveState: 'saved', error: null });
         });
+        if (receipts) receipts.saved(latest, { locallySavedRevision: latest.revision, locallySavedArtifactIds: [artifact.id] });
         return { ok: true };
       } catch (error) {
         if (records.isDeleted(id)) { previews.delete(artifact.id); records.finishDeletion(id); }

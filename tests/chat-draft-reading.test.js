@@ -10,10 +10,10 @@ async function record(disk, services) {
   await capture.chooseImages({ source: 'album' });
   const saved = await services.records.confirmCapture(capture.confirm().batch); assert.equal(saved.ok, true); return saved.recordId;
 }
-async function setup(t, online = false) {
+async function setup(t, online = false, serverEnv = {}) {
   const disk = recordPlatform(t); const traffic = []; let backend;
   if (online) {
-    const server = await start(t, temporary(t), { SEEFOOD_WORKER_DELAY_MS: '100' });
+    const server = await start(t, temporary(t), { SEEFOOD_WORKER_DELAY_MS: '100', ...serverEnv });
     backend = { enabled: true, baseUrl: server.url, identity: 'demo-owner-a' };
     disk.platform.request = (options) => {
       traffic.push({ method: options.method, url: options.url, data: structuredClone(options.data) });
@@ -202,5 +202,48 @@ test('five-language native draft and reading save failures are separate, visible
     assert.equal(createWechatServices(disk.platform).chat.getState(id).draft.text, `Keep this ${language} draft`);
     assert.equal(createWechatServices(disk.platform).history.getChatPosition(id).scrollTop, 400);
   }
+  page.onUnload();
+});
+
+test('real chat receipts wait for visible partial revisions and acknowledge failed local saving as null until retry', async (t) => {
+  const env = await setup(t, true, { SEEFOOD_MOCK_SCENARIO: 'chat-partial-failure', SEEFOOD_CHAT_PARTIAL_DELAY_MS: '500' });
+  const { services, id, disk, traffic } = env;
+  await services.chat.sendQuickQuestion(id, 'explain'); await services.chat.sendQuickQuestion(id, 'price');
+  const ui = nativePage(t, env); const page = ui.load(); page.onShow();
+  page.onMessagesScroll({ detail: { scrollTop: 440, scrollHeight: 1500 } });
+  await services.receipts.flush();
+  const send = disk.platform.request; const write = disk.storage.set;
+  disk.platform.request = (options) => {
+    const success = options.success;
+    options.success = (response) => {
+      if (response.data?.kind === 'chat' && response.data.state === 'failed') {
+        disk.storage.set = (key, value) => { if (key.endsWith(':records')) throw new Error('ENOSPC'); return write(key, value); };
+      }
+      success(response);
+    };
+    send(options);
+  };
+  const work = services.chat.sendQuickQuestion(id, 'communicate');
+  for (let count = 0; count < 100 && !page.data.messages[5]?.text; count += 1) await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.equal(page.data.messages[5].state, 'partial');
+  const partial = services.chat.getState(id).record.chatJobs[page.data.messages[5].id];
+  const acks = () => traffic.filter((entry) => entry.url.endsWith(`/v1/jobs/${partial.jobId}/ack`));
+  assert.equal(page.data.chatScrollTop, 440); await services.receipts.flush();
+  assert.equal(acks().length, 0, 'new reply below the viewport was not presented');
+  page.viewLatest(); await services.receipts.flush();
+  assert.equal(acks().at(-1).data.appliedRevision, partial.revision);
+  assert.equal(acks().at(-1).data.locallySavedRevision, partial.revision);
+  page.onMessagesScroll({ detail: { scrollTop: 440, scrollHeight: 2200 } });
+  assert.equal((await work).error, 'storage-write'); await services.receipts.flush();
+  const failed = services.chat.getState(id).unsavedJob;
+  assert.ok(failed.revision > partial.revision);
+  assert.equal(acks().at(-1).data.appliedRevision, partial.revision, 'background final update cannot advance display');
+  page.viewLatest(); await services.receipts.flush();
+  assert.equal(acks().at(-1).data.appliedRevision, failed.revision); assert.equal(acks().at(-1).data.locallySavedRevision, null);
+  disk.platform.request = send; disk.storage.set = write;
+  const generationCount = traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length;
+  assert.equal(page.retrySave().ok, true); await services.receipts.flush();
+  assert.equal(acks().at(-1).data.locallySavedRevision, failed.revision);
+  assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.url.endsWith('/v1/jobs')).length, generationCount);
   page.onUnload();
 });

@@ -1,5 +1,6 @@
 <view class="page dish-detail-page">
   <view wx:if="{{error}}" class="notice" role="alert">{{error}}</view>
+  <view wx:if="{{dietary.unsavedJob}}" class="notice save-recovery"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
   <block wx:if="{{card}}">
     <view class="dish-name">{{card.displayName}}</view>
     <view wx:if="{{card.secondaryName}}" class="dish-localized-name">{{card.secondaryName}}</view>
@@ -26,6 +27,7 @@
       <button wx:if="{{dietary.canContinue}}" class="text-button" bindtap="continueDietary" disabled="{{dietary.offline}}">{{dietary.copy.continue}}</button>
       <button wx:if="{{dietary.canRetry}}" class="text-button" bindtap="retryDietary" disabled="{{dietary.offline}}">{{dietary.copy.retry}}</button>
       <button wx:if="{{dietary.unsavedJob}}" class="text-button" bindtap="retryDietarySave">{{dietary.copy.retrySave}}</button>
+      <button class="text-button detail-ask-staff" disabled="{{!canAskStaff}}" bindtap="askStaff">{{askStaffLabel}}</button>
     </view>
     <button class="primary original-source" disabled="{{!sourceImages.length}}" bindtap="viewOriginal">{{dishCopy.original}}</button>
   </block>

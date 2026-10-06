@@ -2,6 +2,7 @@
   <button class="editor-back" bindtap="returnCards">‹ {{editorCopy.back}}</button>
   <view class="editor-heading">{{editorCopy.title}}</view>
   <view wx:if="{{saveMessage}}" class="draft-status {{saveError ? 'save-error' : ''}}" role="{{saveError ? 'alert' : 'status'}}"><text>{{saveMessage}}</text><button wx:if="{{saveError}}" bindtap="retrySave">{{saveError === 'storage-read' ? editorCopy.retryRead : editorCopy.retrySave}}</button></view>
+  <view wx:if="{{saveError && saveError !== 'storage-read'}}" class="notice save-recovery"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
   <view wx:if="{{needsResume && draft}}" class="draft-recovery paper">
     <view class="recovery-heading">{{editorCopy.draftFound}}</view>
     <view class="input-language">{{sourceLanguageName}}</view>

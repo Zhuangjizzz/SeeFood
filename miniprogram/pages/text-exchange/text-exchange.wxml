@@ -10,6 +10,7 @@
     <button class="translate-button" bindtap="submit" disabled="{{!canSubmit}}" hover-class="press">{{exchangeCopy.translate}}</button>
   </view>
   <view class="save-warning" wx:if="{{saveError}}" role="alert"><text>{{saveError}}</text><button bindtap="retrySave">{{exchangeCopy.retrySave}}</button></view>
+  <view wx:if="{{saveError}}" class="save-warning"><view>{{saveRecoveryCopy.help}}</view><button bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
   <view wx:if="{{empty}}" class="exchange-empty">{{exchangeCopy.empty}}</view>
   <view class="result-pair paper {{item.latest ? 'latest-pair' : ''}}" wx:for="{{rows}}" wx:key="speaker">
     <view class="result-heading"><text>{{item.label}}</text><text class="latest-label" wx:if="{{item.latest}}">{{exchangeCopy.latest}}</text></view>

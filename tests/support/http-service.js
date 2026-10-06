@@ -27,7 +27,7 @@ async function request(url, method, route, body, token, key) {
   const headers = { 'Content-Type': 'application/json' }; if (token) headers.Authorization = `Bearer ${token}`; if (key) headers['Idempotency-Key'] = key;
   const response = await fetch(url + route, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   const value = await response.json();
-  const name = response.status >= 400 ? 'Error' : route === '/v1/dev/session' ? 'Session' : route === '/v1/uploads' ? 'UploadTicket' : route.endsWith('/complete') ? 'UploadedAsset' : route.includes('/jobs') ? (method === 'GET' && route.includes('/contexts/') ? 'JobList' : 'Job') : 'Context';
+  const name = response.status >= 400 ? 'Error' : route === '/v1/dev/session' ? 'Session' : route === '/v1/uploads' ? 'UploadTicket' : route.endsWith('/complete') ? 'UploadedAsset' : route.endsWith('/ack') ? 'AckReceipt' : route.includes('/jobs') ? (method === 'GET' && route.includes('/contexts/') ? 'JobList' : 'Job') : 'Context';
   const valid = schema.getSchema(`jobs-contract#/components/schemas/${name}`); assert.equal(valid(value), true, JSON.stringify(valid.errors));
   return { status: response.status, body: value };
 }

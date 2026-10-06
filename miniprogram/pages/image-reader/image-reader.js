@@ -1,3 +1,4 @@
+const receiptPage = require('../../ui/save-receipts');
 const page = require('../../ui/page');
 const { getCaptureCopy } = require('../../core/capture-copy');
 const { getImagesCopy } = require('../../core/images-copy');
@@ -18,6 +19,7 @@ Page({
     this.resultSource = page.services().history.getResultSource(this.recordId);
   },
   onShow() {
+    this.receiptVisible = true;
     const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync(); this.viewportWidth = info.windowWidth;
     if (this.unsubscribe) this.unsubscribe();
     this.unsubscribe = page.services().jobs.subscribe((id) => { if (id === this.recordId) this.render(); });
@@ -41,6 +43,7 @@ Page({
     const width = artifact ? artifact.width : view.image.width; const height = artifact ? artifact.height : view.image.height;
     const ratio = rotated ? width / height : height / width;
     const job = view.translationJob;
+    const renderedJobs = services.jobs.getState(this.recordId);
     const translationNotice = job && job.state === 'succeeded' && job.output.state === 'not_required' ?
       (job.output.reasonKey === 'images.already_chinese' ? imageCopy.alreadyChinese : job.output.reasonKey === 'images.no_translatable_text' ? imageCopy.noText : imageCopy.notRequired) :
       job ? imageCopy[job.state === 'succeeded' ? 'ready' : job.state] : imageCopy.unstarted;
@@ -51,7 +54,8 @@ Page({
       choiceSaveError: !!view.saveError, missingImage: view.variant === 'translation' ? imageCopy.missingTranslation : recordCopy.missingOriginal,
       imageError: changed ? false : this.data.imageError, scale: position.scale, zoomPercent: Math.round(position.scale * 100),
       imageWidth: this.viewportWidth * position.scale, imageHeight: this.viewportWidth * position.scale * ratio,
-      scrollTop: position.scrollTop, scrollLeft: position.scrollLeft });
+      scrollTop: position.scrollTop, scrollLeft: position.scrollLeft }, () => { if (this.receiptVisible) this.renderedImageReceipt = { path: view.variant === 'translation' ? view.path : null,
+        entries: receiptPage.imageEntries(record.record, renderedJobs, view.imageId, { translationOnly: true, imageLoaded: true }) }; });
   },
   scrollImage(event) {
     if (!this.current) return;
@@ -88,6 +92,11 @@ Page({
     this.finishTouch(); this.render();
   },
   retryChoice() { page.services().imageView.retrySave(this.recordId); this.render(); },
+  presentImage(event) {
+    const shown = this.renderedImageReceipt;
+    if (!this.receiptVisible || !shown?.path || event.currentTarget.dataset.path !== shown.path) return;
+    receiptPage.present(page.services(), shown.entries);
+  },
   failedImage() { this.setData({ imageError: true }); },
   onResize(event) { if (event.size && event.size.windowWidth) { this.viewportWidth = event.size.windowWidth; this.render(); } },
   preserveSourcePosition() {
@@ -109,6 +118,6 @@ Page({
     } else if (this.resultSource && this.resultSource.view === 'history') wx.redirectTo({ url: `/pages/history/history?source=${this.resultSource.historySource}` });
     else wx.switchTab({ url: '/pages/index/index' });
   },
-  onHide() { this.preserveSourcePosition(); if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
+  onHide() { this.receiptVisible = false; this.preserveSourcePosition(); if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
   onUnload() { this.onHide(); }
 });

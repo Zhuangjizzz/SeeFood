@@ -50,7 +50,7 @@ export function createCleanupService({ database, imageDirectory, transaction }: 
         for (const artifact of database.prepare('SELECT path FROM image_artifacts WHERE context_id=?').all(row.context_id)) paths.add(String(artifact.path));
         for (const path of paths) { try { unlinkSync(path); } catch (error: any) { if (error.code !== 'ENOENT') throw error; } }
         transaction(() => {
-          for (const table of ['image_artifacts', 'jobs', 'assets', 'uploads', 'snapshots']) database.prepare(`DELETE FROM ${table} WHERE context_id=?`).run(row.context_id);
+          for (const table of ['job_deliveries', 'job_receipts', 'image_artifacts', 'jobs', 'assets', 'uploads', 'snapshots']) database.prepare(`DELETE FROM ${table} WHERE context_id=?`).run(row.context_id);
           // Idempotency responses can contain full generated content. Keep only the
           // owner-bound context tombstone and cleanup identity after explicit deletion.
           for (const saved of database.prepare('SELECT * FROM idempotency WHERE owner=?').all(row.owner)) {

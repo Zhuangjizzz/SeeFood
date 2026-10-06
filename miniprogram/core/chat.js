@@ -9,7 +9,7 @@ function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
   return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
 }
-function createChat({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
+function createChat({ records, backend, network, preferences, contexts, getLanguage, receipts, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   records.subscribe((id) => { if (records.isDeleted(id)) { unsaved.delete(id); errors.delete(id); } });
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
@@ -22,6 +22,18 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
     return job.state === 'succeeded' ? 'complete' : ['failed', 'cancelled', 'expired'].includes(job.state) ? 'failed' : job.output ? 'partial' : job.attempt > 1 ? 'retrying' : 'waiting';
   }
   function hasRetry(record, except) { return Object.keys(record.chatRetries || {}).some((key) => key !== except); }
+  function isRecommendation(record, message) {
+    if (message.role !== 'assistant') return false;
+    const entry = record.chatRequests?.[message.id];
+    if (!entry && (message.attachments || []).some(item => item.type === 'dish_reference')) return true;
+    const user = record.messages.find(item => item.id === message.inReplyTo && item.role === 'user');
+    const language = entry?.request.input.targetLanguage || user?.contentLanguage;
+    const text = entry?.request.input.text || user?.text;
+    return text === getChatCopy(language).questions.find(item => item.id === 'recommend').text;
+  }
+  preferences.subscribe(() => {
+    for (const record of records.listHistory().records) notify(record.id);
+  });
   function checked(record, job) {
     const target = job && job.target; const entry = target && record.chatRequests && record.chatRequests[target.assistantMessageId];
     const request = entry && entry.request;
@@ -37,7 +49,8 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
       const output = job.output;
       if (!output || typeof output.text !== 'string' || output.contentLanguage !== request.input.targetLanguage ||
         typeof output.complete !== 'boolean' || !Array.isArray(output.attachments) || output.attachments.some((attachment) => {
-          if (attachment.type === 'dish_reference') return !entry.snapshot.snapshot.cards.some((card) => card.id === attachment.cardId && card.recordId === record.id);
+          if (attachment.type === 'dish_reference') return !entry.snapshot.snapshot.cards.some((card) => card.id === attachment.cardId && card.recordId === record.id) ||
+            request.input.dishCardId && attachment.cardId !== request.input.dishCardId;
           if (attachment.type !== 'communication_card' || !attachment.card) return true;
           const card = attachment.card;
           return typeof card.title !== 'string' || !card.title || typeof card.textZh !== 'string' || !card.textZh ||
@@ -69,6 +82,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         if (nextAttempt) delete draft.chatRetries[key];
         if (job.output) Object.assign(assistant, { text: job.output.text, contentLanguage: job.output.contentLanguage, attachments: clone(job.output.attachments) });
       }, false);
+      if (receipts) receipts.saved(job, { locallySavedRevision: job.revision, locallySavedArtifactIds: [] });
       unsaved.delete(id); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }
@@ -91,7 +105,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
     }).finally(() => { active.delete(id); notify(id); });
     active.set(id, work); notify(id); return work;
   }
-  function send(id, text, submittedDraft) {
+  function send(id, text, options = {}) {
     const language = getLanguage();
     if (typeof text !== 'string' || !text.trim() || !LANGUAGES.some((item) => item.code === language)) return Promise.resolve({ ok: false, error: 'INPUT_UNSUPPORTED' });
     return run(id, async () => {
@@ -102,6 +116,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
       const acceptance = await contexts.run(id, async () => {
         await contexts.publishPending(id);
         const record = read(id); const preferenceSnapshot = preferences.getSnapshot();
+        if (options.dishCardId && !(record.cards || []).some(card => card.id === options.dishCardId && card.recordId === id)) throw { code: 'DEPENDENCY_MISSING' };
         const complete = (record.messages || []).filter((message) => message.role === 'assistant' && message.state === 'complete');
         const included = new Set(complete.flatMap((message) => [message.id, message.inReplyTo]));
         const snapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: record.contextSnapshotVersion + 1,
@@ -109,6 +124,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
             cards: clone(record.cards || []), messages: (record.messages || []).filter((message) => included.has(message.id)).map(messageSnapshot), preferences: preferenceSnapshot } };
         const request = { contextId: record.contextId, kind: 'chat', target: { userMessageId: userId, assistantMessageId: assistantId },
           input: { contextSnapshotVersion: snapshot.snapshotVersion, text: text.trim(), targetLanguage: language } };
+        if (options.dishCardId) request.input.dishCardId = options.dishCardId;
         const requestId = makeId('chat');
         save(id, (draft) => {
           const common = { contentLanguage: language, preferencesVersion: preferenceSnapshot.version, attachments: [], state: 'sending' };
@@ -117,7 +133,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
           draft.messageIds = draft.messages.map((message) => message.id);
           draft.chatRequests = Object.assign({}, draft.chatRequests, { [assistantId]: { requestId, request, snapshot } });
           draft.pendingContextSnapshot = snapshot;
-          drafts.consume(draft, submittedDraft);
+          drafts.consume(draft, options.submittedDraft);
         });
         await contexts.publishPending(id);
         const job = await backend.createJob(request, requestId);
@@ -162,6 +178,14 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
           const message = messages.find((item) => item.id === waiting.target.assistantMessageId);
           if (message) Object.assign(message, waiting.output, { state: messageState(waiting), attempt: waiting.attempt, unsaved: true });
         }
+        let currentPreferencesVersion = null;
+        try { currentPreferencesVersion = preferences.getSnapshot().version; } catch (_) { /* Saved chat remains readable when preferences cannot be verified. */ }
+        for (const message of messages) {
+          if (!isRecommendation(record, message)) continue;
+          if (currentPreferencesVersion === null || !Number.isInteger(message.preferencesVersion)) {
+            message.recommendationStale = true; message.recommendationBasisUnknown = true;
+          } else if (message.preferencesVersion !== currentPreferencesVersion) message.recommendationStale = true;
+        }
         const replyActions = {};
         for (const key of Object.keys(record.chatRequests || {})) {
           const job = record.chatJobs?.[key]; const pending = pendingMessage(record);
@@ -173,11 +197,19 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
       } catch (error) { return { ...drafts.read(id), record: null, messages: [], replyActions: {}, processing: false, running: false, error: error.code, unsavedJob: null, copy: getChatCopy(getLanguage()) }; }
 
     },
-    sendDraft(id) { const current = drafts.read(id); return current.draftError ? Promise.resolve({ ok: false, error: current.draftError }) : send(id, current.draft.text, current.draft); },
+    sendDraft(id) { const current = drafts.read(id); return current.draftError ? Promise.resolve({ ok: false, error: current.draftError }) : send(id, current.draft.text, { submittedDraft: current.draft }); },
     editDraft: drafts.edit,
     clearDraft: drafts.clear,
     retryDraftSave: drafts.retry,
     send,
+    askAboutDish(id, cardId) {
+      try {
+        const card = (read(id).cards || []).find(value => value.id === cardId && value.recordId === id);
+        if (!card) return Promise.resolve({ ok: false, error: 'DEPENDENCY_MISSING' });
+        const copy = getChatCopy(getLanguage()); const dish = card.nameZh || card.localizedName || copy.unidentifiedDish;
+        return send(id, copy.askDishQuestion.replace('{dish}', dish), { dishCardId: cardId });
+      } catch (error) { return Promise.resolve({ ok: false, error: error.code || 'DEPENDENCY_MISSING' }); }
+    },
     retryReply,
     continueSubmission(id, assistantId) {
       return run(id, async () => {

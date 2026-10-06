@@ -5,7 +5,7 @@ import { chatContent, twoPortions } from './chat-content.ts';
 const { getChatCopy } = createRequire(import.meta.url)('../miniprogram/core/chat-copy.js');
 
 /** The generated prose is fixed for local integration; record identities remain real. */
-export function chatHandler(scenario = 'complete'): JobHandler {
+export function chatHandler(scenario = 'complete', partialDelayMs = 350): JobHandler {
   return {
     purpose: 'record',
     prepare(request, snapshot, asset) {
@@ -20,7 +20,7 @@ export function chatHandler(scenario = 'complete'): JobHandler {
             message.attachments.some((attachment: any) => attachment.type === 'dish_reference' && !cardIds.has(attachment.cardId)))) reject(409, 'DEPENDENCY_MISSING');
       return images.filter((image: any) => image.assetId !== null).map((image: any) => asset(image.assetId, image.imageId, image.kind));
     },
-    async generate({ request, snapshot }) {
+    async generate({ request, snapshot, job, publishPartial }) {
       if (scenario === 'chat-failure') throw new ApiError(503, 'TEMPORARY_FAILURE', true);
       const card = snapshot.snapshot.cards[0];
       const language = request.input.targetLanguage; const text = chatContent[language];
@@ -34,11 +34,16 @@ export function chatHandler(scenario = 'complete'): JobHandler {
       if (kind === 'communicate') attachments.push({ type: 'communication_card', card: {
         title: text.title.replace('{dish}', dish), category: 'service', textZh: chatContent['zh-CN'].question.replace('{dish}', dish),
         pairedLanguage: language, pairedText: language === 'zh-CN' ? null : text.question.replace('{dish}', dish) } });
+      if (scenario === 'chat-partial-failure' && job.attempt === 1) {
+        publishPartial({ text: body.slice(0, Math.max(dish.length + 1, Math.floor(body.length / 2))), contentLanguage: language, complete: false, attachments: [] });
+        await new Promise((resolve) => setTimeout(resolve, Math.max(10, partialDelayMs)));
+        throw new ApiError(503, 'TEMPORARY_FAILURE', true);
+      }
       return { text: body, contentLanguage: language, complete: true, attachments };
     },
-    validateOutput(output, frozen) {
+    validateOutput(output, frozen, phase = 'complete') {
       validate('ChatOutput', output);
-      if (!output.complete || output.contentLanguage !== frozen.request.input.targetLanguage || output.attachments.some((attachment: any) =>
+      if (output.complete !== (phase === 'complete') || output.contentLanguage !== frozen.request.input.targetLanguage || output.attachments.some((attachment: any) =>
         attachment.type === 'dish_reference' && !frozen.snapshot.snapshot.cards.some((card: any) => card.id === attachment.cardId && card.recordId === frozen.snapshot.recordId))) reject(409, 'DEPENDENCY_MISSING');
     }
   };

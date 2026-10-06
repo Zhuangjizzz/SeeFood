@@ -22,6 +22,7 @@ Page({
   onUnload() { this.onHide(); },
   show() {
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
+    const favorites = services.cardFavorites.getState(this.recordId);
     const dishCopy = getDishesCopy(services.application.getState().language);
     wx.setNavigationBarTitle({ title: copy.title });
     const messages = state.messages.map((message) => ({ ...message, ...(state.replyActions[message.id] || {}),
@@ -33,14 +34,21 @@ Page({
         const dish = state.record && (state.record.cards || []).find((card) => card.id === attachment.cardId);
         return dish ? presentDish(dish, dishCopy) : null;
       }).filter(Boolean),
-      communicationCards: (message.attachments || []).filter((attachment) => attachment.type === 'communication_card').map((attachment, index) => ({ ...attachment.card, index }))
+      communicationCards: (message.attachments || []).map((attachment, index) => {
+        if (attachment.type !== 'communication_card') return null;
+        const saved = favorites.cards.some((card) => card.sourceMessageId === message.id && card.sourceAttachmentIndex === index);
+        const error = this.favoriteErrors?.[message.id + ':' + index] || favorites.error;
+        return { ...attachment.card, index, sourceContent: attachment.card, saved, saveFailed: error === 'storage-write',
+          favoriteError: error ? ['card-unavailable', 'card-changed'].includes(error) ? copy.favoriteUnavailable : copy.favoriteFailed : '' };
+      }).filter(Boolean)
     }));
     const offline = !services.network.getState().online;
     const errorText = offline ? copy.offline : state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
     this.renderedChatState = state;
     this.setData({ draft: state.draft.text, draftSaveFailed: !!state.draftError, hasNewReply: reading.hasNew(this, state), messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
+      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob,
+      favoriteSaveFailed: messages.some((message) => message.communicationCards.some((card) => card.saveFailed)), recordAvailable: !!state.record }, () => reading.render(this, state));
 
   },
   onInput(event) { const result = page.services().chat.editDraft(this.recordId, event.detail.value); this.show(); return result; },
@@ -67,6 +75,16 @@ Page({
   async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   retrySave() { const result = page.services().chat.retrySave(this.recordId); this.show(); return result; },
+  favoriteCard(event) {
+    const { messageId, index } = event.currentTarget.dataset;
+    const attachmentIndex = Number(index);
+    const shown = this.data.messages.find((message) => message.id === messageId)?.communicationCards.find((card) => card.index === attachmentIndex);
+    if (!shown) return { ok: false, error: 'card-unavailable' };
+    const result = page.services().cardFavorites.save(this.recordId, messageId, attachmentIndex, shown.sourceContent);
+    this.favoriteErrors = { ...this.favoriteErrors, [messageId + ':' + attachmentIndex]: result.ok ? null : result.error };
+    this.show();
+    return result;
+  },
   openDish(event) {
     const { messageId, cardId } = event.currentTarget.dataset;
     const state = page.services().chat.getState(this.recordId);

@@ -17,6 +17,13 @@ const READING = {
   es: { clearDraft: 'Borrar borrador', newReply: 'Ver respuesta nueva', draftSaveFailed: 'El cambio del borrador no está guardado en este dispositivo. Intenta guardarlo de nuevo.', positionSaveFailed: 'No se guardó la posición de lectura. Intenta guardarla de nuevo.' },
   'zh-CN': { clearDraft: '清空草稿', newReply: '查看新回复', draftSaveFailed: '草稿更改尚未保存到本机，请重试保存。', positionSaveFailed: '阅读位置尚未保存，请重试保存。' }
 };
-for (const language of Object.keys(COPY)) Object.assign(COPY[language], READING[language]);
+const FAVORITES = {
+  en: { favorite: 'Save to my cards', favoriteSaved: 'Saved to your cards', favoriteFailed: 'This card could not be saved. Your reply is still here. Try again.', favoriteUnavailable: 'This card has changed or is unavailable. Check the current reply before saving again.', favoriteRetry: 'Try saving this card again' },
+  ja: { favorite: 'カードに保存', favoriteSaved: 'カードに保存しました', favoriteFailed: 'カードを保存できませんでした。回答は残っています。もう一度お試しください。', favoriteUnavailable: 'カードが変更されたか利用できません。現在の回答を確認してから保存してください。', favoriteRetry: 'カードの保存を再試行' },
+  ko: { favorite: '내 카드에 저장', favoriteSaved: '내 카드에 저장했어요', favoriteFailed: '카드를 저장하지 못했습니다. 답변은 그대로 남아 있습니다. 다시 시도하세요.', favoriteUnavailable: '카드가 변경되었거나 사용할 수 없습니다. 현재 답변을 확인한 후 다시 저장하세요.', favoriteRetry: '카드 저장 다시 시도' },
+  es: { favorite: 'Guardar en mis tarjetas', favoriteSaved: 'Guardada en tus tarjetas', favoriteFailed: 'No se pudo guardar la tarjeta. La respuesta sigue aquí. Inténtalo de nuevo.', favoriteUnavailable: 'La tarjeta cambió o no está disponible. Revisa la respuesta actual antes de guardarla de nuevo.', favoriteRetry: 'Volver a intentar guardar la tarjeta' },
+  'zh-CN': { favorite: '收藏到沟通卡', favoriteSaved: '已收藏到沟通卡', favoriteFailed: '卡片未能保存，原回复仍保留，请重试收藏。', favoriteUnavailable: '卡片已变化或无法读取，请核对当前回复后重新收藏。', favoriteRetry: '重试收藏这张卡' }
+};
+for (const language of Object.keys(COPY)) Object.assign(COPY[language], READING[language], FAVORITES[language]);
 function getChatCopy(language) { return COPY[language] || COPY.en; }
 module.exports = { getChatCopy };

@@ -9,9 +9,11 @@ async function setup(t, source = 'multiple') {
   const disk = recordPlatform(t); const traffic = [];
   const { createService } = await import('../server/service.ts');
   const { imageCardsHandler } = await import('../server/image-cards.ts');
+  const { ApiError } = await import('../server/contract.ts');
   const generator = imageCardsHandler();
   const service = createService({ dataDir: temporary(t), enableDevSession: true, devIdentities: ['reader'], jobHandlers: {
     image_cards: { ...generator, async generate(context) {
+      if (source === 'retry' && context.job.attempt === 1) throw new ApiError(503, 'TEMPORARY_FAILURE', true);
       const output = await generator.generate(context);
       if (source === 'empty') return { cards: [] };
       output.cards[0].sourceImageIds = source === 'foreign' ? [context.request.target.imageId, 'foreign-image'] :
@@ -227,4 +229,21 @@ test('preview fullscreen still reads only selected originals and preserves the u
   assert.equal(reader.data.scale, 2.5); reader.fitWidth(); reader.close(); reader.onUnload();
   assert.deepEqual(ui.navigation.at(-1), ['back']); assert.equal(services.capture.getState().previewPosition, 460);
   assert.equal(services.capture.getState().canConfirm, true); assert.equal(traffic.length, 0);
+});
+
+test('an explicit retry preserves the original multi-image source snapshot after another image is appended', async (t) => {
+  const { services, disk, backend, add } = await setup(t, 'retry');
+  const { id, images } = await add(['menu-photo.png', 'menu-long.png']);
+  for (const image of images) await services.uploads.uploadRecord(id, image.id);
+  await services.jobs.startImageCards(id, images[0].id);
+  const failed = services.records.getRecord(id).record.images[0].stageJobs.image_cards;
+  assert.equal(failed.state, 'failed');
+  const appended = await add(['menu-screenshot.png'], { kind: 'append', recordId: id });
+  await services.uploads.uploadRecord(id, appended.images[0].id);
+  const reopened = createWechatServices(disk.platform, { backend });
+  assert.equal((await reopened.jobs.retryStage(id, images[0].id, 'image_cards')).ok, true);
+  const record = reopened.records.getRecord(id).record;
+  assert.equal(record.images[0].stageJobs.image_cards.jobId, failed.jobId);
+  assert.equal(record.images[0].stageJobs.image_cards.attempt, 2);
+  assert.deepEqual(record.cards[0].sourceImageIds, images.map((image) => image.id));
 });

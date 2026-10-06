@@ -15,6 +15,7 @@ import { imageCardsHandler } from './image-cards.ts';
 import { textTranslationHandler } from './text-translation.ts';
 import { createImageTranslation } from './image-translation.ts';
 import { chatHandler } from './chat.ts';
+import { createReceiptService } from './receipts.ts';
 import { createCleanupService } from './cleanups.ts';
 
 async function readJson(req: IncomingMessage): Promise<Json> {
@@ -106,6 +107,8 @@ export function createService(options: ServiceOptions) {
     scenario: options.mockScenario, delayMs: options.translationDelayMs });
   const jobs = createJobService({ database, now, getContext, getSnapshot, idempotent,
     handlers: { image_cards: imageCardsHandler(options.mockScenario), image_translation: translations.handler, text_translation: textTranslationHandler(options.mockScenario), chat: chatHandler(options.mockScenario), ...options.jobHandlers }, workerDelayMs: options.workerDelayMs, pageSize: options.jobPageSize });
+  const receipts = createReceiptService({ database, getContext, transaction });
+  const deliver = (job: Json) => receipts.delivered(translations.decorate(job));
   const cleanups = createCleanupService({ database, imageDirectory: imageDir, transaction });
   function checkImage(contextId: string, ownerId: string, imageId: string, kind?: string) {
     const snapshot = getSnapshot(contextId, ownerId);
@@ -260,11 +263,13 @@ export function createService(options: ServiceOptions) {
     }
     if (route.startsWith('/v1/')) {
       const ownerId = owner(req);
-      if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, translations.decorate(jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req))));
+      if (route === '/v1/jobs' && req.method === 'POST') return send(res, 202, deliver(jobs.accept(ownerId, req.headers['idempotency-key'], await readJson(req))));
+      const ackRoute = route.match(/^\/v1\/jobs\/([^/]+)\/ack$/);
+      if (ackRoute && req.method === 'POST') return send(res, 200, receipts.ack(decodeURIComponent(ackRoute[1]), ownerId, await readJson(req)));
       const retryRoute = route.match(/^\/v1\/jobs\/([^/]+)\/retry$/);
-      if (retryRoute && req.method === 'POST') return send(res, 202, translations.decorate(jobs.retry(decodeURIComponent(retryRoute[1]), ownerId, req.headers['idempotency-key'], await readJson(req))));
+      if (retryRoute && req.method === 'POST') return send(res, 202, deliver(jobs.retry(decodeURIComponent(retryRoute[1]), ownerId, req.headers['idempotency-key'], await readJson(req))));
       const jobRoute = route.match(/^\/v1\/jobs\/([^/]+)$/);
-      if (jobRoute && req.method === 'GET') return send(res, 200, translations.decorate(jobs.get(decodeURIComponent(jobRoute[1]), ownerId)));
+      if (jobRoute && req.method === 'GET') return send(res, 200, deliver(jobs.get(decodeURIComponent(jobRoute[1]), ownerId)));
       const artifactRoute = route.match(/^\/v1\/image-artifacts\/([^/]+)$/);
       if (artifactRoute && req.method === 'GET') {
         const bytes = translations.download(decodeURIComponent(artifactRoute[1]), ownerId);
@@ -275,7 +280,7 @@ export function createService(options: ServiceOptions) {
       if (contextJobs && req.method === 'GET') {
         if (url.searchParams.getAll('cursor').length > 1) return reject(400, 'INPUT_UNSUPPORTED');
         const list = jobs.list(decodeURIComponent(contextJobs[1]), ownerId, url.searchParams.get('cursor') ?? undefined);
-        return send(res, 200, { ...list, items: list.items.map(translations.decorate) });
+        return send(res, 200, { ...list, items: list.items.map(deliver) });
 
       }
       const contextRoute = route.match(/^\/v1\/contexts\/([^/]+)$/);
@@ -300,5 +305,5 @@ export function createService(options: ServiceOptions) {
       else res.destroy();
     });
   });
-  return { server, close: async () => { cleanups.close(); await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
+  return { server, retention: receipts, close: async () => { cleanups.close(); await jobs.close(); await new Promise<void>((done) => server.close(() => { database.close(); done(); })); } };
 }

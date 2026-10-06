@@ -4,7 +4,7 @@ function has(value, key) { return Object.prototype.hasOwnProperty.call(value, ke
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function defaultTitle(text) { return Array.from(text.trim().replace(/\s+/g, ' ')).slice(0, 32).join(''); }
 
-function createCardDrafts({ repository, library, translations, getLanguage }) {
+function createCardDrafts({ repository, library, translations, getLanguage, receipts }) {
   let draft = null; let saveError = null; let dirty = false; let needsResume = false; let pendingCreate = false;
   let slot = 'new'; let targetMissing = false;
   const listeners = new Set(); const active = new Map();
@@ -32,7 +32,7 @@ function createCardDrafts({ repository, library, translations, getLanguage }) {
     draft = next;
     if (options?.create) pendingCreate = true;
     const result = repository.writeDraft(next, { slot, create: pendingCreate });
-    if (result.ok) pendingCreate = false;
+    if (result.ok) { pendingCreate = false; if (receipts && next.job) receipts.saved(next.job, { locallySavedRevision: next.job.revision, locallySavedArtifactIds: [] }); }
     if (result.error === 'card-not-found') return missingTarget();
     if (result.error === 'stale-draft') { load(); return result; }
     dirty = !result.ok; saveError = result.ok ? null : result.error; notify(); return result;

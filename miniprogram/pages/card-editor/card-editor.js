@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const { LANGUAGES } = require('../../core/i18n');
 const { CATEGORIES, COLORS } = require('../../core/card-repository');
@@ -18,10 +20,11 @@ Page({
     return result;
   },
   onShow() {
+    this.receiptVisible = true;
     if (!this.unsubscribe) this.unsubscribe = this.drafts.subscribe(() => this.renderDraft());
     this.renderDraft(); if (!this.entryBlocked) this.drafts.refresh();
   },
-  onHide() { if (this.unsubscribe) this.unsubscribe(); this.unsubscribe = null; },
+  onHide() { this.receiptVisible = false; if (this.unsubscribe) this.unsubscribe(); this.unsubscribe = null; },
   onUnload() { this.onHide(); },
   renderDraft() {
     const state = this.drafts.getState();
@@ -31,7 +34,7 @@ Page({
     const jobState = draft?.job?.state;
     const translating = !!draft?.operation && !draft.error && (!draft.job || ['queued', 'running'].includes(jobState));
     const error = draft?.error;
-    this.setData({ ...state, entryBlocked: !!this.entryBlocked, editorCopy: copy, isChinese: draft?.sourceLanguage === 'zh-CN',
+    this.setData({ ...state, saveRecoveryCopy: saveRecovery.copy(), entryBlocked: !!this.entryBlocked, editorCopy: copy, isChinese: draft?.sourceLanguage === 'zh-CN',
       sourceLanguageName: LANGUAGES.find((item) => item.code === draft?.sourceLanguage)?.name || '',
       categories: CATEGORIES.map((value) => ({ value, label: copy[value] })), colors: COLORS.map((value) => ({ value, label: copy[value] })),
       canTranslate: !!draft?.text.trim() && !state.dirty && !state.saveError && !state.needsResume && !translating,
@@ -40,7 +43,7 @@ Page({
       translationMessage: error ? copy[error === 'submission-pending' ? 'interrupted' : error === 'network-unavailable' || error === 'backend-unavailable' ? 'offline' : 'translationFailed'] :
         jobState === 'failed' || jobState === 'expired' || jobState === 'cancelled' ? copy.translationFailed : translating ? copy.generating :
           draft?.needsChineseReview ? copy.needsReview : draft?.textZh ? copy.translated : ''
-    });
+    }, () => { if (this.receiptVisible) receiptPage.present(page.services(), receiptPage.draftEntries(state)); });
     wx.setNavigationBarTitle({ title: copy.title });
     if (state.targetMissing && !this.returning) {
       this.returning = true; wx.showToast({ title: copy.cardMissing, icon: 'none' }); this.returnCards();
@@ -54,6 +57,7 @@ Page({
   continueDraft() { this.editCardId ? this.drafts.resumeEdit() : this.drafts.resumeNew(); this.drafts.refresh(); },
   async translate() { await this.drafts.translate(); this.renderDraft(); },
   async continueTranslation() { await this.drafts.continueSubmission(); this.renderDraft(); },
+  openSaveCleanup: saveRecovery.open,
   retrySave() {
     const result = this.drafts.retrySave();
     if (result.ok && (this.entryBlocked || !this.drafts.getState().draft)) this.openDraft();

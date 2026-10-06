@@ -14,6 +14,7 @@
           <view class="communication-chinese" selectable>{{card.textZh}}</view><view wx:if="{{card.pairedText}}" class="communication-paired" selectable>{{card.pairedText}}</view>
         </view>
       </view>
+      <view wx:if="{{saveFailed}}" class="notice save-recovery" role="status"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
       <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
     </view>
   </scroll-view>

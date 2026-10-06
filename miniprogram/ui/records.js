@@ -1,4 +1,6 @@
 const page = require('./page');
+const receiptPage = require('./save-receipts');
+const saveRecovery = require('./save-recovery');
 const { getRecordsCopy, recordError } = require('../core/records-copy');
 const { getUploadCopy } = require('../core/upload-copy');
 const { getDishesCopy, presentDish } = require('../core/dishes-copy');
@@ -83,8 +85,9 @@ function showResult(target, recordId) {
     job.output.cards.some((card) => card.sourceImageIds.includes(currentImage.id)));
   const cardsRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_cards');
   const translationRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_translation');
+  const renderedImage = { path: imageView.variant === 'translation' ? imageView.path : null, entries: receiptPage.imageEntries(record, jobState, currentImage.id, { translationOnly: true, imageLoaded: true }) };
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
-    historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
+    saveRecoveryCopy: saveRecovery.copy(), historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
     stageCopy: getStageRetryCopy(application.language), cardsRetry, translationRetry,
     uploadInterrupted: uploadStatus.interrupted, uploadResuming: uploadStatus.resuming, canRetryUpload: uploadStatus.canRetry,
@@ -117,7 +120,7 @@ function showResult(target, recordId) {
           artifact && artifact.saveState === 'saved' ? imageCopy.saved : saving ? imageCopy.saving : artifact && artifact.saveState === 'failed' ? imageCopy.saveFailed : imageCopy.pending,
         translationReady: !!artifact, resultSaveFailed: pending.length > 0
       });
-    }) }));
+    }) }), () => { if (target.receiptVisible !== false) { target.renderedImageReceipt = renderedImage; receiptPage.present(page.services(), receiptPage.imageEntries(record, jobState, currentImage.id)); } });
   if (uploadStatus.originalMissing || uploadStatus.error && uploadStatus.error !== 'backend-unavailable' && uploadStatus.error !== 'single-image-only') {
     target.setData({ uploadState: 'failed', processingLabel: recordCopy.uploadFailed });
   }

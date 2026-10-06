@@ -13,6 +13,9 @@
       <view class="status-row"><text class="status-label">{{historyCopy.processingLabel}}</text><text class="processing-state">{{processingLabel}}</text></view>
       <view class="status-row"><text class="status-label">{{recordCopy.saveLabel}}</text><text class="local-save-state">{{saveLabel}}</text></view>
     </view>
+    <view wx:if="{{cardsSaveFailed || imageView.canRetryTranslationSave || uploadLocalFailure || imageView.saveError}}" class="notice save-recovery" role="status">
+      <view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button>
+    </view>
     <scroll-view class="image-selector" scroll-x>
       <view class="thumbnail-strip">
         <button wx:for="{{record.images}}" wx:key="id" class="image-selector-button {{currentImageId === item.id ? 'selected-image' : ''}}" data-id="{{item.id}}" bindtap="selectImage" aria-label="{{recordCopy.photo}} {{index + 1}}" aria-pressed="{{currentImageId === item.id}}">
@@ -28,7 +31,7 @@
     </view>
     <view class="original-label">{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} · {{recordCopy.photo}} {{currentImage.order + 1}}</view>
     <button wx:if="{{imageView.path && (imageView.variant === 'translation' || !uploadOriginalMissing)}}" class="original-button paper reading-anchor" id="result-image" data-anchor-id="image:{{currentImageId}}" bindtap="viewImage" aria-label="{{imageView.variant === 'translation' ? imageCopy.translation : imageCopy.original}} {{recordCopy.photo}} {{currentImage.order + 1}}">
-      <image class="result-original" src="{{imageView.path}}" mode="aspectFit" />
+      <image class="result-original" data-path="{{imageView.path}}" bindload="presentImage" src="{{imageView.path}}" mode="aspectFit" />
 
     </button>
     <view wx:else class="notice missing-original" role="alert">{{imageView.variant === 'translation' ? imageCopy.missingTranslation : recordCopy.missingOriginal}}</view>

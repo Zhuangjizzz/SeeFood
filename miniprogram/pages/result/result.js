@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const reading = require('../../ui/history-reading');
 const recordsPage = require('../../ui/records');
 const page = require('../../ui/page');
@@ -8,6 +10,7 @@ Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
   onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
+    this.receiptVisible = true;
     // A fullscreen reader can change the shared selection while this page is hidden.
     this.setData({ currentImageId: null });
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
@@ -28,7 +31,7 @@ Page({
     void page.services().jobs.refreshRecord(this.recordId);
   },
   onPageScroll(event) { this.scrollTop = event.scrollTop; reading.capture(this, event); },
-  onHide() { if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onHide() { this.receiptVisible = false; if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   addPhotos() {
     if (!this.data.record) return;
@@ -106,6 +109,12 @@ Page({
   openChat() {
     if (!this.data.record) return;
     wx.navigateTo({ url: `/pages/chat/chat?recordId=${encodeURIComponent(this.recordId)}` });
+  },
+  openSaveCleanup: saveRecovery.open,
+  presentImage(event) {
+    const shown = this.renderedImageReceipt;
+    if (!this.receiptVisible || !shown?.path || event.currentTarget.dataset.path !== shown.path) return;
+    receiptPage.present(page.services(), shown.entries);
   },
   retryResultSave() { page.services().jobs.retrySave(this.recordId); recordsPage.showResult(this, this.recordId); },
   viewOriginal() {

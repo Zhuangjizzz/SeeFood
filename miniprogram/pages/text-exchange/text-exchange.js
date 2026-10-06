@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const { LANGUAGES } = require('../../core/i18n');
 const { SPEAKERS } = require('../../core/text-exchange');
@@ -7,6 +9,7 @@ Page({
   data: { exchangeCopy: {}, rows: [], inputValue: '', selectedSpeaker: 'visitor' },
   onLoad() { this.exchange = page.services().textExchange; },
   onShow() {
+    this.receiptVisible = true;
     if (!this.exchange) this.exchange = page.services().textExchange;
     if (!this.unsubscribe) this.unsubscribe = this.exchange.subscribe(() => this.render());
     this.render();
@@ -14,7 +17,7 @@ Page({
   },
   onHide() { this.stopWatching(); },
   onUnload() { this.stopWatching(); },
-  stopWatching() { if (this.unsubscribe) this.unsubscribe(); this.unsubscribe = null; },
+  stopWatching() { this.receiptVisible = false; if (this.unsubscribe) this.unsubscribe(); this.unsubscribe = null; },
   render() {
     const state = this.exchange.getState(); const language = page.services().application.getState().language;
     const copy = getTextExchangeCopy(language); const active = state.sides[state.selectedSpeaker];
@@ -33,7 +36,7 @@ Page({
       direction: languageName(active.inputLanguage) + ' → ' + languageName(targetLanguage),
       canSubmit: !!active.draft.trim() && !state.saveError, empty: rows.every((row) => !row.result && !row.pendingText),
       saveError: state.saveError ? copy[state.saveError === 'storage-read' ? 'readFailed' : 'saveFailed'] : '',
-      draftStatus: active.draft && !state.saveError ? copy.draft : '' });
+      saveRecoveryCopy: saveRecovery.copy(), draftStatus: active.draft && !state.saveError ? copy.draft : '' }, () => { if (this.receiptVisible) receiptPage.present(page.services(), receiptPage.textEntries(state)); });
     wx.setNavigationBarTitle({ title: copy.title });
   },
   onInput(event) { this.exchange.edit(this.data.selectedSpeaker, event.detail.value); },
@@ -41,6 +44,7 @@ Page({
   submit() { return this.exchange.submit(this.data.selectedSpeaker); },
   checkProgress(event) { return this.exchange.continueSubmission(event.currentTarget.dataset.speaker); },
   editSubmitted(event) { return this.exchange.restoreInput(event.currentTarget.dataset.speaker); },
+  openSaveCleanup: saveRecovery.open,
   retrySave() { return this.exchange.retrySave(); },
   clearExchange() {
     const copy = this.data.exchangeCopy;

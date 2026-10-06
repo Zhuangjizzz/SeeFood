@@ -2213,6 +2213,11 @@
               },
               "targetLanguage": {
                 "$ref": "#/components/schemas/Locale"
+              },
+              "dishCardId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "可选的具体菜品沟通对象；必须属于当前记录的冻结快照。提供后固定模拟返回这道菜的店员沟通帮助，不缩小整条记录的快照。"
               }
             },
             "required": [

@@ -571,6 +571,51 @@
       "requestSchema": "CreateJobRequest"
     },
     {
+      "id": "chat-dish-accepted",
+      "request": {
+        "method": "POST",
+        "path": "/v1/jobs",
+        "body": {
+          "contextId": "context-demo-1",
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-dish-1",
+            "assistantMessageId": "message-assistant-dish-1"
+          },
+          "input": {
+            "contextSnapshotVersion": 1,
+            "text": "Help me ask the server about the ingredients, preparation and dietary requirements for 示例炒饭.",
+            "targetLanguage": "en",
+            "dishCardId": "card-menu-1"
+          }
+        },
+        "headers": {
+          "Idempotency-Key": "chat-dish-1"
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "jobId": "job-demo-chat-dish-1",
+          "contextId": "context-demo-1",
+          "contextSnapshotVersion": 1,
+          "kind": "chat",
+          "target": {
+            "userMessageId": "message-user-dish-1",
+            "assistantMessageId": "message-assistant-dish-1"
+          },
+          "state": "queued",
+          "attempt": 1,
+          "revision": 1,
+          "output": null,
+          "error": null,
+          "expiresAt": "2026-10-07T00:00:00Z"
+        }
+      },
+      "responseSchema": "Job",
+      "requestSchema": "CreateJobRequest"
+    },
+    {
       "id": "chat-partial",
       "request": {
         "method": "GET",

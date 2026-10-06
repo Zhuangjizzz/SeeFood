@@ -52,7 +52,7 @@ flowchart LR
 | DishCard | OpenAPI 的 `DishCard` 完整内容 | 保留 `recordId` 与 `sourceImageIds`；同一卡片可关联多图；当前图片筛选只影响展示，整条记录的卡片与聊天范围保持完整 |
 | DietaryAssessment | `cardId, preferencesVersion, state, warnings, concern?, checkedAt?` | 与菜品解释正文分开保存，检查结果绑定偏好版本 |
 | Message | `id, recordId, role, text, contentLanguage, state, saveState, inReplyTo?, jobId?, attempt, contextSnapshotVersion?, preferencesVersion?, attachments` | 用户问题和对应回复各有稳定 ID；重试更新同一回复，恢复层保存当前任务、尝试号及已应用版本 |
-| PersonalCard | OpenAPI 的 `CardContent` 完整内容，加 `id, order, color, edited, presetId?, sourceMessageId?, saveState` | `order` 是本机卡库的全局顺序；收藏时复制完整文字与语言并生成个人卡片 ID；来源标识仅供追溯，展示与保存不依赖来源记录 |
+| PersonalCard | OpenAPI 的 `CardContent` 完整内容，加 `id, order, color, edited, presetId?, sourceRecordId?, sourceMessageId?, sourceAttachmentIndex?, saveState` | `order` 是本机卡库的全局顺序；收藏时复制完整文字与语言并生成个人卡片 ID；来源标识仅供追溯，展示与保存不依赖来源记录 |
 | Preferences | `version`、三类已选项及各类补充原文；据此构建符合 OpenAPI 的 `Preferences` 快照 | 统一保存后增加版本；表单编辑与已生效偏好分开，请求仅携带已保存快照 |
 | 聊天草稿 | `recordId, text, inputVersion, updatedAt, saveState` | 每条记录独立保存，暂离与退出后恢复；不作为已发送消息进入聊天快照 |
 | 记录浏览状态 | `recordId`、当前图片、按 `imageId` 保存的原译选择、结果与聊天阅读位置、聊天是否处于底部 | 原译选择属于图片；阅读位置属于记录及视图，新输出只更新内容和状态，不覆盖用户的浏览选择 |
@@ -141,6 +141,8 @@ flowchart LR
 
 创建和编辑卡片通过 `cardDrafts` 管理输入与独立翻译，通过 `cardRepository` 提交本机变更。`personal-cards` 本机值内的 `drafts` 与正式 `cards` 分离；新建草稿使用 `new` 槽位，编辑草稿使用 `edit:<cardId>` 槽位，互不覆盖。主动保存用一次本机写入创建或更新正式卡片，并移除对应草稿，避免正式内容已保存、草稿却未清理的中间状态。编辑提交保留卡片 ID、全局顺序和来源信息；写回前校验目标卡仍存在、作用域与输入版本仍有效。删除卡片同时移除其编辑草稿，旧页面实例不能重新写入已放弃或目标已删除的草稿。
 
+聊天收藏通过 `cardFavorites.save(recordId, messageId, attachmentIndex, expectedContent?)` 从当前有效回复复制 `CardContent`，并通过同一 `cardRepository` 单次写入正式卡库，不改动来源消息或草稿。页面传入已展示的内容以核对点击期间的变化；附件索引使用原消息内的位置。收藏保存为独立个人身份、浅绿默认颜色和最前全局顺序；相同来源附件已有副本时返回该副本，不重复创建或覆盖后续个人编辑。删除个人副本后可以重新收藏。收藏状态从个人卡库读取，收藏与展示不发起网络请求；来源记录未保存、不可读或已删除，不影响已经保存的副本展示。
+
 沟通卡草稿独立于正式卡片持久保存。编辑期间不能提前覆盖可展示的正式卡片；主动保存成功后才提交新内容并清理对应草稿，失败时保留草稿与明确的保存状态。双向文字交流分别保存双方最近结果与未发送草稿；切换说话者切换相应输入，不能使一方的结果覆盖另一方。浏览状态、草稿与当前交流都由本机仓库恢复，不依赖后端临时上下文持续存在。
 
 草稿每次修改增加 `inputVersion`；每次明确提交新翻译生成新 `requestId`，网络重发复用该请求。任务输入的文字、语言、`inputVersion` 必须与所引用快照一致。修改草稿只更新本机输入，不自动提交翻译。
@@ -200,6 +202,12 @@ flowchart LR
 `DietaryAssessment.concern` 提供 `conflict / possible_conflict / unknown` 三种结构化类别，供页面及推荐筛选复用；旧结果缺少类别时按 `unknown` 处理。`current` 只表示对应偏好版本的检查完成，不表示安全保证，也不从 `warnings` 文字反解析类别。
 
 客户端只有在返回版本仍匹配当前偏好时，才将检查更新为 `current`。旧检查不能覆盖新版本；检查失败保留可辨认状态。检查记录与冻结请求保存在本机 `dietaryReviews`，提示独立保存在 `dietaryAssessments`；成功保存偏好后，对已有菜品发起新检查。未送达的检查保留待检查状态，重进只查询，用户明确继续才重发原请求键；失败任务的重试沿用冻结输入。提示保存失败时保留可读结果，并单独提供本机重存，不再生成。旧对话保留原文，通过消息的 `preferencesVersion` 判断推荐是否需要重新确认，后续新操作使用新快照。
+
+推荐的待确认标记由持久消息的偏好版本与当前已保存偏好版本比较得出，重开与离线时同样生效，不回写或改造旧正文。已接收问题的迟到结果继续沿用原消息版本；已知请求按固定推荐问题识别，缺少请求元数据的旧菜品建议按保守规则提示核实。该静态提示随界面语言切换，回答本身保留原语言。
+
+详情的“向店员询问”通过可选的 `ChatRequest.input.dishCardId` 绑定具体菜品，聊天显示包含该菜中文名的实际问题。服务端验证该 ID 属于当前所有者、记录与冻结快照；完整快照仍包含同一记录的全部图片和菜品。固定模拟返回该菜的沟通文字与引用，外来菜品或错配输出被拒绝。该入口不等待饮食重查完成，也不清理现有聊天草稿。
+
+本轮推荐固定模拟与饮食检查复用相同的结构化分类：依据该问题冻结的已保存偏好排除 `conflict`，`possible_conflict` 与 `unknown` 继续保留原因及可进入详情询问的引用；没有偏好时说明未结合个人限制。这是联调场景，不是正式推荐算法。
 
 <a id="lifecycle"></a>
 

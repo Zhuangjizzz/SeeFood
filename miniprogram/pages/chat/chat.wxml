@@ -5,6 +5,7 @@
       <view class="mock-note">{{chatCopy.mock}}</view>
       <view wx:for="{{messages}}" wx:key="id" class="message message-{{item.role}}" id="message-{{item.id}}" data-message-id="{{item.id}}">
         <view class="message-text" selectable>{{item.text}}</view>
+        <view wx:if="{{item.recommendationNotice}}" class="recommendation-stale" role="status">{{item.recommendationNotice}}</view>
         <view wx:if="{{item.role === 'assistant'}}" class="message-status {{item.state}}">{{item.statusLabel}}</view>
         <button wx:if="{{item.canRetry}}" class="reply-retry text-button" disabled="{{item.actionDisabled || offline}}" data-id="{{item.id}}" bindtap="retryReply">{{chatCopy.retryReply}}</button>
         <button wx:if="{{item.canContinue}}" class="reply-continue text-button" disabled="{{item.actionDisabled || offline}}" data-id="{{item.id}}" bindtap="continueSend">{{chatCopy.continueSend}}</button>
@@ -14,9 +15,12 @@
         <view wx:for="{{item.communicationCards}}" wx:for-item="card" wx:key="index" class="chat-communication paper">
           <view class="communication-label">{{chatCopy.card}}</view><view class="communication-title">{{card.title}}</view>
           <view class="communication-chinese" selectable>{{card.textZh}}</view><view wx:if="{{card.pairedText}}" class="communication-paired" selectable>{{card.pairedText}}</view>
+          <view wx:if="{{card.saved}}" class="favorite-saved" role="status">{{chatCopy.favoriteSaved}}</view>
+          <view wx:if="{{card.favoriteError}}" class="favorite-error" role="alert">{{card.favoriteError}}</view>
+          <button wx:if="{{!card.saved}}" class="favorite-card text-button" data-message-id="{{item.id}}" data-index="{{card.index}}" bindtap="favoriteCard">{{card.favoriteError ? chatCopy.favoriteRetry : chatCopy.favorite}}</button>
         </view>
       </view>
-      <view wx:if="{{saveFailed || draftSaveFailed || positionSaveFailed}}" class="notice save-recovery" role="status"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
+      <view wx:if="{{saveFailed || draftSaveFailed || positionSaveFailed || favoriteSaveFailed}}" class="notice save-recovery" role="status"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
       <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{needsMaterial}}" class="text-button add-material" bindtap="addPhotos">{{expirationCopy.addPhotos}}</button><button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>
     </view>
   </scroll-view>

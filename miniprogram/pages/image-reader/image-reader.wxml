@@ -17,7 +17,7 @@
     <view wx:if="{{!imagePath || imageError}}" class="reader-notice" role="alert">{{imageError ? copy.imageUnreadable : missingImage}}</view>
     <scroll-view class="reader-viewport" scroll-x="{{!pinching}}" scroll-y="{{!pinching}}" scroll-top="{{scrollTop}}" scroll-left="{{scrollLeft}}" bindscroll="scrollImage">
       <view wx:if="{{imagePath}}" class="reader-canvas" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" bindtouchstart="startTouch" bindtouchmove="moveTouch" bindtouchend="finishTouch" bindtouchcancel="finishTouch">
-        <image class="reader-image" src="{{imagePath}}" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" mode="scaleToFill" binderror="failedImage" />
+        <image class="reader-image" src="{{imagePath}}" style="width: {{imageWidth}}px; height: {{imageHeight}}px;" mode="scaleToFill" binderror="failedImage" bindload="presentImage" data-path="{{imagePath}}" />
       </view>
     </scroll-view>
     <view class="reader-footer">

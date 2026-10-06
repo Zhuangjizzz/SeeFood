@@ -9,7 +9,7 @@ function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
   return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
 }
-function createChat({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
+function createChat({ records, backend, network, preferences, contexts, getLanguage, receipts, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   records.subscribe((id) => { if (records.isDeleted(id)) { unsaved.delete(id); errors.delete(id); } });
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
@@ -82,6 +82,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
         if (nextAttempt) delete draft.chatRetries[key];
         if (job.output) Object.assign(assistant, { text: job.output.text, contentLanguage: job.output.contentLanguage, attachments: clone(job.output.attachments) });
       }, false);
+      if (receipts) receipts.saved(job, { locallySavedRevision: job.revision, locallySavedArtifactIds: [] });
       unsaved.delete(id); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }

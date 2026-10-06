@@ -10,6 +10,7 @@
   <scroll-view class="preview-list" scroll-y scroll-top="{{scrollTop}}" bindscroll="onListScroll">
     <view class="list-content">
       <view class="notice save-progress" wx:if="{{saveState === 'saving'}}" role="status">{{recordCopy.saving}}</view>
+      <view wx:if="{{saveState === 'failed'}}" class="notice save-recovery"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
       <view class="notice save-error" wx:if="{{saveError}}" role="alert">{{saveError}}</view>
       <view class="empty paper" wx:if="{{!images.length}}">
         <view class="empty-title">{{copy.emptyPreview}}</view>

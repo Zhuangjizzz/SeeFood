@@ -1,3 +1,4 @@
+const { createSaveReceipts } = require('../core/save-receipts');
 const { createDietaryReview } = require('../core/dietary-review');
 const { createLocalStore } = require('../core/local-store');
 const { createApplication } = require('../core/application');
@@ -43,21 +44,30 @@ function createWechatServices(platform, options = {}) {
   const records = createRecords({ store, now: options.now, files: createWechatOriginalFiles(platform), translationFiles });
   const network = createWechatNetwork(platform);
   const backend = createWechatBackend(platform, store, options.backend || developmentBackend(platform), network);
+  const receipts = createSaveReceipts({ store, backend, network });
   let deletions;
   const contexts = createRecordContexts({ records, backend, onDeletedContext: (id) => deletions.retry(id) });
   const uploads = createUploads({ records, network, preferences: application.preferences, backend, contexts });
-  const jobs = createJobs({ records, backend, translationFiles, network });
+  const jobs = createJobs({ records, backend, translationFiles, network, receipts });
   const imageBatches = createImageBatches({ records, uploads, jobs });
   const textTranslations = createTextTranslations({ backend });
   const cardRepository = createCardRepository({ store, getLanguage: () => application.getState().language });
-  const cardDrafts = createCardDrafts({ repository: cardRepository, library: cardLibrary, translations: textTranslations, getLanguage: () => application.getState().language });
-  const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language });
-  const chat = createChat({ records, backend, network, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
-  const dietaryReview = createDietaryReview({ records, backend, network, contexts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const cardDrafts = createCardDrafts({ repository: cardRepository, library: cardLibrary, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
+  const textExchange = createTextExchange({ store, translations: textTranslations, getLanguage: () => application.getState().language, receipts });
+  const chat = createChat({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
+  const dietaryReview = createDietaryReview({ records, backend, network, contexts, receipts, preferences: application.preferences, getLanguage: () => application.getState().language });
   const imageView = createImageView({ records, jobs });
   const history = createHistory({ records, application, jobs, chat, uploads, store, dietaryReview });
   deletions = createDeletions({ records, backend, network });
-  return { dietaryReview, deletions, imageBatches, cardRepository, cardDrafts, textTranslations, textExchange, network, history, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
+  records.subscribe((id) => {
+    if (records.isDeleted(id)) {
+      const entry = records.getDeletions().entries?.find((item) => item.localScopeId === id);
+      if (entry) receipts.forgetContexts(entry.contextIds);
+      return;
+    }
+
+  });
+  return { dietaryReview, receipts, deletions, imageBatches, cardRepository, cardDrafts, textTranslations, textExchange, network, history, imageView, chat, contexts, jobs, store, application, preferences: application.preferences, cardLibrary, capture, records, backend, uploads };
 }
 
 module.exports = { createWechatServices };

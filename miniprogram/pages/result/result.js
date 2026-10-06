@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const dietaryPage = require('../../ui/dietary');
 const reading = require('../../ui/history-reading');
 const recordsPage = require('../../ui/records');
@@ -9,6 +11,7 @@ Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
   onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
+    this.receiptVisible = true;
     if (this.unsubscribeDietary) this.unsubscribeDietary();
     this.unsubscribeDietary = page.services().dietaryReview.subscribe((id) => { if (id === this.recordId) recordsPage.showResult(this, this.recordId); });
     // A fullscreen reader can change the shared selection while this page is hidden.
@@ -32,7 +35,7 @@ Page({
     void dietaryPage.refresh(this.recordId);
   },
   onPageScroll(event) { this.scrollTop = event.scrollTop; reading.capture(this, event); },
-  onHide() { if (this.unsubscribeDietary) { this.unsubscribeDietary(); this.unsubscribeDietary = null; } if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
+  onHide() { this.receiptVisible = false; if (this.unsubscribeDietary) { this.unsubscribeDietary(); this.unsubscribeDietary = null; } if (this.unsubscribeChat) { this.unsubscribeChat(); this.unsubscribeChat = null; } if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } reading.save(this, 'result', this.recordId); if (this.unsubscribeJobs) { this.unsubscribeJobs(); this.unsubscribeJobs = null; } if (this.unsubscribeUpload) { this.unsubscribeUpload(); this.unsubscribeUpload = null; } },
   onUnload() { this.onHide(); },
   addPhotos() {
     if (!this.data.record) return;
@@ -114,6 +117,12 @@ Page({
   openChat() {
     if (!this.data.record) return;
     wx.navigateTo({ url: `/pages/chat/chat?recordId=${encodeURIComponent(this.recordId)}` });
+  },
+  openSaveCleanup: saveRecovery.open,
+  presentImage(event) {
+    const shown = this.renderedImageReceipt;
+    if (!this.receiptVisible || !shown?.path || event.currentTarget.dataset.path !== shown.path) return;
+    receiptPage.present(page.services(), shown.entries);
   },
   retryResultSave() { page.services().jobs.retrySave(this.recordId); recordsPage.showResult(this, this.recordId); },
   viewOriginal() {

@@ -43,7 +43,8 @@ function createWechatBackend(platform, store, config, network) {
     return send(config.baseUrl + path, method, data, headers);
   }
   return {
-    enabled,
+    enabled, identityKey: config.identity,
+    ackJob: (id, body) => business('POST', `/v1/jobs/${encodeURIComponent(id)}/ack`, body),
     deleteContext: (id) => business('DELETE', `/v1/contexts/${encodeURIComponent(id)}`),
     getCleanup: (id) => business('GET', `/v1/cleanups/${encodeURIComponent(id)}`),
     createJob: (body, key) => business('POST', '/v1/jobs', body, key),

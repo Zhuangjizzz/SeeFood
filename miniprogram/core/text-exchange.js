@@ -3,7 +3,7 @@ const { makeId } = require('./identity');
 const SPEAKERS = ['visitor', 'staff'];
 const KEY = 'current-text-exchange';
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
-function createTextExchange({ store, translations, getLanguage }) {
+function createTextExchange({ store, translations, getLanguage, receipts }) {
   function side(language) { return { draft: '', inputLanguage: language, inputVersion: 1, operation: null, job: null, result: null, error: null }; }
   function empty() { return { localScopeId: makeId('exchange'), contextId: makeId('communication'), snapshotVersion: 0,
     selectedSpeaker: 'visitor', latestSpeaker: null, sides: { visitor: side(getLanguage() || 'en'), staff: side('zh-CN') } }; }
@@ -13,7 +13,9 @@ function createTextExchange({ store, translations, getLanguage }) {
   function notify() { listeners.forEach((listener) => { try { listener(); } catch (_) { /* UI cannot interrupt local persistence. */ } }); }
   function persist(next) {
     state = next;
-    try { store.set(KEY, state); dirty = false; saveError = null; notify(); return { ok: true }; }
+    try { store.set(KEY, state); dirty = false; saveError = null;
+      if (receipts) for (const side of Object.values(state.sides)) if (side.job) receipts.saved(side.job, { locallySavedRevision: side.job.revision, locallySavedArtifactIds: [] });
+      notify(); return { ok: true }; }
     catch (_) { dirty = true; saveError = 'storage-write'; notify(); return { ok: false, error: saveError }; }
   }
   function change(update) {

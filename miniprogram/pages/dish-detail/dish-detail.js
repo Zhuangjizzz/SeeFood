@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const dietaryPage = require('../../ui/dietary');
 const page = require('../../ui/page');
 const { getDishesCopy, presentDish } = require('../../core/dishes-copy');
@@ -7,17 +9,21 @@ Page({
   data: { card: null, dishCopy: {}, error: '', sourceImages: [] },
   onLoad(options) { this.recordId = page.routeValue(options.recordId); this.cardId = page.routeValue(options.cardId); this.detailScrollTop = 0; },
   onShow() {
+    this.receiptVisible = true;
     if (this.unsubscribeChat) this.unsubscribeChat();
     this.unsubscribeChat = page.services().chat.subscribe((id) => { if (id === this.recordId) this.showDetail(); });
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => this.showDetail());
+
     if (this.unsubscribeDietary) this.unsubscribeDietary();
     this.unsubscribeDietary = page.services().dietaryReview.subscribe((id) => { if (id === this.recordId) this.showDetail(); });
     this.showDetail(true); void dietaryPage.refresh(this.recordId);
   },
   onHide() {
+    this.receiptVisible = false;
     for (const key of ['unsubscribeDietary', 'unsubscribeChat', 'unsubscribeNetwork']) if (this[key]) { this[key](); this[key] = null; }
   },
+
   onUnload() { this.onHide(); },
   onPageScroll(event) { this.detailScrollTop = Math.max(0, Number(event.scrollTop) || 0); },
   showDetail(restore = false) {
@@ -25,10 +31,12 @@ Page({
     const result = services.records.getRecord(this.recordId);
     const card = result.ok && readCards(result.record, services.jobs.getState(this.recordId)).find((item) => item.id === this.cardId);
     wx.setNavigationBarTitle({ title: dishCopy.title });
-    this.setData({ dietary: dietaryPage.getDietary(this.recordId, this.cardId), dishCopy, card: card ? presentDish(card, dishCopy) : null, error: card ? '' : dishCopy.missing,
+    const dietary = dietaryPage.getDietary(this.recordId, this.cardId);
+    this.setData({ saveRecoveryCopy: saveRecovery.copy(), dietary, dishCopy, card: card ? presentDish(card, dishCopy) : null, error: card ? '' : dishCopy.missing,
       askStaffLabel: getChatCopy(services.application.getState().language).askStaff,
       canAskStaff: !!card && (result.record.cards || []).some(value => value.id === this.cardId) && !services.chat.getState(this.recordId).running && services.network.getState().online,
       sourceImages: card ? result.record.images.filter((image) => card.sourceImageIds.includes(image.id) && image.original.saveState === 'saved') : [] }, () => {
+      if (this.receiptVisible && card) receiptPage.present(services, receiptPage.dietaryEntries(result.record, dietary));
       if (restore && card && this.detailScrollTop > 0 && wx.pageScrollTo) wx.pageScrollTo({ scrollTop: this.detailScrollTop, duration: 0 });
     });
   },
@@ -37,10 +45,12 @@ Page({
     const work = page.services().chat.askAboutDish(this.recordId, this.cardId);
     wx.navigateTo({ url: `/pages/chat/chat?recordId=${encodeURIComponent(this.recordId)}&source=detail&cardId=${encodeURIComponent(this.cardId)}` });
     return work;
+
   },
   checkDietary() { return dietaryPage.act(this.recordId, 'startRecord'); },
   retryDietary() { return dietaryPage.act(this.recordId, 'retry'); },
   continueDietary() { return dietaryPage.act(this.recordId, 'continueSubmission'); },
+  openSaveCleanup: saveRecovery.open,
   retryDietarySave() { return dietaryPage.act(this.recordId, 'retrySave'); },
   viewOriginal() {
     if (!this.data.sourceImages.length) return;

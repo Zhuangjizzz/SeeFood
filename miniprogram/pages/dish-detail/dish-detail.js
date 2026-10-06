@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const dietaryPage = require('../../ui/dietary');
 const page = require('../../ui/page');
 const { getDishesCopy, presentDish } = require('../../core/dishes-copy');
@@ -6,23 +8,26 @@ Page({
   data: { card: null, dishCopy: {}, error: '', sourceImages: [] },
   onLoad(options) { this.recordId = page.routeValue(options.recordId); this.cardId = page.routeValue(options.cardId); },
   onShow() {
+    this.receiptVisible = true;
     if (this.unsubscribeDietary) this.unsubscribeDietary();
     this.unsubscribeDietary = page.services().dietaryReview.subscribe((id) => { if (id === this.recordId) this.showDetail(); });
     this.showDetail(); void dietaryPage.refresh(this.recordId);
   },
-  onHide() { if (this.unsubscribeDietary) { this.unsubscribeDietary(); this.unsubscribeDietary = null; } },
+  onHide() { this.receiptVisible = false; if (this.unsubscribeDietary) { this.unsubscribeDietary(); this.unsubscribeDietary = null; } },
   onUnload() { this.onHide(); },
   showDetail() {
     const services = page.services(); const dishCopy = getDishesCopy(services.application.getState().language);
     const result = services.records.getRecord(this.recordId);
     const card = result.ok && readCards(result.record, services.jobs.getState(this.recordId)).find((item) => item.id === this.cardId);
     wx.setNavigationBarTitle({ title: dishCopy.title });
-    this.setData({ dietary: dietaryPage.getDietary(this.recordId, this.cardId), dishCopy, card: card ? presentDish(card, dishCopy) : null, error: card ? '' : dishCopy.missing,
-      sourceImages: card ? result.record.images.filter((image) => card.sourceImageIds.includes(image.id) && image.original.saveState === 'saved') : [] });
+    const dietary = dietaryPage.getDietary(this.recordId, this.cardId);
+    this.setData({ saveRecoveryCopy: saveRecovery.copy(), dietary, dishCopy, card: card ? presentDish(card, dishCopy) : null, error: card ? '' : dishCopy.missing,
+      sourceImages: card ? result.record.images.filter((image) => card.sourceImageIds.includes(image.id) && image.original.saveState === 'saved') : [] }, () => { if (this.receiptVisible && card) receiptPage.present(services, receiptPage.dietaryEntries(result.record, dietary)); });
   },
   checkDietary() { return dietaryPage.act(this.recordId, 'startRecord'); },
   retryDietary() { return dietaryPage.act(this.recordId, 'retry'); },
   continueDietary() { return dietaryPage.act(this.recordId, 'continueSubmission'); },
+  openSaveCleanup: saveRecovery.open,
   retryDietarySave() { return dietaryPage.act(this.recordId, 'retrySave'); },
   viewOriginal() {
     if (!this.data.sourceImages.length) return;

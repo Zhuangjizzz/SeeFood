@@ -182,3 +182,24 @@ test('an upgraded retained directory proves a legacy job by GET before acknowled
   assert.equal(traffic.filter((entry) => entry.method === 'POST' && entry.path === '/v1/jobs').length, 2);
   page.onUnload();
 });
+
+test('dietary results are acknowledged only after their current assessment is presented, including a failed save and retry', async (t) => {
+  const { services, id, disk, traffic } = await setup(t); await services.jobs.startImageCards(id);
+  services.preferences.beginEdit(); services.preferences.toggleOption('allergies', 'egg'); services.preferences.save();
+  const write = disk.storage.set; const send = disk.platform.request;
+  disk.platform.request = (options) => {
+    const success = options.success; options.success = (response) => {
+      if (response.data?.kind === 'dietary_review' && response.data.state === 'succeeded') disk.storage.set = (key, value) => {
+        if (key.endsWith(':records')) throw new Error('ENOSPC'); return write(key, value);
+      };
+      success(response);
+    }; send(options);
+  };
+  assert.equal((await services.dietaryReview.startRecord(id)).error, 'storage-write');
+  const job = services.dietaryReview.getState(id).unsavedJob;
+  const page = nativePage(t, services, 'result'); page.onLoad({ recordId: id }); page.onShow(); page.commitRendered(); await services.receipts.flush();
+  assert.equal(traffic.filter((entry) => entry.path === `/v1/jobs/${job.jobId}/ack`).at(-1)?.data.locallySavedRevision, null);
+  disk.platform.request = send; disk.storage.set = write; page.onHide();
+  assert.equal(services.dietaryReview.retrySave(id).ok, true); await services.receipts.flush();
+  assert.equal(traffic.filter((entry) => entry.path === `/v1/jobs/${job.jobId}/ack`).at(-1).data.locallySavedRevision, job.revision);
+});

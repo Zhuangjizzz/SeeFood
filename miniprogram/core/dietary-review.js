@@ -8,7 +8,7 @@ function messageSnapshot(message) {
   const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
   return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
 }
-function createDietaryReview({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
+function createDietaryReview({ records, backend, network, preferences, contexts, getLanguage, receipts, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
   function read(id) { const result = records.getRecord(id); if (!result.ok) throw { code: result.error }; return result.record; }
@@ -64,6 +64,7 @@ function createDietaryReview({ records, backend, network, preferences, contexts,
           for (const assessment of job.output.assessments) draft.dietaryAssessments[assessment.cardId] = clone(assessment);
         }
       });
+      if (receipts) receipts.saved(job, { locallySavedRevision: job.revision, locallySavedArtifactIds: [] });
       unsaved.delete(id); errors.delete(id); notify(id); return { ok: true, jobId: job.jobId };
     } catch (error) { const code = error.code || 'TEMPORARY_FAILURE'; if (code !== 'stale-job') errors.set(id, code); notify(id); return { ok: false, error: code }; }
   }

@@ -13,7 +13,7 @@
       <view class="status-row"><text class="status-label">{{historyCopy.processingLabel}}</text><text class="processing-state">{{processingLabel}}</text></view>
       <view class="status-row"><text class="status-label">{{recordCopy.saveLabel}}</text><text class="local-save-state">{{saveLabel}}</text></view>
     </view>
-    <view wx:if="{{cardsSaveFailed || imageView.canRetryTranslationSave || uploadLocalFailure || imageView.saveError}}" class="notice save-recovery" role="status">
+    <view wx:if="{{dietary.unsavedJob || cardsSaveFailed || imageView.canRetryTranslationSave || uploadLocalFailure || imageView.saveError}}" class="notice save-recovery" role="status">
       <view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button>
     </view>
     <scroll-view class="image-selector" scroll-x>

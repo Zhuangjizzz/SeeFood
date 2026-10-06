@@ -122,7 +122,7 @@ function showResult(target, recordId) {
           artifact && artifact.saveState === 'saved' ? imageCopy.saved : saving ? imageCopy.saving : artifact && artifact.saveState === 'failed' ? imageCopy.saveFailed : imageCopy.pending,
         translationReady: !!artifact, resultSaveFailed: pending.length > 0
       });
-    }) }), () => { if (target.receiptVisible !== false) { target.renderedImageReceipt = renderedImage; receiptPage.present(page.services(), receiptPage.imageEntries(record, jobState, currentImage.id)); } });
+    }) }), () => { if (target.receiptVisible !== false) { target.renderedImageReceipt = renderedImage; receiptPage.present(page.services(), receiptPage.imageEntries(record, jobState, currentImage.id).concat(receiptPage.dietaryEntries(record, dietary))); } });
   if (uploadStatus.originalMissing || uploadStatus.error && uploadStatus.error !== 'backend-unavailable' && uploadStatus.error !== 'single-image-only') {
     target.setData({ uploadState: 'failed', processingLabel: recordCopy.uploadFailed });
   }

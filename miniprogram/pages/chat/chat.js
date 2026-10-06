@@ -1,3 +1,4 @@
+const receiptPage = require('../../ui/save-receipts');
 const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const { presentDish, getDishesCopy } = require('../../core/dishes-copy');
@@ -51,6 +52,7 @@ Page({
     const result = await page.services().chat.sendQuickQuestion(this.recordId, event.currentTarget.dataset.id);
     this.show(); return result;
   },
+  presentVisibleMessages(state, visibleMessageIds) { receiptPage.present(page.services(), receiptPage.chatEntries(state, visibleMessageIds)); },
   openSaveCleanup: saveRecovery.open,
   async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },

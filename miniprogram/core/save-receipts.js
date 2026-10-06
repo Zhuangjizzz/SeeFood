@@ -23,6 +23,7 @@ function createSaveReceipts({ store, backend, network }) {
   }
   function queue(job, persistence) {
     const old = entries[job.jobId];
+    if (old && job.revision < old.body.appliedRevision) return;
     const body = merge(old?.body, { appliedRevision: job.revision, ...persistence });
     if (!old || job.revision > old.body.appliedRevision) body.locallySavedRevision = persistence.locallySavedRevision;
     if (old && JSON.stringify(old.body) === JSON.stringify(body)) return;

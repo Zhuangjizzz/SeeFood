@@ -168,7 +168,9 @@ export function createJobService(options: JobServiceOptions) {
   }
   function publish(job: Json, saved: any) {
     if (stopped) return;
-    const current = JSON.parse(String(database.prepare('SELECT response FROM jobs WHERE id=?').get(job.jobId)!.response));
+    const currentRow = database.prepare('SELECT response FROM jobs WHERE id=?').get(job.jobId);
+    if (!currentRow) return;
+    const current = JSON.parse(String(currentRow.response));
     if (current.attempt !== job.attempt || current.revision >= job.revision || current.state !== 'running') return;
     // Never allow completion after deletion/expiration or a newer attempt.
     try { getContext(String(saved.context_id), String(saved.owner)); } catch { return; }

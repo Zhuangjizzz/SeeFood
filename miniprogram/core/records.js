@@ -6,14 +6,22 @@ function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function createRecords({ store, files, translationFiles, now = () => new Date().toISOString() }) {
   const submissions = new Map();
   const activeSaves = new Map();
-  function readRecords() {
+  const listeners = new Set();
+  function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) {} }); }
+  function deletions() {
+    const value = store.get('record-deletions', []);
+    if (!Array.isArray(value) || value.some((entry) => !entry || entry.scopeType !== 'record' || typeof entry.localScopeId !== 'string' || !Array.isArray(entry.contextIds))) throw new Error('Unreadable deletion markers');
+    return value;
+  }
+  function isDeleted(id) { return deletions().some((entry) => entry.localScopeId === id); }
+  function readRecords(includeDeleted = false) {
     const records = store.get('records', []);
     if (!Array.isArray(records) || records.some((record) => !record || typeof record.id !== 'string' ||
         typeof record.createdAt !== 'string' || !Array.isArray(record.images) || !Array.isArray(record.imageIds) ||
         record.images.some((image) => !image || !image.original || image.recordId !== record.id))) {
       throw new Error('Unreadable local records');
     }
-    return records;
+    return includeDeleted ? records : records.filter((record) => !isDeleted(record.id));
   }
   function readableRecord(record) {
     const result = clone(record);
@@ -77,7 +85,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     submission.error = null;
     record.saveState = 'saving';
     let previous;
-    try { previous = readRecords(); }
+    try { if (isDeleted(record.id)) return failure(submission, 'record-missing'); previous = readRecords(); }
     catch (_) { return failure(submission, 'storage-read'); }
     const existing = previous.find((item) => item.sourceBatchId === batch.id || (item.captureBatches || {})[batch.id]);
     if (existing) {
@@ -100,13 +108,17 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
         image.localOriginalPath = await files.copyOriginal(batch.images[index], record.id);
         image.original.localPath = image.localOriginalPath;
         image.original.saveState = 'saved';
+        if (isDeleted(record.id)) {
+          service.finishDeletion(record.id);
+          return failure(submission, 'record-missing');
+        }
       } catch (_) {
         image.original.saveState = 'failed';
         return failure(submission, 'original-write');
       }
     }
     record.saveState = 'saved';
-    try { previous = readRecords(); }
+    try { if (isDeleted(record.id)) return failure(submission, 'record-missing'); previous = readRecords(); }
     catch (_) { return failure(submission, 'storage-read'); }
     if (batch.target.kind === 'append') {
       // File copies can take time. Merge into the latest record so completed jobs,
@@ -134,9 +146,11 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     activeSaves.set(batchId, result);
     return result;
   }
-  return {
+  const service = {
     async confirmCapture(batch) {
       if (!validBatch(batch)) return { ok: false, error: 'capture-invalid' };
+      try { if (deletions().some((entry) => (entry.batchIds || []).includes(batch.id))) return { ok: false, error: 'record-missing' }; }
+      catch (_) { return { ok: false, error: 'storage-read' }; }
       const previous = submissions.get(batch.id);
       if (previous && previous.discarding) return { ok: false, error: 'submission-discarded' };
       if (previous && previous.signature !== signature(batch)) {
@@ -176,7 +190,51 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
     },
     getSubmission(batchId) {
       const submission = submissions.get(batchId);
-      return submission ? clone(submission) : null;
+      return submission && !isDeleted(submission.record.id) ? clone(submission) : null;
+    },
+    isDeleted,
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+    // One durable write establishes both the fence and the minimal cleanup queue.
+    // Read paths filter this journal even if a later content/file removal fails.
+    markDeleted(ids) {
+      try {
+        const entries = deletions(); const saved = readRecords();
+        for (const id of [...new Set(ids)]) {
+          if (entries.some((entry) => entry.localScopeId === id)) continue;
+          const record = saved.find((item) => item.id === id);
+          if (!record) return { ok: false, error: 'record-missing' };
+          const contextIds = [...new Set((record.contextSnapshotVersion || record.pendingContextSnapshot ? [record.contextId] : []).concat(record.contextIds || []).filter(Boolean))];
+          entries.push({ scopeType: 'record', localScopeId: id, contextIds, batchIds: [...new Set([record.sourceBatchId].concat(Object.keys(record.captureBatches || {})))], pendingCleanupIds: [], deletedAt: now(),
+            localState: 'pending', localError: null, cleanups: contextIds.map((contextId) => ({ contextId, cleanupId: null, state: 'queued', error: null })) });
+        }
+        store.set('record-deletions', entries);
+        ids.forEach(notify);
+        return { ok: true, ids: [...new Set(ids)] };
+      } catch (_) { return { ok: false, error: 'storage-write' }; }
+    },
+    getDeletions() { try { return { ok: true, entries: deletions() }; } catch (_) { return { ok: false, entries: [], error: 'storage-read' }; } },
+    updateDeletion(id, update) {
+      try {
+        const entries = deletions(); const entry = entries.find((item) => item.localScopeId === id);
+        if (!entry) return { ok: false, error: 'record-missing' };
+        update(entry); store.set('record-deletions', entries); notify(id); return { ok: true };
+      } catch (_) { return { ok: false, error: 'storage-write' }; }
+    },
+    finishDeletion(id) {
+      try {
+        if (!isDeleted(id)) return { ok: false, error: 'record-missing' };
+        store.set('records', readRecords(true).filter((record) => record.id !== id));
+        for (const [key, submission] of submissions) if (submission.record.id === id) submissions.delete(key);
+        const browse = store.get('history-browse', {});
+        for (const view of Object.keys(browse)) if (browse[view] && browse[view].anchorId === id) delete browse[view];
+        store.set('history-browse', browse);
+        files.removeUncommittedOriginals(id);
+        if (translationFiles && translationFiles.removeRecordTranslations) translationFiles.removeRecordTranslations(id);
+        return this.updateDeletion(id, (entry) => { entry.localState = 'succeeded'; entry.localError = null; });
+      } catch (_) {
+        this.updateDeletion(id, (entry) => { entry.localState = 'failed'; entry.localError = 'local-cleanup'; });
+        return { ok: false, error: 'local-cleanup' };
+      }
     },
     // Synchronous transaction for request/recovery services. The callback edits a fresh
     // snapshot; a failed write leaves the last persisted record intact.
@@ -219,6 +277,7 @@ function createRecords({ store, files, translationFiles, now = () => new Date().
       } catch (_) { return { ok: false, error: 'storage-read', records: [] }; }
     }
   };
+  return service;
 }
 
 module.exports = { createRecords };

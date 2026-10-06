@@ -8,6 +8,8 @@ Page({
   data: { record: null, currentImageId: null, copy: {}, recordCopy: {} },
   onLoad(options) { this.recordId = page.routeValue(options.recordId); this.source = page.services().history.getResultSource(this.recordId); },
   onShow() {
+    // A fullscreen reader can change the shared selection while this page is hidden.
+    this.setData({ currentImageId: null });
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => recordsPage.showResult(this, this.recordId));
     if (this.unsubscribeChat) this.unsubscribeChat();
@@ -94,7 +96,7 @@ Page({
   retryImageChoice() { page.services().imageView.retrySave(this.recordId); recordsPage.showResult(this, this.recordId); },
   viewImage() {
     const view = page.services().imageView.open(this.recordId, this.data.currentImageId);
-    if (view.ok && view.path) wx.previewImage({ current: view.path, urls: [view.path] });
+    if (view.ok && view.path) wx.navigateTo({ url: `/pages/image-reader/image-reader?recordId=${encodeURIComponent(this.recordId)}&imageId=${encodeURIComponent(view.imageId)}&source=result` });
   },
   openDish(event) {
     const cardId = event.currentTarget.dataset.id;

@@ -10,6 +10,7 @@ function messageSnapshot(message) {
 }
 function createChat({ records, backend, network, preferences, contexts, getLanguage, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
+  records.subscribe((id) => { if (records.isDeleted(id)) { unsaved.delete(id); errors.delete(id); } });
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* Page lifetime does not control persistence. */ } }); }
   function read(id) { const result = records.getRecord(id); if (!result.ok) throw { code: result.error }; return result.record; }

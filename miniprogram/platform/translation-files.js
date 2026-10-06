@@ -1,5 +1,11 @@
 function createWechatTranslationFiles(platform) {
   return {
+    removeRecordTranslations(recordId) {
+      try { platform.getFileSystemManager().rmdirSync(`${platform.env.USER_DATA_PATH}/seefood-translations/${encodeURIComponent(recordId)}`, true); }
+      catch (error) {
+        if (error.code !== 'ENOENT' && !/no such file|file not exist/i.test(error.errMsg || error.message || '')) throw error;
+      }
+    },
     async copyTranslation(artifact, temporaryPath, recordId) {
       const info = await new Promise((resolve, reject) => platform.getImageInfo({ src: temporaryPath, success: resolve, fail: reject }));
       if (info.width !== artifact.width || info.height !== artifact.height || !['png', 'jpeg', 'jpg', 'webp'].includes(info.type)) throw new Error('Invalid translated image');

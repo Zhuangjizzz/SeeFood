@@ -6,7 +6,13 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
   const recovery = createJobRecovery({ backend });
   const retries = createJobRetry({ backend });
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
-  const previews = new Map();
+  const previews = new Map(); const previewOwners = new Map();
+  records.subscribe((id) => {
+    if (!records.isDeleted(id)) return;
+    for (const [key, owner] of previewOwners) if (owner === id) { previews.delete(key); previewOwners.delete(key); }
+    for (const key of unsaved.keys()) if (key.startsWith(id + ':')) unsaved.delete(key);
+    errors.delete(id);
+  });
   const stageErrors = new Map();
   const keyFor = (id, kind, imageId) => `${id}:${kind}:${imageId}`;
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* A page cannot interrupt result persistence. */ } }); }
@@ -31,9 +37,15 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
             !Number.isInteger(artifact.width) || artifact.width < 1 || !Number.isInteger(artifact.height) || artifact.height < 1))) throw { code: 'DEPENDENCY_MISSING' };
       return;
     }
+    const frozen = image.jobSnapshots && image.jobSnapshots[job.kind] ||
+      (record.contextSnapshotVersion === request.input.contextSnapshotVersion ? record.contextSnapshot : null);
+    // Older single-image requests remain safely readable if their historical snapshot was not saved locally.
+    const sourceIds = new Set(frozen && frozen.recordId === record.id && frozen.snapshotVersion === request.input.contextSnapshotVersion ?
+      frozen.snapshot.images.filter((item) => item.assetId && record.images.some((source) => source.id === item.imageId)).map((item) => item.imageId) : [image.id]);
     if (!job.output || !Array.isArray(job.output.cards) ||
         new Set(job.output.cards.map((card) => card.id)).size !== job.output.cards.length || job.output.cards.some((card) =>
-          card.recordId !== record.id || !Array.isArray(card.sourceImageIds) || card.sourceImageIds.length !== 1 || card.sourceImageIds[0] !== image.id ||
+          card.recordId !== record.id || !Array.isArray(card.sourceImageIds) || !card.sourceImageIds.includes(image.id) ||
+          new Set(card.sourceImageIds).size !== card.sourceImageIds.length || card.sourceImageIds.some((sourceId) => !sourceIds.has(sourceId)) ||
           typeof card.id !== 'string' || !Array.isArray(card.details) || !Array.isArray(card.uncertainty) || !card.price ||
           (card.price.amount !== null && (typeof card.price.amount !== 'string' || !/^(0|[1-9][0-9]*)(\.[0-9]+)?$/.test(card.price.amount))) ||
           card.contentLanguage !== request.input.targetLanguage)) throw { code: 'DEPENDENCY_MISSING' };
@@ -109,8 +121,10 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
           Object.assign(target.translation, clone(artifact));
           target.stageJobs.image_translation.output.artifact = clone(artifact);
         });
-        const temporaryPath = await backend.downloadArtifact(artifact); previews.set(artifact.id, temporaryPath);
+        const temporaryPath = await backend.downloadArtifact(artifact); previews.set(artifact.id, temporaryPath); previewOwners.set(artifact.id, id);
+        read(id);
         const local = await translationFiles.copyTranslation(artifact, temporaryPath, id);
+        if (records.isDeleted(id)) { previews.delete(artifact.id); records.finishDeletion(id); throw { code: 'record-missing' }; }
         save(id, (draft) => {
           const target = draft.images.find((item) => item.id === imageId);
           if (!target.translation || target.translation.id !== artifact.id) throw new Error('stale translation');
@@ -118,6 +132,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         });
         return { ok: true };
       } catch (error) {
+        if (records.isDeleted(id)) { previews.delete(artifact.id); records.finishDeletion(id); }
         const code = error.code || 'translation-write';
         try { save(id, (draft) => {
           const target = draft.images.find((item) => item.id === imageId);
@@ -162,7 +177,8 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         request = { contextId: record.contextId, kind, target: { imageId: image.id }, input: {
           contextSnapshotVersion: record.contextSnapshotVersion, assetId: image.assetId, targetLanguage: image.targetLanguage } };
         if (kind === 'image_cards') request.input.inputKind = image.kind;
-        save(id, (draft) => { const target = draft.images.find((item) => item.id === image.id); target.jobRequests = Object.assign({}, target.jobRequests, { [kind]: request }); });
+        save(id, (draft) => { const target = draft.images.find((item) => item.id === image.id); target.jobRequests = Object.assign({}, target.jobRequests, { [kind]: request });
+          if (record.contextSnapshot) target.jobSnapshots = Object.assign({}, target.jobSnapshots, { [kind]: clone(record.contextSnapshot) }); });
       }
       const job = await backend.createJob(request, image.requests[kind]);
       const result = acceptRecoveredJob(id, job);
@@ -248,6 +264,7 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         retryPending: !!image?.stageRetries?.[kind], error: stageErrors.get(key) || null };
     },
     getState(id) {
+      if (!records.getRecord(id).ok) return { running: false, error: 'record-missing', unsavedJob: null, unsavedJobs: [], previewPaths: {}, savingTranslations: [] };
       const pending = [...unsaved.entries()].filter(([key]) => key.startsWith(id + ':')).map(([, job]) => clone(job));
       return { running: [...active.keys()].some((key) => key.startsWith(id + ':')), error: errors.get(id) || null,
         unsavedJob: pending.find((job) => job.kind === 'image_cards') || null, unsavedJobs: pending, previewPaths: Object.fromEntries(previews),

@@ -5,6 +5,7 @@ const { getDishesCopy, presentDish } = require('../core/dishes-copy');
 const { getImagesCopy } = require('../core/images-copy');
 const { getHistoryCopy } = require('../core/history-copy');
 const { getChatCopy } = require('../core/chat-copy');
+const { readCards } = require('./dish-results');
 const { getStageRetryCopy } = require('../core/stage-retry-copy');
 
 const { getRecoveryCopy } = require('../core/recovery-copy');
@@ -77,10 +78,11 @@ function showResult(target, recordId) {
   const unsavedCards = (jobState.unsavedJobs || []).find((job) => job.kind === 'image_cards' && job.target.imageId === currentImage.id);
   const cardsJob = unsavedCards || currentImage.stageJobs.image_cards;
   const cardsAcceptancePending = !cardsJob && !!(currentImage.jobRequests && currentImage.jobRequests.image_cards);
+  const cards = readCards(record, jobState);
+  const visibleUnsavedCards = (jobState.unsavedJobs || []).some((job) => job.kind === 'image_cards' && job.state === 'succeeded' &&
+    job.output.cards.some((card) => card.sourceImageIds.includes(currentImage.id)));
   const cardsRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_cards');
   const translationRetry = page.services().jobs.getStageState(recordId, currentImage.id, 'image_translation');
-  const cards = unsavedCards && cardsJob.state === 'succeeded' ?
-    (record.cards || []).filter((card) => !card.sourceImageIds.includes(currentImage.id)).concat(cardsJob.output.cards) : (record.cards || []);
   target.setData(Object.assign({}, describe(record, application, uploadStatus), { offline: !page.services().network.getState().online, record, copy: application.copy, recordCopy,
     historyCopy: getHistoryCopy(application.language), chatCopy: getChatCopy(application.language), uploadCopy: getUploadCopy(application.language), dishCopy, recoveryCopy, cardsJob, cardsAcceptancePending, translationAcceptancePending, imageCopy, imageView, translationJob, translationStateLabel,
 
@@ -92,7 +94,7 @@ function showResult(target, recordId) {
     dishCards: cards.filter((card) => card.sourceImageIds.includes(currentImage.id)).map((card) => presentDish(card, dishCopy)),
     cardsStateLabel: cardsJob ? dishCopy[cardsJob.state] : cardsAcceptancePending ? recoveryCopy.checking : dishCopy.unstarted,
     saveLabel: (jobState.unsavedJobs || []).length ? recordCopy.saveFailed : describe(record, application, uploadStatus).saveLabel,
-    cardsSaveFailed: !!unsavedCards, cardsReadFailed: !!jobState.error && !(jobState.unsavedJobs || []).length && (!cardsJob || !translationJob || ['queued', 'running'].includes(cardsJob.state) || ['queued', 'running'].includes(translationJob.state)),
+    cardsSaveFailed: !!unsavedCards || visibleUnsavedCards, cardsReadFailed: !!jobState.error && !(jobState.unsavedJobs || []).length && (!cardsJob || !translationJob || ['queued', 'running'].includes(cardsJob.state) || ['queued', 'running'].includes(translationJob.state)),
     canLeave: page.services().imageBatches.getState(recordId).canLeave,
 
     uploadLocalFailure: uploadStatus.error === 'storage-write' || uploadStatus.error === 'storage-read',

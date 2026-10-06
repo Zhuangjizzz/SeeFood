@@ -1,9 +1,19 @@
 <view class="page history-page" wx:if="{{!needsLanguage}}">
-  <view class="history-heading"><text class="section-title">{{copy.history}}</text><text class="brand-seal">sf</text></view>
+  <view class="history-heading"><text class="section-title">{{copy.history}}</text><button class="text-button history-manage" bindtap="manageHistory">{{deletionCopy.manage}}</button></view>
   <view class="history-description">{{historyCopy.description}}</view>
   <view wx:if="{{offline}}" class="notice history-offline" role="status">{{historyCopy.offline}}</view>
   <view wx:if="{{historyError}}" class="notice history-error" role="alert"><view>{{historyError}}</view><button class="text-button" bindtap="retryHistory">{{recordCopy.retryRead}}</button></view>
   <view wx:if="{{positionSaveFailed}}" class="notice" role="status">{{historyCopy.positionFailed}}</view>
+  <view wx:if="{{deletionError}}" class="notice deletion-error" role="alert">{{deletionError}}</view>
+  <view wx:if="{{cleanupReadError}}" class="notice" role="alert"><view>{{cleanupReadError}}</view><button class="text-button" bindtap="retryCleanup">{{deletionCopy.retry}}</button></view>
+  <view wx:if="{{showCleanup && cleanupEntries.length}}" class="paper cleanup-panel" role="status">
+    <view class="cleanup-heading"><text>{{deletionCopy.cleanup}}</text><button class="text-button" bindtap="hideCleanup" aria-label="{{deletionCopy.cleanup}}">⌃</button></view>
+    <view wx:for="{{cleanupEntries}}" wx:key="id" class="cleanup-entry">
+      <view>{{deletionCopy.deletedRecord}} {{index + 1}}</view><view>{{item.localLabel}}</view><view>{{item.backendLabel}}</view>
+    </view>
+    <view class="cleanup-boundary">{{deletionCopy.boundary}}</view>
+    <button wx:if="{{cleanupPending}}" class="text-button cleanup-retry" bindtap="retryCleanup">{{deletionCopy.retry}}</button>
+  </view>
   <view wx:if="{{historyReadable && !entries.length}}" class="empty paper history-empty">
     <view class="empty-title">{{historyCopy.empty}}</view><view class="empty-copy">{{historyCopy.emptyBody}}</view>
     <button class="primary-button" bindtap="takePhoto">{{copy.takePhoto}} / {{copy.importPhoto}}</button>
@@ -19,6 +29,7 @@
         <view class="history-saving">{{recordCopy.saveLabel}} · {{item.saveLabel}}</view>
       </view><text class="history-chevron">›</text>
     </button>
+    <button class="history-menu text-button" data-id="{{item.id}}" bindtap="recordMenu" aria-label="{{deletionCopy.menu}}">···</button>
   </view>
   <view class="history-local-note">{{historyCopy.localBody}}</view>
 </view>

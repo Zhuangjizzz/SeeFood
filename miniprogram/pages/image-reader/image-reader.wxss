@@ -1,0 +1,19 @@
+.reader-page { height: 100vh; display: flex; flex-direction: column; background: #1f2b22; color: #fffdf2; }
+.reader-toolbar { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 24rpx; padding: 6rpx 30rpx; }
+.reader-number { font-size: 26rpx; color: #d0dcc8; }
+.reader-close { min-height: 88rpx; max-width: 280rpx; padding: 10rpx 0 10rpx 20rpx; font-size: 26rpx; }
+.reader-variants, .reader-navigation { flex-shrink: 0; display: flex; gap: 14rpx; padding: 0 26rpx; }
+.reader-variant, .reader-previous, .reader-next { flex: 1; min-width: 0; min-height: 82rpx; padding: 14rpx 10rpx; line-height: 1.4; font-size: 25rpx; }
+.reader-variant { border: 1rpx solid #657a62; background: #2c3e30; }
+.reader-variant.selected { background: #e6ebd8; color: #243e2c; }
+.reader-viewport { height: 0; min-height: 0; flex: 1; width: 100%; }
+.reader-canvas { position: relative; }
+.reader-image { display: block; max-width: none; }
+.reader-footer { flex-shrink: 0; padding: 10rpx 26rpx calc(16rpx + env(safe-area-inset-bottom)); background: #26382a; }
+.reader-zoom { display: flex; align-items: center; gap: 16rpx; }
+.reader-zoom-in, .reader-zoom-out { width: 88rpx; height: 88rpx; font-size: 42rpx; line-height: 88rpx; background: #3b5040; }
+.reader-fit { flex: 1; min-width: 0; min-height: 88rpx; padding: 12rpx; font-size: 25rpx; line-height: 1.4; }
+.reader-hint, .reader-status { color: #b7c5ae; font-size: 22rpx; text-align: center; line-height: 1.4; padding: 5rpx 4rpx; }
+.reader-notice { flex-shrink: 0; margin: 10rpx 26rpx; padding: 14rpx 20rpx; border-radius: 12rpx; background: #455240; font-size: 25rpx; line-height: 1.5; }
+.reader-notice button { font-size: 25rpx; min-height: 88rpx; }
+button[disabled] { opacity: .4; color: #b7c5ae; }

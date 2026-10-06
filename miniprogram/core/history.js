@@ -46,7 +46,7 @@ function createHistory({ records, application, jobs, chat, uploads, store }) {
   }
   return { describe,
     subscribe(listener) {
-      const stops = [uploads, jobs, chat].map((service) => service.subscribe(listener));
+      const stops = [uploads, jobs, chat, records].map((service) => service.subscribe(listener));
       return () => stops.forEach((stop) => stop());
     },
     saveListPosition(view, value) {

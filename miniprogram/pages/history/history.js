@@ -1,12 +1,14 @@
+const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const recordsPage = require('../../ui/records');
 const reading = require('../../ui/history-reading');
 const deletionPage = require('../../ui/deletions');
 Page({
   data: { entries: [], copy: {}, historyCopy: {}, historyReadable: true, cleanupEntries: [], showCleanup: false },
-  onLoad(options = {}) { this.source = options.source === 'mine' ? 'mine' : 'home'; },
+  onLoad(options = {}) { this.source = options.source === 'mine' ? 'mine' : 'home'; this.saveRecovery = options.saveRecovery === '1'; },
   onShow() {
     if (!page.showPage(this, 'history')) return;
+    this.setData({ saveRecovery: this.saveRecovery, saveRecoveryCopy: saveRecovery.copy() });
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => recordsPage.showHistory(this));
     if (this.unsubscribe) this.unsubscribe();

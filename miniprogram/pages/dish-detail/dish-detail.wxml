@@ -1,5 +1,6 @@
 <view class="page dish-detail-page">
   <view wx:if="{{error}}" class="notice" role="alert">{{error}}</view>
+  <view wx:if="{{dietary.unsavedJob}}" class="notice save-recovery"><view>{{saveRecoveryCopy.help}}</view><button class="text-button" bindtap="openSaveCleanup">{{saveRecoveryCopy.manage}}</button></view>
   <block wx:if="{{card}}">
     <view class="dish-name">{{card.displayName}}</view>
     <view wx:if="{{card.secondaryName}}" class="dish-localized-name">{{card.secondaryName}}</view>

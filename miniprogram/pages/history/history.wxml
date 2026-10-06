@@ -1,4 +1,5 @@
 <view class="page history-page" wx:if="{{!needsLanguage}}">
+  <view wx:if="{{saveRecovery}}" class="notice save-recovery"><view>{{saveRecoveryCopy.history}}</view><button class="text-button" bindtap="back">{{saveRecoveryCopy.return}}</button></view>
   <view class="history-heading"><text class="section-title">{{copy.history}}</text><button class="text-button history-manage" bindtap="manageHistory">{{deletionCopy.manage}}</button></view>
   <view class="history-description">{{historyCopy.description}}</view>
   <view wx:if="{{offline}}" class="notice history-offline" role="status">{{historyCopy.offline}}</view>

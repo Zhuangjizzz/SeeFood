@@ -1,3 +1,5 @@
+const receiptPage = require('../../ui/save-receipts');
+const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const reading = require('../../ui/chat-reading');
 const { presentDish, getDishesCopy } = require('../../core/dishes-copy');
@@ -6,6 +8,7 @@ Page({
   data: { messages: [], draft: '', chatCopy: {}, running: false, errorText: '', keyboardHeight: 0, chatScrollTop: 0, hasNewReply: false, positionSaveFailed: false },
   onLoad(options) { this.recordId = page.routeValue(options.recordId); },
   onShow() {
+    this.receiptVisible = true;
     reading.open(this);
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => this.show());
@@ -14,7 +17,7 @@ Page({
     this.show();
     void page.services().chat.refreshRecord(this.recordId);
   },
-  onHide() { reading.close(this); this.setData({ keyboardHeight: 0 }); if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
+  onHide() { this.receiptVisible = false; reading.close(this); this.setData({ keyboardHeight: 0 }); if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
   onUnload() { this.onHide(); },
   show() {
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
@@ -35,7 +38,7 @@ Page({
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
     this.renderedChatState = state;
     this.setData({ draft: state.draft.text, draftSaveFailed: !!state.draftError, hasNewReply: reading.hasNew(this, state), messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, offline, saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
+      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
 
   },
   onInput(event) { const result = page.services().chat.editDraft(this.recordId, event.detail.value); this.show(); return result; },
@@ -57,6 +60,8 @@ Page({
     const result = await page.services().chat.sendQuickQuestion(this.recordId, event.currentTarget.dataset.id);
     this.show(); return result;
   },
+  presentVisibleMessages(state, visibleMessageIds) { if (!this.chatVisible) return; receiptPage.present(page.services(), receiptPage.chatEntries(state, visibleMessageIds)); },
+  openSaveCleanup: saveRecovery.open,
   async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   retrySave() { const result = page.services().chat.retrySave(this.recordId); this.show(); return result; },

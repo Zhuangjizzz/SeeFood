@@ -1,3 +1,4 @@
+const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
 const capturePage = require('../../ui/capture');
 const recordsPage = require('../../ui/records');
@@ -9,7 +10,7 @@ Page({
     const state = capturePage.previewState();
     this.actualScrollTop = state.previewPosition;
     this.setData(Object.assign({}, state, { scrollTop: state.previewPosition,
-      recordCopy: getRecordsCopy(page.services().application.getState().language) }));
+      saveRecoveryCopy: saveRecovery.copy(), recordCopy: getRecordsCopy(page.services().application.getState().language) }));
     wx.setNavigationBarTitle({ title: state.copy.preview });
     this.measureRows();
   },
@@ -94,6 +95,7 @@ Page({
     this.pendingDrag = null;
     this.setData({ draggingId: null, dropIndex: -1 });
   },
+  openSaveCleanup: saveRecovery.open,
   confirm() {
     if (this.data.draggingId) return;
     const result = page.services().capture.confirm();

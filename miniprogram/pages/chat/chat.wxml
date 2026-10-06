@@ -14,6 +14,9 @@
         <view wx:for="{{item.communicationCards}}" wx:for-item="card" wx:key="index" class="chat-communication paper">
           <view class="communication-label">{{chatCopy.card}}</view><view class="communication-title">{{card.title}}</view>
           <view class="communication-chinese" selectable>{{card.textZh}}</view><view wx:if="{{card.pairedText}}" class="communication-paired" selectable>{{card.pairedText}}</view>
+          <view wx:if="{{card.saved}}" class="favorite-saved" role="status">{{chatCopy.favoriteSaved}}</view>
+          <view wx:if="{{card.favoriteError}}" class="favorite-error" role="alert">{{card.favoriteError}}</view>
+          <button wx:if="{{!card.saved}}" class="favorite-card text-button" data-message-id="{{item.id}}" data-index="{{card.index}}" bindtap="favoriteCard">{{card.favoriteError ? chatCopy.favoriteRetry : chatCopy.favorite}}</button>
         </view>
       </view>
       <view wx:if="{{errorText}}" class="notice chat-error" role="alert">{{errorText}}<button wx:if="{{saveFailed}}" class="text-button" bindtap="retrySave">{{chatCopy.retrySave}}</button></view>

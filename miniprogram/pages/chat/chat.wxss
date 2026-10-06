@@ -34,3 +34,7 @@
 .reading-save-error { flex-shrink: 0; margin: 0 24rpx 12rpx; }
 .reply-retry, .reply-continue { min-height: 88rpx; margin: 14rpx 0 0; padding: 18rpx 22rpx; max-width: 100%; width: fit-content; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; text-align: left; }
 .message-status.retrying { color: #45694d; }
+.favorite-card { min-height: 88rpx; margin: 18rpx 0 0; padding: 18rpx 22rpx; width: fit-content; max-width: 100%; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; text-align: left; }
+.favorite-saved, .favorite-error { margin-top: 18rpx; font-size: 25rpx; line-height: 1.6; }
+.favorite-saved { color: #315d43; }
+.favorite-error { color: #8a452d; }

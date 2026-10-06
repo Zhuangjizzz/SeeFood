@@ -1,4 +1,5 @@
 const { createPresetCards } = require('./card-presets');
+const { makeId } = require('./identity');
 const KEY = 'personal-cards';
 const CATEGORIES = ['dietary', 'service'];
 const COLORS = ['green', 'blue', 'orange'];
@@ -17,11 +18,26 @@ function createCardRepository({ store, getLanguage = () => 'en' }) {
     let saved;
     try { saved = read(); } catch (_) { return { ok: false, error: 'storage-read' }; }
     const result = change(saved);
-    if (!result.ok) return result;
+    if (!result.ok || result.alreadySaved) return result;
     try { store.set(KEY, saved); } catch (_) { return { ok: false, error: 'storage-write' }; }
     return result;
   }
   return {
+    readFavorites(recordId) {
+      try { return { ok: true, cards: clone(read().cards.filter((card) => card.sourceRecordId === recordId)) }; }
+      catch (_) { return { ok: false, error: 'storage-read', cards: [] }; }
+    },
+    commitFavorite(content, source) {
+      return update((saved) => {
+        const existing = saved.cards.find((card) => card.sourceRecordId === source.sourceRecordId &&
+          card.sourceMessageId === source.sourceMessageId && card.sourceAttachmentIndex === source.sourceAttachmentIndex);
+        if (existing) return { ok: true, alreadySaved: true, card: clone(existing) };
+        const card = { ...clone(content), ...source, id: makeId('personal-card'), color: 'green', edited: false, saveState: 'saved',
+          order: saved.cards.length ? Math.min(...saved.cards.map((item) => item.order)) - 1 : 0 };
+        saved.cards.unshift(card);
+        return { ok: true, card: clone(card) };
+      });
+    },
     readDraft(slot = 'new') {
       try {
         const saved = read();

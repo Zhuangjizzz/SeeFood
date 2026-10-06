@@ -7,6 +7,7 @@
 .message-user { margin-left: auto; width: fit-content; max-width: 82%; box-sizing: border-box; padding: 20rpx 26rpx; background: #dce8d6; border-radius: 24rpx 24rpx 6rpx 24rpx; }
 .message-assistant { padding: 4rpx 4rpx 16rpx; }
 .message-text { white-space: pre-wrap; }
+.recommendation-stale { margin-top: 18rpx; padding: 16rpx 20rpx; border-left: 5rpx solid #b8955e; background: #f4edde; color: #6d5635; font-size: 25rpx; line-height: 1.6; }
 .message-status { font-size: 22rpx; color: #78836d; padding-top: 12rpx; }
 .message-status.failed { color: #9b4a36; }
 .chat-dish { width: 100%; text-align: left; padding: 22rpx 24rpx; margin-top: 20rpx; border: 1rpx solid #cfd9c7; border-radius: 16rpx; white-space: normal; line-height: 1.5; color: #315d43; font-size: 26rpx; background: #f9faf3; }

@@ -10,5 +10,13 @@ const COPY = {
   'zh-CN': { unknownRecommendation: "无法核实这条建议依据的饮食偏好，选择前需要重新确认。", askDishQuestion: "请帮我向店员确认{dish}的配料、做法和饮食要求。", askStaff: "向店员询问这道菜", unidentifiedDish: "这道未确认菜品", staleRecommendation: "这条建议基于旧饮食偏好，选择前需要重新确认。", backToDish: "返回菜品详情", retryReply: "重试此回复", retrying: "正在重试此回复，之前的片段尚未完成。", continueSend: "继续发送此问题", sendUnconfirmed: "尚未确认发送成功，联网后可继续发送这条已保存的问题。", retryUnconfirmed: "尚未确认重试已被接收，联网后可继续同一次重试。", title: '问问这份菜单', entry: '问问这份菜单', placeholder: '输入想问的菜品问题…', send: '发送', empty: '可以问这条记录中的任何菜品，也可以使用下方快捷问题。', mock: '当前预览使用固定示例回复。', sending: '发送中…', waiting: '正在准备回复…', partial: '正在回复', complete: '已保存到本机', failed: '回复未能完成。', busy: '请等待当前回复后再发送下一问，期间可以继续输入。', offline: '联网后可以发送新问题，已保存的对话仍可阅读。', saveFailed: '这条回复尚未保存到本机。', retrySave: '重新保存', missing: '这条记录无法读取。', error: '问题未能发送，输入内容仍保留。', openDish: '查看菜品', card: '给店员看的内容', back: '返回菜单',
     questions: [{ id: 'explain', label: '解释菜品', text: '请解释这份菜单中的菜品。' }, { id: 'recommend', label: '推荐菜品', text: '请从这份菜单中推荐菜品。' }, { id: 'price', label: '参考算价', text: '请展示一道菜两份的参考价格。' }, { id: 'communicate', label: '询问店员', text: '请帮我向店员询问一道菜。' }] }
 };
+const READING = {
+  en: { clearDraft: 'Clear draft', newReply: 'View new reply', draftSaveFailed: 'Your draft change is not saved on this device. Try saving again.', positionSaveFailed: 'Your reading position is not saved. Try saving again.' },
+  ja: { clearDraft: '下書きを消す', newReply: '新しい回答を見る', draftSaveFailed: '下書きの変更は端末に保存されていません。再保存してください。', positionSaveFailed: '閲覧位置を保存できませんでした。再保存してください。' },
+  ko: { clearDraft: '초안 지우기', newReply: '새 답변 보기', draftSaveFailed: '초안 변경 내용이 기기에 저장되지 않았습니다. 다시 저장하세요.', positionSaveFailed: '읽던 위치를 저장하지 못했습니다. 다시 저장하세요.' },
+  es: { clearDraft: 'Borrar borrador', newReply: 'Ver respuesta nueva', draftSaveFailed: 'El cambio del borrador no está guardado en este dispositivo. Intenta guardarlo de nuevo.', positionSaveFailed: 'No se guardó la posición de lectura. Intenta guardarla de nuevo.' },
+  'zh-CN': { clearDraft: '清空草稿', newReply: '查看新回复', draftSaveFailed: '草稿更改尚未保存到本机，请重试保存。', positionSaveFailed: '阅读位置尚未保存，请重试保存。' }
+};
+for (const language of Object.keys(COPY)) Object.assign(COPY[language], READING[language]);
 function getChatCopy(language) { return COPY[language] || COPY.en; }
 module.exports = { getChatCopy };

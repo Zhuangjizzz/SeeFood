@@ -31,9 +31,15 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
             !Number.isInteger(artifact.width) || artifact.width < 1 || !Number.isInteger(artifact.height) || artifact.height < 1))) throw { code: 'DEPENDENCY_MISSING' };
       return;
     }
+    const frozen = image.jobSnapshots && image.jobSnapshots[job.kind] ||
+      (record.contextSnapshotVersion === request.input.contextSnapshotVersion ? record.contextSnapshot : null);
+    // Older single-image requests remain safely readable if their historical snapshot was not saved locally.
+    const sourceIds = new Set(frozen && frozen.recordId === record.id && frozen.snapshotVersion === request.input.contextSnapshotVersion ?
+      frozen.snapshot.images.filter((item) => item.assetId && record.images.some((source) => source.id === item.imageId)).map((item) => item.imageId) : [image.id]);
     if (!job.output || !Array.isArray(job.output.cards) ||
         new Set(job.output.cards.map((card) => card.id)).size !== job.output.cards.length || job.output.cards.some((card) =>
-          card.recordId !== record.id || !Array.isArray(card.sourceImageIds) || card.sourceImageIds.length !== 1 || card.sourceImageIds[0] !== image.id ||
+          card.recordId !== record.id || !Array.isArray(card.sourceImageIds) || !card.sourceImageIds.includes(image.id) ||
+          new Set(card.sourceImageIds).size !== card.sourceImageIds.length || card.sourceImageIds.some((sourceId) => !sourceIds.has(sourceId)) ||
           typeof card.id !== 'string' || !Array.isArray(card.details) || !Array.isArray(card.uncertainty) || !card.price ||
           (card.price.amount !== null && (typeof card.price.amount !== 'string' || !/^(0|[1-9][0-9]*)(\.[0-9]+)?$/.test(card.price.amount))) ||
           card.contentLanguage !== request.input.targetLanguage)) throw { code: 'DEPENDENCY_MISSING' };
@@ -162,7 +168,8 @@ function createJobs({ records, backend, network, translationFiles, pollMs = 100 
         request = { contextId: record.contextId, kind, target: { imageId: image.id }, input: {
           contextSnapshotVersion: record.contextSnapshotVersion, assetId: image.assetId, targetLanguage: image.targetLanguage } };
         if (kind === 'image_cards') request.input.inputKind = image.kind;
-        save(id, (draft) => { const target = draft.images.find((item) => item.id === image.id); target.jobRequests = Object.assign({}, target.jobRequests, { [kind]: request }); });
+        save(id, (draft) => { const target = draft.images.find((item) => item.id === image.id); target.jobRequests = Object.assign({}, target.jobRequests, { [kind]: request });
+          if (record.contextSnapshot) target.jobSnapshots = Object.assign({}, target.jobSnapshots, { [kind]: clone(record.contextSnapshot) }); });
       }
       const job = await backend.createJob(request, image.requests[kind]);
       const result = acceptRecoveredJob(id, job);

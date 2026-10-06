@@ -2,6 +2,7 @@ const { makeId } = require('./identity');
 const { getChatCopy } = require('./chat-copy');
 const { LANGUAGES } = require('./i18n');
 const { createJobRecovery } = require('./recovery');
+const { createChatDrafts } = require('./chat-drafts');
 const { createJobRetry, canAcceptRetry } = require('./job-retry');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function messageSnapshot(message) {
@@ -12,6 +13,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   records.subscribe((id) => { if (records.isDeleted(id)) { unsaved.delete(id); errors.delete(id); } });
   const recovery = createJobRecovery({ backend }); const retries = createJobRetry({ backend });
+  const drafts = createChatDrafts({ records, notify });
   function notify(id) { listeners.forEach((listener) => { try { listener(id); } catch (_) { /* Page lifetime does not control persistence. */ } }); }
   function read(id) { const result = records.getRecord(id); if (!result.ok) throw { code: result.error }; return result.record; }
   function save(id, update, publish = true) { const result = records.updateRecord(id, update); if (!result.ok) throw { code: result.error }; if (publish) notify(id); return result.record; }
@@ -90,7 +92,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
     }).finally(() => { active.delete(id); notify(id); });
     active.set(id, work); notify(id); return work;
   }
-  function send(id, text) {
+  function send(id, text, submittedDraft) {
     const language = getLanguage();
     if (typeof text !== 'string' || !text.trim() || !LANGUAGES.some((item) => item.code === language)) return Promise.resolve({ ok: false, error: 'INPUT_UNSUPPORTED' });
     return run(id, async () => {
@@ -116,6 +118,7 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
           draft.messageIds = draft.messages.map((message) => message.id);
           draft.chatRequests = Object.assign({}, draft.chatRequests, { [assistantId]: { requestId, request, snapshot } });
           draft.pendingContextSnapshot = snapshot;
+          drafts.consume(draft, submittedDraft);
         });
         await contexts.publishPending(id);
         const job = await backend.createJob(request, requestId);
@@ -166,10 +169,15 @@ function createChat({ records, backend, network, preferences, contexts, getLangu
           replyActions[key] = { canRetry: job?.state === 'failed' && job.error?.retryable === true, canContinue: !job,
             retryPending: !!record.chatRetries?.[key], actionDisabled: active.has(id) || !!waiting || !!(pending && pending.id !== key) || hasRetry(record, key) };
         }
-        return { record, messages, replyActions, processing: active.has(id), running: active.has(id) || !!pendingMessage(record) || hasRetry(record), error: errors.get(id) || null,
+        return { ...drafts.read(id, record), record, messages, replyActions, processing: active.has(id), running: active.has(id) || !!pendingMessage(record) || hasRetry(record), error: errors.get(id) || null,
           unsavedJob: waiting ? clone(waiting) : null, copy: getChatCopy(getLanguage()) };
-      } catch (error) { return { record: null, messages: [], replyActions: {}, processing: false, running: false, error: error.code, unsavedJob: null, copy: getChatCopy(getLanguage()) }; }
+      } catch (error) { return { ...drafts.read(id), record: null, messages: [], replyActions: {}, processing: false, running: false, error: error.code, unsavedJob: null, copy: getChatCopy(getLanguage()) }; }
+
     },
+    sendDraft(id) { const current = drafts.read(id); return current.draftError ? Promise.resolve({ ok: false, error: current.draftError }) : send(id, current.draft.text, current.draft); },
+    editDraft: drafts.edit,
+    clearDraft: drafts.clear,
+    retryDraftSave: drafts.retry,
     send,
     retryReply,
     continueSubmission(id, assistantId) {

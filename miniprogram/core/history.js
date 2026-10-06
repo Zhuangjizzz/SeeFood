@@ -36,7 +36,8 @@ function createHistory({ records, application, jobs, chat, uploads, store, dieta
     const imageState = jobs.getState(record.id); const chatState = chat.getState(record.id); const upload = uploads.getState(record.id);
     const artifacts = record.images.flatMap((image) => [image.original].concat(image.translation || []));
     const missingImages = artifacts.filter((artifact) => artifact.saveState !== 'saved').length;
-    const unsaved = (imageState.unsavedJobs || []).length || chatState.unsavedJob || dietaryState.unsavedJob || ['storage-read', 'storage-write'].includes(upload.error);
+    const unsaved = (imageState.unsavedJobs || []).length || chatState.unsavedJob || chatState.draftError || dietaryState.unsavedJob || ['storage-read', 'storage-write'].includes(upload.error);
+
     const saving = record.images.some((image) => image.original.saveState === 'saving' ||
       image.translation && image.translation.saveState === 'saving' && (imageState.savingTranslations || []).includes(image.id)) || record.saveState === 'saving';
     const saveState = unsaved || record.saveState === 'failed' ? 'failed' : saving ? 'saving' : originalsSaved && translationsSaved ? 'saved' : 'partial';
@@ -74,6 +75,28 @@ function createHistory({ records, application, jobs, chat, uploads, store, dieta
       const image = record.images.find((item) => item.id === browse.currentImageId) || record.images[0];
       const anchors = image ? [`image:${image.id}`].concat((record.cards || []).filter((card) => card.sourceImageIds.includes(image.id)).map((card) => `card:${card.id}`)) : [];
       return !saved.anchorId || anchors.includes(saved.anchorId) ? saved : { ...TOP };
+    },
+    saveChatPosition(id, value) {
+      return records.updateRecord(id, (record) => {
+        const seenReplies = {};
+        for (const [messageId, revision] of Object.entries(value && value.seenReplies || {})) {
+          if (Number.isInteger(revision) && revision > 0 && (record.messages || []).some((message) => message.id === messageId && message.role === 'assistant')) seenReplies[messageId] = revision;
+        }
+        record.browseState = { ...record.browseState, chatPosition: { ...position(value), atBottom: !!(value && value.atBottom), seenReplies } };
+      });
+    },
+    getChatPosition(id) {
+      const fallback = { ...TOP, atBottom: false, seenReplies: {} };
+      const result = records.getRecord(id); if (!result.ok) return fallback;
+      const value = result.record.browseState && result.record.browseState.chatPosition;
+      if (!value) return { ...fallback, atBottom: true };
+      const saved = position(value);
+      if (saved.anchorId && !(result.record.messages || []).some((message) => message.id === saved.anchorId)) return fallback;
+      const seenReplies = {};
+      for (const [messageId, revision] of Object.entries(value.seenReplies || {})) {
+        if (Number.isInteger(revision) && revision > 0 && (result.record.messages || []).some((message) => message.id === messageId && message.role === 'assistant')) seenReplies[messageId] = revision;
+      }
+      return { ...saved, atBottom: value.atBottom === true, seenReplies };
     },
     list({ recent = false } = {}) {
       const result = recent ? records.listRecent(3) : records.listHistory();

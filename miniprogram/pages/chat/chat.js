@@ -1,13 +1,15 @@
 const receiptPage = require('../../ui/save-receipts');
 const saveRecovery = require('../../ui/save-recovery');
 const page = require('../../ui/page');
+const reading = require('../../ui/chat-reading');
 const { presentDish, getDishesCopy } = require('../../core/dishes-copy');
 
 Page({
-  data: { messages: [], draft: '', chatCopy: {}, running: false, errorText: '', keyboardHeight: 0 },
-  onLoad(options) { this.recordId = page.routeValue(options.recordId); this.inputVersion = 0; },
+  data: { messages: [], draft: '', chatCopy: {}, running: false, errorText: '', keyboardHeight: 0, chatScrollTop: 0, hasNewReply: false, positionSaveFailed: false },
+  onLoad(options) { this.recordId = page.routeValue(options.recordId); },
   onShow() {
     this.receiptVisible = true;
+    reading.open(this);
     if (this.unsubscribeNetwork) this.unsubscribeNetwork();
     this.unsubscribeNetwork = page.services().network.subscribe(() => this.show());
     if (this.unsubscribe) this.unsubscribe();
@@ -15,7 +17,7 @@ Page({
     this.show();
     void page.services().chat.refreshRecord(this.recordId);
   },
-  onHide() { this.receiptVisible = false; if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
+  onHide() { this.receiptVisible = false; reading.close(this); this.setData({ keyboardHeight: 0 }); if (this.unsubscribeNetwork) { this.unsubscribeNetwork(); this.unsubscribeNetwork = null; } if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; } },
   onUnload() { this.onHide(); },
   show() {
     const services = page.services(); const state = services.chat.getState(this.recordId); const copy = state.copy;
@@ -34,16 +36,22 @@ Page({
     const offline = !services.network.getState().online;
     const errorText = offline ? copy.offline : state.error === 'JOB_STATE_CONFLICT' ? copy.busy : ['network-unavailable', 'backend-unavailable'].includes(state.error) ? copy.offline :
       state.unsavedJob ? copy.saveFailed : !state.record ? copy.missing : state.error ? copy.error : '';
-    this.setData({ messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
-      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record });
+    this.renderedChatState = state;
+    this.setData({ draft: state.draft.text, draftSaveFailed: !!state.draftError, hasNewReply: reading.hasNew(this, state), messages, chatCopy: copy, running: state.running, canSend: !!state.record && !state.running && !offline,
+      errorText, offline, saveRecoveryCopy: saveRecovery.copy(), saveFailed: !!state.unsavedJob, recordAvailable: !!state.record }, () => reading.render(this, state));
+
   },
-  onInput(event) { this.inputVersion += 1; this.setData({ draft: event.detail.value }); },
-  onKeyboardHeight(event) { this.setData({ keyboardHeight: Math.max(0, event.detail.height || 0) }); },
+  onInput(event) { const result = page.services().chat.editDraft(this.recordId, event.detail.value); this.show(); return result; },
+  clearDraft() { const result = page.services().chat.clearDraft(this.recordId); this.show(); return result; },
+  retryDraftSave() { const result = page.services().chat.retryDraftSave(this.recordId); this.show(); return result; },
+  onMessagesScroll(event) { reading.scroll(this, event); },
+  viewLatest() { reading.latest(this); },
+  retryReadingSave() { return reading.save(this); },
+  onKeyboardHeight(event) { this.setData({ keyboardHeight: Math.max(0, event.detail.height || 0) }, () => reading.render(this, this.renderedChatState)); },
+  onComposerResize() { reading.render(this, this.renderedChatState); },
+  onResize() { this.onComposerResize(); },
   async send() {
-    const text = this.data.draft; const version = this.inputVersion;
-    if (!text.trim()) return { ok: false, error: 'INPUT_UNSUPPORTED' };
-    const result = await page.services().chat.send(this.recordId, text);
-    if (result.ok && this.inputVersion === version) { this.inputVersion += 1; this.setData({ draft: '' }); }
+    const result = await page.services().chat.sendDraft(this.recordId);
     this.show();
     if (!result.ok && result.error === 'JOB_STATE_CONFLICT') this.setData({ errorText: this.data.chatCopy.busy });
     return result;
@@ -52,7 +60,7 @@ Page({
     const result = await page.services().chat.sendQuickQuestion(this.recordId, event.currentTarget.dataset.id);
     this.show(); return result;
   },
-  presentVisibleMessages(state, visibleMessageIds) { receiptPage.present(page.services(), receiptPage.chatEntries(state, visibleMessageIds)); },
+  presentVisibleMessages(state, visibleMessageIds) { if (!this.chatVisible) return; receiptPage.present(page.services(), receiptPage.chatEntries(state, visibleMessageIds)); },
   openSaveCleanup: saveRecovery.open,
   async retryReply(event) { const result = await page.services().chat.retryReply(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
   async continueSend(event) { const result = await page.services().chat.continueSubmission(this.recordId, event.currentTarget.dataset.id); this.show(); return result; },
@@ -63,7 +71,8 @@ Page({
     const message = state.messages.find((item) => item.id === messageId);
     if (!message || !message.attachments.some((item) => item.type === 'dish_reference' && item.cardId === cardId) ||
       !state.record || !(state.record.cards || []).some((card) => card.id === cardId && card.recordId === this.recordId)) return;
+    reading.save(this);
     wx.navigateTo({ url: `/pages/dish-detail/dish-detail?recordId=${encodeURIComponent(this.recordId)}&cardId=${encodeURIComponent(cardId)}` });
   },
-  back() { if (getCurrentPages().length > 1) wx.navigateBack(); else wx.redirectTo({ url: `/pages/result/result?recordId=${encodeURIComponent(this.recordId)}` }); }
+  back() { reading.save(this); if (getCurrentPages().length > 1) wx.navigateBack(); else wx.redirectTo({ url: `/pages/result/result?recordId=${encodeURIComponent(this.recordId)}` }); }
 });

@@ -35,6 +35,35 @@ test('dietary checks accept owner-bound frozen cards and preferences, and surviv
 });
 module.exports = { ready };
 
+test('reordering dietary target and input card sets replays one job through the same or a different request key', async t => {
+  const { createService } = await import('../server/service.ts');
+  const { imageCardsHandler } = await import('../server/image-cards.ts');
+  const normal = imageCardsHandler();
+  const service = createService({ dataDir: temporary(t), enableDevSession: true, devIdentities: ['demo-owner-a'], jobHandlers: {
+    image_cards: { ...normal, async generate(input) {
+      const output = await normal.generate(input);
+      return { cards: [...output.cards, { ...output.cards[0], id: output.cards[0].id + '-second', nameZh: '第二道固定样例' }] };
+    } }
+  } });
+  await new Promise(resolve => service.server.listen(0, '127.0.0.1', resolve)); t.after(() => service.close());
+  const url = `http://127.0.0.1:${service.server.address().port}`; const token = await session(url);
+  const source = await ready(url, token); assert.equal(source.body.target.cardIds.length, 2);
+  const accepted = await request(url, 'POST', '/v1/jobs', source.body, token, 'set-first');
+  assert.equal(accepted.status, 202);
+  const reordered = structuredClone(source.body); reordered.target.cardIds.reverse();
+  for (const key of ['set-first', 'set-second']) {
+    const replay = await request(url, 'POST', '/v1/jobs', reordered, token, key);
+    assert.equal(replay.status, 202); assert.equal(replay.body.jobId, accepted.body.jobId);
+  }
+  reordered.input.cards.reverse();
+  const replay = await request(url, 'POST', '/v1/jobs', reordered, token, 'set-third');
+  assert.equal(replay.status, 202); assert.equal(replay.body.jobId, accepted.body.jobId);
+  const changed = structuredClone(reordered); changed.input.cards[0].summary = 'A different meaning';
+  assert.equal((await request(url, 'POST', '/v1/jobs', changed, token, 'set-fourth')).status, 409);
+  const jobs = (await request(url, 'GET', `/v1/contexts/${source.contextId}/jobs`, undefined, token)).body.items;
+  assert.equal(jobs.filter(job => job.kind === 'dietary_review').length, 1);
+});
+
 test('checks reject foreign known cards even when copied into a rewritten snapshot and reject unbound output card IDs or preference versions', async t => {
   const server = await start(t, temporary(t)); const token = await session(server.url); const other = await session(server.url, 'demo-owner-b');
   const own = await ready(server.url, token, 'owned'); const foreign = await ready(server.url, other, 'foreign'); const sibling = await ready(server.url, token, 'sibling');

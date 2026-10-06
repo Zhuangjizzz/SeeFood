@@ -42,6 +42,21 @@ test('saved preferences immediately invalidate old dish assessments and complete
 });
 module.exports = { setup };
 
+test('explicit multi-image submission checks newly generated cards against already saved preferences without opening a page', async t => {
+  const { services, disk, id } = await setup(t);
+  services.preferences.beginEdit(); services.preferences.toggleOption('allergies', 'egg'); services.preferences.save();
+  assert.equal((await services.dietaryReview.startRecord(id)).ok, true);
+  const capture = createCapture({ media: { chooseImages: async () => [disk.material('menu-photo.png'), disk.material('menu-screenshot.png')] }, getLanguage: () => 'en' });
+  await capture.chooseImages({ source: 'album' }); const batch = capture.confirm().batch;
+  const saved = await services.records.confirmCapture(batch);
+  assert.equal((await services.imageBatches.startBatch(saved.recordId, batch.id)).ok, true);
+  const record = services.records.getRecord(saved.recordId).record;
+  assert.equal(record.cards.length, 2);
+  const state = services.dietaryReview.getState(saved.recordId);
+  assert.equal(state.pending, false);
+  for (const card of record.cards) assert.equal(state.assessments[card.id].preferencesVersion, services.preferences.getSnapshot().version);
+});
+
 test('late old-preference delivery cannot overwrite newer saved hints, and pending editing never mutates the original cards', async t => {
   const { services, id, disk } = await setup(t); const send = disk.platform.request; let release; let received;
   const arrived = new Promise(resolve => { received = resolve; });

@@ -9,9 +9,7 @@ function getDietary(id, cardId) {
     offline: !page.services().network.getState().online };
 }
 function refresh(id) {
-  const services = page.services(); const state = services.dietaryReview.getState(id);
-  if (state.canStart && services.preferences.getState().isSet) return services.dietaryReview.startRecord(id);
-  return services.dietaryReview.refreshRecord(id);
+  return page.services().dietaryReview.refreshRecord(id);
 }
 function act(id, action) { return page.services().dietaryReview[action](id); }
 module.exports = { getDietary, refresh, act };

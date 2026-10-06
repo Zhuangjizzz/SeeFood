@@ -4,11 +4,8 @@ const { LANGUAGES } = require('./i18n');
 const { createJobRecovery } = require('./recovery');
 const { createChatDrafts } = require('./chat-drafts');
 const { createJobRetry, canAcceptRetry } = require('./job-retry');
+const { completedMessages } = require('./record-snapshot');
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
-function messageSnapshot(message) {
-  const { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments } = message;
-  return { id, role, text, contentLanguage, inReplyTo, preferencesVersion, attachments: clone(attachments) };
-}
 function createChat({ records, backend, network, preferences, contexts, uploads, getLanguage, receipts, pollMs = 100 }) {
   const active = new Map(); const errors = new Map(); const unsaved = new Map(); const listeners = new Set();
   records.subscribe((id) => { if (records.isDeleted(id)) { unsaved.delete(id); errors.delete(id); } });
@@ -124,11 +121,9 @@ function createChat({ records, backend, network, preferences, contexts, uploads,
         await contexts.publishPending(id);
         const record = read(id); const preferenceSnapshot = preferences.getSnapshot();
         if (options.dishCardId && !(record.cards || []).some(card => card.id === options.dishCardId && card.recordId === id)) throw { code: 'DEPENDENCY_MISSING' };
-        const complete = (record.messages || []).filter((message) => message.role === 'assistant' && message.state === 'complete');
-        const included = new Set(complete.flatMap((message) => [message.id, message.inReplyTo]));
         const snapshot = { purpose: 'record', recordId: id, localScopeId: id, snapshotVersion: record.contextSnapshotVersion + 1,
           snapshot: { images: record.images.map((image) => ({ imageId: image.id, kind: image.kind, order: image.order, assetId: image.assetId })),
-            cards: clone(record.cards || []), messages: (record.messages || []).filter((message) => included.has(message.id)).map(messageSnapshot), preferences: preferenceSnapshot } };
+            cards: clone(record.cards || []), messages: completedMessages(record), preferences: preferenceSnapshot } };
         const request = { contextId: record.contextId, kind: 'chat', target: { userMessageId: userId, assistantMessageId: assistantId },
           input: { contextSnapshotVersion: snapshot.snapshotVersion, text: text.trim(), targetLanguage: language } };
         if (options.dishCardId) request.input.dishCardId = options.dishCardId;

@@ -15,6 +15,18 @@
       <view class="section-title">{{dishCopy.uncertainty}}</view>
       <view wx:for="{{card.uncertainty}}" wx:key="*this" class="detail-line">{{item}}</view>
     </view>
+    <view wx:if="{{dietary.assessment}}" class="dish-detail-section paper dish-dietary dietary-{{dietary.assessment.concern}}">
+      <view class="section-title">{{dietary.copy.title}}</view>
+      <view class="dietary-status" role="status">{{dietary.assessment.stateLabel}}</view>
+      <view wx:if="{{dietary.assessment.concernLabel}}">{{dietary.assessment.concernLabel}}</view>
+      <view wx:for="{{dietary.assessment.warnings}}" wx:key="*this" class="detail-line">{{item}}</view>
+      <view wx:if="{{dietary.error}}" class="dietary-error" role="alert">{{dietary.copy.error}}</view>
+      <view wx:if="{{dietary.unsavedJob}}" class="dietary-save-error" role="alert">{{dietary.copy.saveFailed}}</view>
+      <button wx:if="{{dietary.canStart}}" class="text-button" bindtap="checkDietary" disabled="{{dietary.offline}}">{{dietary.copy.start}}</button>
+      <button wx:if="{{dietary.canContinue}}" class="text-button" bindtap="continueDietary" disabled="{{dietary.offline}}">{{dietary.copy.continue}}</button>
+      <button wx:if="{{dietary.canRetry}}" class="text-button" bindtap="retryDietary" disabled="{{dietary.offline}}">{{dietary.copy.retry}}</button>
+      <button wx:if="{{dietary.unsavedJob}}" class="text-button" bindtap="retryDietarySave">{{dietary.copy.retrySave}}</button>
+    </view>
     <button class="primary original-source" disabled="{{!sourceImages.length}}" bindtap="viewOriginal">{{dishCopy.original}}</button>
   </block>
   <button class="text-button detail-back" bindtap="back">{{dishCopy.back}}</button>

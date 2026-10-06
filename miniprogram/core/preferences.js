@@ -20,6 +20,7 @@ function readPreferences(store) {
 }
 
 function createPreferences({ store }) {
+  const listeners = new Set();
   let saved = null;
   let draft = null;
   let error = null;
@@ -31,6 +32,7 @@ function createPreferences({ store }) {
   }
   refresh();
   return {
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     beginEdit() {
       const result = refresh();
       if (!result.ok) return result;
@@ -66,6 +68,7 @@ function createPreferences({ store }) {
       saved = next;
       draft = null;
       error = null;
+      listeners.forEach(listener => { try { listener(); } catch (_) { /* Successful preferences remain saved even when background checking is unavailable. */ } });
       return { ok: true };
     },
     getState(language) {

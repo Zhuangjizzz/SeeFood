@@ -55,3 +55,9 @@
 .translation-progress { font-size: 25rpx; line-height: 1.6; color: #536b4c; margin: 16rpx 6rpx 6rpx; overflow-wrap: anywhere; }
 .image-save-states { font-size: 22rpx; line-height: 1.6; color: #6b7d62; margin: 8rpx 6rpx 16rpx; overflow-wrap: anywhere; }
 .stage-actions .text-button { min-height: 88rpx; white-space: normal; line-height: 1.45; padding: 20rpx 24rpx; text-align: left; }
+
+.dish-dietary { margin-top: 18rpx; padding: 18rpx 20rpx; border-left: 5rpx solid #b8955e; background: #f5f0e4; color: #715837; font-size: 24rpx; line-height: 1.6; overflow-wrap: anywhere; }
+.dish-dietary.dietary-conflict { border-color: #a8624c; background: #f5eae4; color: #80432e; }
+.dietary-controls { padding: 18rpx 24rpx; margin: 20rpx 0; }
+.dietary-controls .text-button, .dish-dietary .text-button { min-height: 88rpx; padding: 18rpx 8rpx; line-height: 1.5; white-space: normal; text-align: left; }
+.dietary-status, .dietary-error, .dietary-save-error { margin-top: 12rpx; }

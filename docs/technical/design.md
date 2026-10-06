@@ -50,7 +50,7 @@ flowchart LR
 | ImageInput | `id, recordId, kind, order, localOriginalPath, uploadState, assetId?, targetLanguage, stageJobs` | 一图属于一条记录；`kind=menu/dish`；保存来源、顺序、原图、上传状态与各阶段任务关联 |
 | 本机图片条目 | `id, imageId, kind, contentLanguage, assetId?, remoteUrl?, localPath?, saveState`，以及服务端返回的资源描述 | 原图和译图分别保存文件与保存状态；HTTP 的 `ImageArtifact` 只描述译图，`localPath`、`saveState` 由客户端维护 |
 | DishCard | OpenAPI 的 `DishCard` 完整内容 | 保留 `recordId` 与 `sourceImageIds`；同一卡片可关联多图；当前图片筛选只影响展示，整条记录的卡片与聊天范围保持完整 |
-| DietaryAssessment | `cardId, preferencesVersion, state, warnings, checkedAt?` | 与菜品解释正文分开保存，检查结果绑定偏好版本 |
+| DietaryAssessment | `cardId, preferencesVersion, state, warnings, concern?, checkedAt?` | 与菜品解释正文分开保存，检查结果绑定偏好版本 |
 | Message | `id, recordId, role, text, contentLanguage, state, saveState, inReplyTo?, jobId?, attempt, contextSnapshotVersion?, preferencesVersion?, attachments` | 用户问题和对应回复各有稳定 ID；重试更新同一回复，恢复层保存当前任务、尝试号及已应用版本 |
 | PersonalCard | OpenAPI 的 `CardContent` 完整内容，加 `id, order, color, edited, presetId?, sourceMessageId?, saveState` | `order` 是本机卡库的全局顺序；收藏时复制完整文字与语言并生成个人卡片 ID；来源标识仅供追溯，展示与保存不依赖来源记录 |
 | Preferences | `version`、三类已选项及各类补充原文；据此构建符合 OpenAPI 的 `Preferences` 快照 | 统一保存后增加版本；表单编辑与已生效偏好分开，请求仅携带已保存快照 |
@@ -197,7 +197,9 @@ flowchart LR
 
 表单统一保存成功后增加本机 `Preferences.version`，相关 `DietaryAssessment` 转为待检查；尚未保存的选项和三类补充保持在编辑状态。新检查任务冻结当前偏好和相关卡片；后端校验目标 `cardIds`、`preferencesVersion` 与输入快照一致，输出逐项绑定卡片与偏好版本。
 
-客户端只有在返回版本仍匹配当前偏好时，才将检查更新为 `current`。旧检查不能覆盖新版本；检查失败保留可辨认状态。旧对话保留原文，通过消息的 `preferencesVersion` 判断推荐是否需要重新确认，后续新操作使用新快照。
+`DietaryAssessment.concern` 提供 `conflict / possible_conflict / unknown` 三种结构化类别，供页面及推荐筛选复用；旧结果缺少类别时按 `unknown` 处理。`current` 只表示对应偏好版本的检查完成，不表示安全保证，也不从 `warnings` 文字反解析类别。
+
+客户端只有在返回版本仍匹配当前偏好时，才将检查更新为 `current`。旧检查不能覆盖新版本；检查失败保留可辨认状态。检查记录与冻结请求保存在本机 `dietaryReviews`，提示独立保存在 `dietaryAssessments`；成功保存偏好后，对已有菜品发起新检查。未送达的检查保留待检查状态，重进只查询，用户明确继续才重发原请求键；失败任务的重试沿用冻结输入。提示保存失败时保留可读结果，并单独提供本机重存，不再生成。旧对话保留原文，通过消息的 `preferencesVersion` 判断推荐是否需要重新确认，后续新操作使用新快照。
 
 <a id="lifecycle"></a>
 

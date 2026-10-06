@@ -57,7 +57,7 @@ export function createJobService(options: JobServiceOptions) {
     validate('CreateJobRequest', request);
     const context = getContext(request.contextId, owner);
     return idempotent(owner, 'POST', '/v1/jobs', key, request, () => {
-      const previous = database.prepare('SELECT * FROM jobs WHERE context_id=? AND kind=? AND target=?').get(request.contextId, request.kind, canonical(request.target));
+      const previous = database.prepare('SELECT * FROM jobs WHERE context_id=? AND kind=? AND target=?').get(request.contextId, request.kind, canonical(request.kind === 'dietary_review' ? { ...request.target, cardIds: [...request.target.cardIds].sort() } : request.target));
       if (previous) {
         if (previous.request !== canonical(request)) reject(409, 'IDEMPOTENCY_CONFLICT');
         return JSON.parse(String(previous.response));
@@ -75,7 +75,7 @@ export function createJobService(options: JobServiceOptions) {
       }
       const snapshot = getSnapshot(request.contextId, owner, request.input.contextSnapshotVersion);
       if (snapshot.purpose !== handler.purpose) reject(409, 'DEPENDENCY_MISSING');
-      if (request.kind === 'chat') {
+      if (request.kind === 'chat' || request.kind === 'dietary_review') {
         const cardIds = new Set(snapshot.snapshot.cards.map((card: Json) => card.id));
         const messageIds = new Set(snapshot.snapshot.messages.map((message: Json) => message.id));
         // Known identities retain their record/owner even if a client rewrites their fields.
@@ -104,7 +104,7 @@ export function createJobService(options: JobServiceOptions) {
         kind: request.kind, target: request.target, state: 'queued', attempt: 1, revision: 1, output: null, error: null, expiresAt: context.expires_at };
       validate('Job', job);
       database.prepare('INSERT INTO jobs VALUES (?,?,?,?,?,?,?,?)').run(job.jobId, owner, request.contextId, request.kind,
-        canonical(request.target), canonical(request), JSON.stringify({ request, snapshot, assets }), JSON.stringify(job));
+        canonical(request.kind === 'dietary_review' ? { ...request.target, cardIds: [...request.target.cardIds].sort() } : request.target), canonical(request), JSON.stringify({ request, snapshot, assets }), JSON.stringify(job));
       return job;
     });
   }

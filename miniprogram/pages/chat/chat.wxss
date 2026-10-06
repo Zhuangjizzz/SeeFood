@@ -26,5 +26,11 @@
 .chat-send { flex-shrink: 0; min-width: 118rpx; max-width: 30%; min-height: 90rpx; padding: 20rpx 22rpx; font-size: 27rpx; white-space: normal; overflow-wrap: anywhere; }
 .composer-status { font-size: 22rpx; color: #7b8772; line-height: 1.45; margin-top: 12rpx; }
 
+.new-reply-entry { flex-shrink: 0; padding: 8rpx 28rpx; background: #f2f0eb; }
+.new-reply-button { min-height: 88rpx; padding: 18rpx 24rpx; background: #dce8d6; color: #315d43; border-radius: 22rpx; font-size: 27rpx; line-height: 1.6; white-space: normal; }
+.draft-actions { display: flex; justify-content: flex-end; }
+.draft-clear { min-height: 88rpx; padding: 16rpx 8rpx; font-size: 24rpx; line-height: 1.5; white-space: normal; }
+.draft-save-error, .reading-save-error { font-size: 24rpx; line-height: 1.5; }
+.reading-save-error { flex-shrink: 0; margin: 0 24rpx 12rpx; }
 .reply-retry, .reply-continue { min-height: 88rpx; margin: 14rpx 0 0; padding: 18rpx 22rpx; max-width: 100%; width: fit-content; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; text-align: left; }
 .message-status.retrying { color: #45694d; }
